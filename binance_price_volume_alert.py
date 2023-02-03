@@ -176,13 +176,13 @@ class BinancePriceVolumeAlert:
 
         # three bars alert
         if len(self.exchange_bar_dict[symbol]) == 2:
-            if vol != 0.0 and vol >= 10 * self.exchange_bar_dict[symbol][1] and amount >= alert_threshold:
+            if vol != 0.0 and vol >= 10 * self.exchange_bar_dict[symbol][1]:
                 self.exchange_bar_dict[symbol].append(vol)
                 self.exchange_bar_dict[symbol][0] = current_time
             else:
                 self.exchange_bar_dict[symbol] = [current_time, vol]
         elif len(self.exchange_bar_dict[symbol]) == 3:
-            if vol != 0.0 and vol >= 50 * self.exchange_bar_dict[symbol][1] and amount >= alert_threshold:
+            if vol != 0.0 and vol >= 10 * self.exchange_bar_dict[symbol][1] and amount >= alert_threshold:
                 self.tg_bot_volume.add_msg_to_queue(f"{symbol} 15 min volume alert 3 bars: volume "
                                                     f"[{self.exchange_bar_dict[symbol][1]} "
                                                     f"-> {self.exchange_bar_dict[symbol][2]} -> {vol}]"

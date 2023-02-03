@@ -11,6 +11,7 @@ from pycoingecko import CoinGeckoAPI
 from telegram_api import TelegramBot
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
+
 class CoinGecKo:
     COINGECKO_API_KEY = "CG-wAukVxNxrR322gkZYEgZWtV1"
     DATA_DOWNLOAD_ROOT_URL = "https://data.binance.vision/data/spot/daily/klines/"
