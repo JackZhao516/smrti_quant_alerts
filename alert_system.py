@@ -9,13 +9,6 @@ from binance_indicator_alert import BinanceIndicatorAlert
 MODE = "CG_SUM"
 tg_bot = TelegramBot(MODE)
 cg = CoinGecKo("TEST")
-#
-# usdt_gateway_setting = {
-#         "key": "ZaipNokA3CkFb0fQsp7D2mqmev9RAHPrgW0SnUXVhReXfgTujN7SJB0Wu4atl20M",
-#         "secret": "xD0eB0n0E47FQj9zKO4FinrjwKuCb7c3on9A9qv72bqM08QszCMYMkiCo7PntTYW",
-#         "proxy_host": "127.0.0.1",
-#         "proxy_port": 0,
-#     }
 
 
 def alert_indicator(alert_type="alert_100"):

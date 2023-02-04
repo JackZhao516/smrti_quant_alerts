@@ -10,7 +10,8 @@ class TelegramBot:
         "CG_SUM": "-804953236",  # CG Summary
         "TEST": "-814886566",  # TEST
         "VOLUME": "-859234465",  # Volume Alert
-        "PRICE": "-824512265"  # Price Alert
+        "PRICE_15M": "-824512265",  # Price Alert 15m
+        "PRICE_1H": "-824415540"  # Price Alert 1h
         }
     MAX_ERROR = 10
 
