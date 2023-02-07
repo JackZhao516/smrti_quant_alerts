@@ -326,7 +326,7 @@ class BinanceIndicatorAlert:
                 self.alert_helper_1m(close, 4, exchange)
                 self.alert_helper_1m(close, 24, exchange)
             self.last_close_1m[exchange] = close
-            logging.warning(f"{exchange} 1m current {self.last_close_1m[exchange]}")
+            # logging.warning(f"{exchange} 1m current {self.last_close_1m[exchange]}")
             self.close_lock.release()
 
 

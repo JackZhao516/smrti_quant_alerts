@@ -151,7 +151,8 @@ class CoinGecKo:
 
     def get_500_usdt_exchanges(self, market_cap=True):
         exchanges = self.get_all_popular_exchanges(time_on_binance=2)
-        # logger.info(f"Getting all {len(exchanges)}")
+        # exchanges = self.get_all_exchanges()
+
         res = []
         if market_cap:
             ids = self.cg.get_coins_markets(vs_currency='usd', order='market_cap_desc', per_page=250, page=1,

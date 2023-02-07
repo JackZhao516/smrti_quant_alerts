@@ -8,7 +8,7 @@ from binance_indicator_alert import BinanceIndicatorAlert
 
 MODE = "CG_SUM"
 tg_bot = TelegramBot(MODE)
-cg = CoinGecKo("TEST")
+cg = CoinGecKo(MODE)
 
 
 def alert_indicator(alert_type="alert_100"):
