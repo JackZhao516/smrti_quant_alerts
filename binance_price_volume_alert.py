@@ -86,8 +86,8 @@ class BinancePriceVolumeAlert:
                 for exchange, count in message_list:
                     message_string += f"{exchange} monthly count: {count}\n"
                 self.tg_bot_volume.send_message(
-                    f"Daily volume alert ticker count:\n"
-                    f"{message_string}"
+                    f"[Daily volume alert ticker count:\n"
+                    f"{message_string}](http://www.google.com/)", blue_text=True
                 )
                 self.exchange_volume_alert_daily_count = set()
                 self.lock_15m.release()

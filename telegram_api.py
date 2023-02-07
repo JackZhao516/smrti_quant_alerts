@@ -32,14 +32,17 @@ class TelegramBot:
         if daemon:
             self.msg_thread.start()
 
-    def send_message(self, message):
+    def send_message(self, message, blue_text=False):
         api_url = f'https://api.telegram.org/bot{self.TOKEN}/' \
                   f'sendMessage?chat_id={self.telegram_chat_id}&text={message}'
+        if blue_text:
+            api_url += '&parse_mode=MarkdownV2'
+        print(api_url)
         requests.get(api_url, timeout=10).json()
 
-    def safe_send_message(self, message):
+    def safe_send_message(self, message, blue_text=False):
         try:
-            self.send_message(message)
+            self.send_message(message, blue_text)
         except Exception as e:
             self.error += 1
             if self.error > self.MAX_ERROR:
@@ -72,8 +75,9 @@ class TelegramBot:
 
 
 if __name__ == "__main__":
-    tg_bot = TelegramBot("TEST", daemon=True)
-    tg_bot.add_msg_to_queue("Test")
+    tg_bot = TelegramBot("TEST", daemon=False)
+    a = ""
+    for i in range(100):
+        a += f"BTCUSDT monthly volume count: {i}\n"
+    tg_bot.safe_send_message(f"[Daily volume alert ticker count: {a}](http://www.google.com/)", blue_text=True)
     print(tg_bot.running)
-    time.sleep(10)
-    tg_bot.stop()
