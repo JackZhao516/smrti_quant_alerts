@@ -14,7 +14,8 @@ STABLE_COINS = {"USDT", "USDC", "DAI", "BUSD", "USDP", "GUSD",
                 "TUSD", "FRAX", "CUSD", "USDD", "DEI", "USDK",
                 "MIMATIC", "OUSD", "PAX", "FEI", "USTC", "USDN",
                 "TRIBE", "LUSD", "EURS", "VUSDC", "USDX", "SUSD",
-                "VAI", "RSV", "CEUR", "USDS", "CUSDT"}
+                "VAI", "RSV", "CEUR", "USDS", "CUSDT", "DOLA", 
+                "HAY", "MIM"}
 
 
 class CoinGecKo12H(CoinGecKo):

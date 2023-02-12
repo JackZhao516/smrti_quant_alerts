@@ -135,3 +135,5 @@ tmp/
 
 *.log
 .idea/
+*.txt
+*.out

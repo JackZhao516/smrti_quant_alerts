@@ -23,7 +23,7 @@ class BinanceIndicatorAlert:
     DATA_DOWNLOAD_ROOT_URL = "https://data.binance.vision/data/spot/daily/klines/"
     HTTP_URL = "https://api.binance.com/api/v3/klines?"
     MAX_ERROR = 5
-    STABLE_EXCHANGES = {"wbtcbtc"}
+    STABLE_EXCHANGES = {"wbtcbtc", "busdusdt"}
     config_logging(logging, logging.INFO)
     csv_dir = os.path.join(os.getcwd(), "klines_csv")
     try:
