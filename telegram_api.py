@@ -37,7 +37,7 @@ class TelegramBot:
                   f'sendMessage?chat_id={self.telegram_chat_id}&text={message}'
         if blue_text:
             api_url += '&parse_mode=MarkdownV2'
-        print(api_url)
+            message =  f"[{message}](http://www.google.com/)"
         requests.get(api_url, timeout=10).json()
 
     def safe_send_message(self, message, blue_text=False):

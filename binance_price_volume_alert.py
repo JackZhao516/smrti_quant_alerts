@@ -35,7 +35,7 @@ class BinancePriceVolumeAlert:
         self.lock_15m = threading.Lock()
 
         # volume alert monthly count
-        self.exchange_volume_alert_monthly_count = defaultdict(lambda: 0)
+        self.exchange_volume_alert_monthly_count = defaultdict(list)
 
         # monitored exchanges
         self.exchanges = self.cg.get_500_usdt_exchanges(market_cap=False)
@@ -70,6 +70,7 @@ class BinancePriceVolumeAlert:
         while self.running:
             time_now = datetime.now().strftime('%M')
             if time_now[1] == "2":
+                logging.info("hourly subscribe new exchange start checking")
                 all_exchanges = set(self.cg.get_all_exchanges())
                 if self.all_exchanges != all_exchanges:
                     exchange_diff = all_exchanges - self.all_exchanges
@@ -91,7 +92,7 @@ class BinancePriceVolumeAlert:
                     self.exchanges.sort()
                     self.all_exchanges = all_exchanges
                     logging.info(f"adding new exchanges: {new_exchanges}")
-                    time.sleep(550)
+                time.sleep(550)
 
     def daily_reset_and_alert_volume_alert_count(self):
         """
@@ -105,12 +106,12 @@ class BinancePriceVolumeAlert:
                 self.lock_15m.acquire()
                 message_string = ""
                 message_list = list(self.exchange_volume_alert_monthly_count.items())
-                message_list.sort(key=lambda x: x[1], reverse=True)
+                message_list.sort(key=lambda x: x[1][0], reverse=True)
                 for exchange, count in message_list:
-                    message_string += f"{exchange} monthly count: {count}\n"
+                    message_string += f"{exchange} monthly count: {count[0]}\n"
                 self.tg_bot_volume.send_message(
-                    f"[Daily volume alert ticker count:\n"
-                    f"{message_string}](http://www.google.com/)", blue_text=True
+                    f"Daily volume alert ticker count:\n"
+                    f"{message_string}", blue_text=True
                 )
                 self.lock_15m.release()
                 time.sleep(86000)
@@ -123,7 +124,7 @@ class BinancePriceVolumeAlert:
         while self.running:
             time.sleep(86400 * 30)
             self.lock_15m.acquire()
-            self.exchange_volume_alert_monthly_count = defaultdict(lambda: 0)
+            self.exchange_volume_alert_monthly_count = defaultdict(list)
             self.lock_15m.release()
 
     def monitor_price_change(self, timeframe="15m"):
@@ -169,7 +170,8 @@ class BinancePriceVolumeAlert:
                         break
 
                 logging.info(f"largest price change: {largest}")
-                logging.info(f"smallest price change: {smallest}")
+                # logging.info(f"smallest price change: {smallest}")
+                logging.info(f"monthly count: {self.exchange_volume_alert_monthly_count}")
                 # logging.info(f"exchange bar dict 1: {self.exchange_bar_dict_1}")
                 # logging.info(f"exchange bar dict: {self.exchange_bar_dict}")
                 # logging.info(f"exchange bar dict 0: {self.exchange_bar_dict_0}")
@@ -246,6 +248,14 @@ class BinancePriceVolumeAlert:
                 raise e
             time.sleep(1)
 
+    def _update_monthly_count(self, exchange):
+        if exchange not in self.exchange_volume_alert_monthly_count:
+            self.exchange_volume_alert_monthly_count[exchange] = [1, int(time.time())]
+        else:
+            if time.time() - self.exchange_volume_alert_monthly_count[exchange][1] > 1850:
+                self.exchange_volume_alert_monthly_count[exchange][0] += 1
+            self.exchange_volume_alert_monthly_count[exchange][1] = time.time()
+
     def alert_15m(self, msg):
         """
         volume/price alert callback function for 15min klines
@@ -281,13 +291,13 @@ class BinancePriceVolumeAlert:
         # two bars alert
         if len(self.exchange_bar_dict_0[symbol]) == 2 and \
                 vol >= 50 * self.exchange_bar_dict_0[symbol][1] and amount >= alert_threshold:
-            self.exchange_volume_alert_monthly_count[symbol] += 1
+            self._update_monthly_count(symbol)
             self.tg_bot_volume.add_msg_to_queue(
                 f"{symbol} 15 min volume alert 2nd bar 50X: volume "
                 f"[{self.exchange_bar_dict_0[symbol][1]} "
                 f"-> {vol}]\namount: ${math.ceil(amount)}"
                 f"\nticker volume alert monthly count:"
-                f" {self.exchange_volume_alert_monthly_count[symbol]}")
+                f" {self.exchange_volume_alert_monthly_count[symbol][0]}")
         self.exchange_bar_dict_0[symbol] = [current_time, vol]
         # logging.info(f"exchange_bar_dict_0: {exchange_bar_dict_0}")
 
@@ -297,14 +307,14 @@ class BinancePriceVolumeAlert:
         elif len(self.exchange_bar_dict_1[symbol]) == 2 and \
                 vol >= 50 * self.exchange_bar_dict_1[symbol][0] \
                 and amount >= alert_threshold:
-            self.exchange_volume_alert_monthly_count[symbol] += 1
+            self._update_monthly_count(symbol)
             self.tg_bot_volume.add_msg_to_queue(
                 f"{symbol} 15 min volume alert 3rd bar 50X: volume "
                 f"[{self.exchange_bar_dict_1[symbol][0]} "
                 f"-> {self.exchange_bar_dict[symbol][1]} "
                 f"-> {vol}]\namount: ${math.ceil(amount)}"
                 f"\nticker volume alert monthly count:"
-                f" {self.exchange_volume_alert_monthly_count[symbol]}")
+                f" {self.exchange_volume_alert_monthly_count[symbol][0]}")
             self.exchange_bar_dict_1[symbol].append(vol)
             self.exchange_bar_dict_1[symbol].pop(0)
         elif len(self.exchange_bar_dict_1[symbol]) == 2:
@@ -321,14 +331,14 @@ class BinancePriceVolumeAlert:
         elif len(self.exchange_bar_dict[symbol]) == 3:
             if vol != 0.0 and vol >= 10 * self.exchange_bar_dict[symbol][1] \
                     and amount >= alert_threshold:
-                self.exchange_volume_alert_monthly_count[symbol] += 1
+                self._update_monthly_count(symbol)
                 self.tg_bot_volume.add_msg_to_queue(
                     f"{symbol} 15 min volume alert 2nd, 3rd bar 10X: volume "
                     f"[{self.exchange_bar_dict[symbol][1]} "
                     f"-> {self.exchange_bar_dict[symbol][2]} -> {vol}]"
                     f"\namount: ${math.ceil(amount)}"
                     f"\nticker volume alert monthly count:"
-                    f" {self.exchange_volume_alert_monthly_count[symbol]}")
+                    f" {self.exchange_volume_alert_monthly_count[symbol][0]}")
             self.exchange_bar_dict[symbol] = [current_time, vol]
         else:
             self.exchange_bar_dict[symbol] = [current_time, vol]
