@@ -137,3 +137,5 @@ tmp/
 .idea/
 *.txt
 *.out
+*.zip
+

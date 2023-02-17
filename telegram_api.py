@@ -11,7 +11,8 @@ class TelegramBot:
         "TEST": "-814886566",  # TEST
         "VOLUME": "-859234465",  # Volume Alert
         "PRICE_15M": "-824512265",  # Price Alert 15m
-        "PRICE_1H": "-824415540"  # Price Alert 1h
+        "PRICE_1H": "-824415540",  # Price Alert 1h
+        "MAR_CAP": "-834195695"  # Market Cap Alert
         }
     MAX_ERROR = 10
 
@@ -33,11 +34,12 @@ class TelegramBot:
             self.msg_thread.start()
 
     def send_message(self, message, blue_text=False):
+        if blue_text:
+            message = f"[{message}](http://www.google.com/)"
         api_url = f'https://api.telegram.org/bot{self.TOKEN}/' \
                   f'sendMessage?chat_id={self.telegram_chat_id}&text={message}'
         if blue_text:
             api_url += '&parse_mode=MarkdownV2'
-            message =  f"[{message}](http://www.google.com/)"
         requests.get(api_url, timeout=10).json()
 
     def safe_send_message(self, message, blue_text=False):
@@ -79,5 +81,5 @@ if __name__ == "__main__":
     a = ""
     for i in range(100):
         a += f"BTCUSDT monthly volume count: {i}\n"
-    tg_bot.safe_send_message(f"[Daily volume alert ticker count: {a}](http://www.google.com/)", blue_text=True)
+    tg_bot.safe_send_message("test", blue_text=True)
     print(tg_bot.running)
