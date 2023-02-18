@@ -12,7 +12,7 @@ class TelegramBot:
         "VOLUME": "-859234465",  # Volume Alert
         "PRICE_15M": "-824512265",  # Price Alert 15m
         "PRICE_1H": "-824415540",  # Price Alert 1h
-        "MAR_CAP": "-834195695"  # Market Cap Alert
+        "CG_MAR_CAP": "-834195695"  # Market Cap Alert
         }
     MAX_ERROR = 10
 

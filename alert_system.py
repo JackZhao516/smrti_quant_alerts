@@ -1,8 +1,9 @@
 import sys
 import logging
+import threading
 
 from crawl_coingecko import CoinGecKo
-from alert_coingecko import CoinGecKo12H, alert_coins, close_all_threads
+from alert_coingecko import CoinGecKo12H, alert_coins, close_all_threads, CoinGecKoMarketCapReport
 from telegram_api import TelegramBot
 from binance_indicator_alert import BinanceIndicatorAlert
 
@@ -57,9 +58,21 @@ def alert_300():
     logging.warning("alert_300 finished")
 
 
+def report_market_cap():
+    logging.info("report_market_cap start")
+    top_200 = threading.Thread(target=CoinGecKoMarketCapReport, args=(200,))
+    top_200.start()
+    top_500 = threading.Thread(target=CoinGecKoMarketCapReport, args=(500,))
+    top_500.start()
+
+    logging.warning("report_market_cap finished")
+
+
 if __name__ == "__main__":
     # sys.argv[1] is the mode
     if sys.argv[1] == "alert_300":
         alert_300()
+    elif sys.argv[1] == "market_cap":
+        report_market_cap()
     else:
         alert_indicator(sys.argv[1])

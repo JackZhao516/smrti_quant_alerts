@@ -178,14 +178,15 @@ class BinancePriceVolumeAlert:
                 # logging.info(f"exchange bar dict 1: {self.exchange_bar_dict_1}")
                 # logging.info(f"exchange bar dict: {self.exchange_bar_dict}")
                 # logging.info(f"exchange bar dict 0: {self.exchange_bar_dict_0}")
+                price_type = "close" if timeframe == "15m" else "high/low"
                 if len(largest) > 0:
                     self.tg_bot_price[timeframe].safe_send_message(
                         f"{timeframe} top {len(largest)} "
-                        f"positive price change in % over {rate_threshold}%: {largest}")
+                        f"positive price({price_type}) change in % over {rate_threshold}%: {largest}")
                 if len(smallest) > 0:
                     self.tg_bot_price[timeframe].safe_send_message(
                         f"{timeframe} top {len(smallest)} "
-                        f"negative price change in % over {rate_threshold}%: {smallest}")
+                        f"negative price({price_type}) change in % over {rate_threshold}%: {smallest}")
 
                 time.sleep(1)
                 if timeframe == "15m":

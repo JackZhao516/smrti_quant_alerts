@@ -1,8 +1,10 @@
 import time
+from datetime import datetime
 from time import sleep
 import threading
 import logging
 
+import pytz
 import numpy as np
 from binance.lib.utils import config_logging
 
@@ -15,7 +17,7 @@ STABLE_COINS = {"USDT", "USDC", "DAI", "BUSD", "USDP", "GUSD",
                 "MIMATIC", "OUSD", "PAX", "FEI", "USTC", "USDN",
                 "TRIBE", "LUSD", "EURS", "VUSDC", "USDX", "SUSD",
                 "VAI", "RSV", "CEUR", "USDS", "CUSDT", "DOLA", 
-                "HAY", "MIM", "EDGT"}
+                "HAY", "MIM", "EDGT", "ALUSD"}
 
 
 class CoinGecKo12H(CoinGecKo):
@@ -60,7 +62,7 @@ class CoinGecKo12H(CoinGecKo):
         return update_coins_exchanges_txt_300(self.spot_over_h12_300, "coins")
 
 
-############################################################################################################
+#########################################################################################
 running = True
 config_logging(logging, logging.INFO)
 class CoinGecKoAlert(CoinGecKo):
@@ -342,9 +344,6 @@ def loop_alert_helper(coins, coin_ids):
         coin_ids, r = coin_ids[:250], coin_ids[250:]
     start_time = time.time()
 
-    # # setting up the msg queue
-    # msg_thread = threading.Thread(target=send_msg_from_queue, args=(coins[coin_ids[0]].tg_bot,))
-    # msg_thread.start()
     global running
     running = True
     # minute update
@@ -373,11 +372,59 @@ def close_all_threads(thread):
     thread.join()
     running = True
 
+#########################################################################################
+
+
+class CoinGecKoMarketCapReport(CoinGecKo):
+    def __init__(self, top_n=200, tg_type="CG_MAR_CAP"):
+        super().__init__("TEST")
+        self.tg_bot = TelegramBot(tg_type)
+        self.top_n = top_n
+        self.top_n_list = None
+
+    def get_top_n_market_cap(self):
+        if self.top_n == 200:
+            ids = self.cg.get_coins_markets(vs_currency='usd', order='market_cap_desc', per_page=200, page=1,
+                                            sparkline=False)
+        else:
+            ids = self.cg.get_coins_markets(vs_currency='usd', order='market_cap_desc', per_page=250, page=1,
+                                            sparkline=False)
+            ids += self.cg.get_coins_markets(vs_currency='usd', order='market_cap_desc', per_page=250, page=2,
+                                             sparkline=False)
+        ids = [id['symbol'].upper() for id in ids]
+        logging.info(f"Top {self.top_n} Market Cap List: {ids}")
+        return ids
+
+    def run(self):
+        self.top_n_list = self.get_top_n_market_cap()
+        while True:
+            tz = pytz.timezone('Asia/Shanghai')
+            shanghai_now = datetime.now(tz).strftime('%H:%M')
+            if shanghai_now == "11:59":
+                cur_set = set(self.top_n_list)
+                new_list = self.get_top_n_market_cap()
+                new_set = set(new_list)
+                deleted_list = []
+                added_list = []
+                if cur_set != new_set:
+                    deleted_list = list(cur_set - new_set)
+                    added = new_set - cur_set
+                    for i, a in enumerate(new_list):
+                        if a in added:
+                            added_list.append(a)
+                    self.top_n_list = new_list
+                self.tg_bot.send_message(f"Top {self.top_n} Market Cap Report: \n"
+                                         f"Deleted: {deleted_list}\n"
+                                         f"Added: {added_list}\n"
+                                         f"(Added in market cap desc order)")
+                sleep(60 * 60 * 24 - 60)
+
 
 if __name__ == '__main__':
-    test = CoinGecKo12H(["bitcoin"], ["BTC"], "TEST")
-    res = test.run()
-
+    # test = CoinGecKo12H(["bitcoin"], ["BTC"], "TEST")
+    # res = test.run()
+    test = CoinGecKoMarketCapReport()
+    test.run()
 
     # from crawl_coingecko import CoinGecKo
     # cg = CoinGecKo("TEST")
