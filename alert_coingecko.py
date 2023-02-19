@@ -381,6 +381,7 @@ class CoinGecKoMarketCapReport(CoinGecKo):
         self.tg_bot = TelegramBot(tg_type)
         self.top_n = top_n
         self.top_n_list = None
+        self.run()
 
     def get_top_n_market_cap(self):
         if self.top_n == 200:

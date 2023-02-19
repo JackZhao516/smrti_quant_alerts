@@ -1,6 +1,7 @@
 import sys
 import logging
 import threading
+from time import sleep
 
 from crawl_coingecko import CoinGecKo
 from alert_coingecko import CoinGecKo12H, alert_coins, close_all_threads, CoinGecKoMarketCapReport
@@ -64,7 +65,7 @@ def report_market_cap():
     top_200.start()
     top_500 = threading.Thread(target=CoinGecKoMarketCapReport, args=(500,))
     top_500.start()
-
+    sleep(60 * 60 * 24 * 365)
     logging.warning("report_market_cap finished")
 
 
