@@ -2,6 +2,7 @@ import logging
 import requests
 import datetime
 import threading
+import json
 import time
 
 import urllib3
@@ -13,7 +14,7 @@ urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 
 class CoinGecKo:
-    COINGECKO_API_KEY = "CG-wAukVxNxrR322gkZYEgZWtV1"
+    COINGECKO_API_KEY = json.load(open("token.json"))["COINGECKO_API_KEY"]
     DATA_DOWNLOAD_ROOT_URL = "https://data.binance.vision/?prefix=data/spot/daily/klines/"
 
     def __init__(self, tg_type="TEST"):

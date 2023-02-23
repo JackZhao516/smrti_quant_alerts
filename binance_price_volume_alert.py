@@ -1,5 +1,6 @@
 import time
 import math
+import json
 import logging
 import threading
 from collections import defaultdict
@@ -20,10 +21,11 @@ class BinancePriceVolumeAlert:
     def __init__(self):
         self.running = True
         self.cg = CoinGecKo("TEST")
-        self.tg_bot_volume = TelegramBot("VOLUME", daemon=True)
-        self.tg_bot_price = {
-            "15m": TelegramBot("PRICE_15M", daemon=False),
-            "1h": TelegramBot("PRICE_1H", daemon=False)
+        self.tg_bot = {
+            "15m_price": TelegramBot("PRICE_15M", daemon=False),
+            "1h_price": TelegramBot("PRICE_1H", daemon=False),
+            "15m_volume": TelegramBot("VOLUME_15M", daemon=True),
+            "1h_volume": TelegramBot("VOLUME_1H", daemon=True),
         }
 
         # symbol->[timestamp, close1, close2]
@@ -36,8 +38,13 @@ class BinancePriceVolumeAlert:
         self.lock_15m = threading.Lock()
         self.exchange_bar_dict_1h = defaultdict(list)
 
-        # volume alert monthly count
-        self.exchange_volume_alert_monthly_count = defaultdict(list)
+        # alert monthly count
+        self.exchange_alert_monthly_count = {
+            "15m_price": defaultdict(list),
+            "1h_price": defaultdict(list),
+            "15m_volume": defaultdict(list),
+            "1h_volume": defaultdict(list),
+        }
 
         # monitored exchanges
         self.exchanges = self.cg.get_500_usdt_exchanges(market_cap=False)
@@ -61,10 +68,71 @@ class BinancePriceVolumeAlert:
         self.klines_client = Client()
         self.id_count = 1
 
-        # for testing only
-        self.tg_bot_test = TelegramBot("TEST")
+        # threshold for price/volume alert
+        self.settings = json.load(open("settings.json"))
 
-    def ten_min_subscribe_new_exchange(self):
+        # # for testing only
+        # self.tg_bot_test = TelegramBot("TEST")
+
+    def klines_alert(self):
+        """
+        For price/volume alert
+        main function
+
+        alert if second and third bar are both ten times larger than first bar
+        for top 500 market cap USDT exchanges on binance
+        """
+
+        error_count = 0
+        logging.info("start price_volume_alert")
+
+        try:
+            # setting up the tg volume alert thread
+            monitor_threads = [
+                threading.Thread(target=self._monthly_reset_volume_alert_count),
+                threading.Thread(target=self._daily_reset_and_alert_volume_alert_count),
+                threading.Thread(target=self._monitor_price_change,
+                                 args=("15m",)),
+                threading.Thread(target=self._monitor_price_change,
+                                 args=("1h",))]
+
+            for t in monitor_threads:
+                t.start()
+            logging.info(f"exchanges: {len(self.exchanges)}")
+
+            self.klines_client.start()
+            self.klines_client.kline(
+                symbol=self.exchanges, id=self.id_count, interval="15m", callback=self._alert_15m
+            )
+            self.id_count += 1
+
+            time.sleep(5)
+            self.klines_client.kline(
+                symbol=self.exchanges, id=self.id_count, interval="1h", callback=self._alert_1h
+            )
+            self.id_count += 1
+
+            time.sleep(5)
+            auto_subscribe = threading.Thread(target=self._ten_min_subscribe_new_exchange)
+            auto_subscribe.start()
+            monitor_threads.append(auto_subscribe)
+
+            time.sleep(86400.0 * 365)
+            logging.info("closing ws connection")
+            self.klines_client.stop()
+            self.running = False
+            self.tg_bot["15m_volume"].stop()
+            self.tg_bot["1h_volume"].stop()
+            for t in monitor_threads:
+                t.join()
+
+        except Exception as e:
+            error_count += 1
+            if error_count > self.MAX_ERROR:
+                raise e
+            time.sleep(1)
+
+    def _ten_min_subscribe_new_exchange(self):
         """
         Subscribe new exchange every ten minutes
         """
@@ -72,6 +140,7 @@ class BinancePriceVolumeAlert:
         while self.running:
             time_now = datetime.now().strftime('%M')
             if time_now[1] == "2":
+                self.settings = json.load(open("settings.json"))
                 logging.info("hourly subscribe new exchange start checking")
                 all_exchanges = set(self.cg.get_all_exchanges())
                 if self.all_exchanges != all_exchanges:
@@ -82,11 +151,11 @@ class BinancePriceVolumeAlert:
                                 exchange[-3:] == "BTC":
                             new_exchanges.append(exchange.lower())
                     self.klines_client.kline(
-                        symbol=new_exchanges, id=self.id_count, interval="15m", callback=self.alert_15m
+                        symbol=new_exchanges, id=self.id_count, interval="15m", callback=self._alert_15m
                     )
                     self.id_count += 1
                     self.klines_client.kline(
-                        symbol=new_exchanges, id=self.id_count, interval="1h", callback=self.alert_1h
+                        symbol=new_exchanges, id=self.id_count, interval="1h", callback=self._alert_1h
                     )
                     self.id_count += 1
 
@@ -96,7 +165,7 @@ class BinancePriceVolumeAlert:
                     logging.info(f"adding new exchanges: {new_exchanges}")
                 time.sleep(550)
 
-    def daily_reset_and_alert_volume_alert_count(self):
+    def _daily_reset_and_alert_volume_alert_count(self):
         """
         Reset and alert volume alert count daily, top 40
         """
@@ -106,20 +175,23 @@ class BinancePriceVolumeAlert:
             shanghai_now = datetime.now(tz).strftime('%H:%M')
             if shanghai_now == "11:59":
                 self.lock_15m.acquire()
-                message_string = ""
-                message_list = list(self.exchange_volume_alert_monthly_count.items())
-                message_list.sort(key=lambda x: x[1][0], reverse=True)
-                message_list = message_list[:30]
-                for exchange, count in message_list:
-                    message_string += f"{exchange} monthly count: {count[0]}\n"
-                self.tg_bot_volume.send_message(
-                    f"Daily volume alert ticker count:\n"
-                    f"{message_string}", blue_text=True
-                )
+                self.lock_1h.acquire()
+                for alert_type in ["15m_price", "1h_price", "15m_volume", "1h_volume"]:
+                    message_string = ""
+                    message_list = list(self.exchange_alert_monthly_count[alert_type].items())
+                    message_list.sort(key=lambda x: x[1][0], reverse=True)
+                    message_list = message_list[:30]
+                    for exchange, count in message_list:
+                        message_string += f"{exchange} monthly count: {count[0]}\n"
+                    self.tg_bot[alert_type].send_message(
+                        f"Daily {alert_type} alert ticker count:\n"
+                        f"{message_string}", blue_text=True
+                    )
+                self.lock_1h.release()
                 self.lock_15m.release()
                 time.sleep(86000)
 
-    def monthly_reset_volume_alert_count(self):
+    def _monthly_reset_volume_alert_count(self):
         """
         Reset volume alert count monthly
         """
@@ -127,27 +199,35 @@ class BinancePriceVolumeAlert:
         while self.running:
             time.sleep(86400 * 30)
             self.lock_15m.acquire()
-            self.exchange_volume_alert_monthly_count = defaultdict(list)
+            self.lock_1h.acquire()
+            self.exchange_alert_monthly_count = {
+                "15m_price": defaultdict(list),
+                "1h_price": defaultdict(list),
+                "15m_volume": defaultdict(list),
+                "1h_volume": defaultdict(list),
+            }
+            self.lock_1h.release()
             self.lock_15m.release()
 
-    def monitor_price_change(self, timeframe="15m"):
+    def _monitor_price_change(self, timeframe="15m"):
         """
         For price change alert
 
         :param timeframe: 15m or 1h
         """
         logging.info(f"monitor price change for {timeframe} start")
-        rate_threshold = 10.0 if timeframe == "1h" else 5.0
+        rate_threshold = self.settings["1h_volume_usd"] \
+            if timeframe == "1h" else self.settings["15m_volume_usd"]
 
         while self.running:
             time_now = datetime.now().strftime('%M:%S')
             time_set = {"00:58", "15:58", "30:58", "45:58"} if timeframe == "15m" \
                 else {"01:00"}
             if time_now in time_set:
-                # if timeframe == "15m":
-                self.lock_15m.acquire()
-                # elif timeframe == "1h":
-                    # self.lock_1h.acquire()
+                if timeframe == "15m":
+                    self.lock_15m.acquire()
+                elif timeframe == "1h":
+                    self.lock_1h.acquire()
                 
                 price_lists = [[k, v[0]] for k, v in self.price_dict[timeframe].items()]
                 largest, smallest = [], []
@@ -170,95 +250,45 @@ class BinancePriceVolumeAlert:
                     if len(smallest) == 5:
                         break
 
+                alert_type = timeframe + "_price"
+                for i, l in enumerate(largest):
+                    self._update_monthly_count(l[0], alert_type)
+                    largest[i].append(self.exchange_alert_monthly_count[alert_type][l[0]][0])
+
+                for i, s in enumerate(smallest):
+                    self._update_monthly_count(s[0], alert_type)
+                    smallest[i].append(self.exchange_alert_monthly_count[alert_type][s[0]][0])
+
                 # logging.info(f"largest price change: {largest}")
                 # logging.info(f"smallest price change: {smallest}")
-                # logging.info(f"monthly count: {self.exchange_volume_alert_monthly_count}")
-                # logging.info(f"exchange bar dict 1: {self.exchange_bar_dict_1}")
-                # logging.info(f"exchange bar dict: {self.exchange_bar_dict}")
-                # logging.info(f"exchange bar dict 0: {self.exchange_bar_dict_0}")
+
                 price_type = "close" if timeframe == "15m" else "high/low"
+
                 if len(largest) > 0:
-                    self.tg_bot_price[timeframe].safe_send_message(
+                    self.tg_bot[alert_type].safe_send_message(
                         f"{timeframe} top {len(largest)} "
                         f"positive price({price_type}) change in % over {rate_threshold}%: {largest}")
                 if len(smallest) > 0:
-                    self.tg_bot_price[timeframe].safe_send_message(
+                    self.tg_bot[alert_type].safe_send_message(
                         f"{timeframe} top {len(smallest)} "
                         f"negative price({price_type}) change in % over {rate_threshold}%: {smallest}")
 
                 time.sleep(1)
-                # if timeframe == "15m":
-                self.lock_15m.release()
-                # elif timeframe == "1h":
-                    # self.lock_1h.release()
+                if timeframe == "15m":
+                    self.lock_15m.release()
+                elif timeframe == "1h":
+                    self.lock_1h.release()
                 time.sleep(850 if timeframe == "15m" else 3550)
 
-    def klines_alert(self):
-        """
-        For price/volume alert
-        main function
-
-        alert if second and third bar are both ten times larger than first bar
-        for top 500 market cap USDT exchanges on binance
-        """
-
-        error_count = 0
-        logging.info("start price_volume_alert")
-
-        try:
-            # setting up the tg volume alert thread
-            monitor_threads = [
-                threading.Thread(target=self.monthly_reset_volume_alert_count),
-                threading.Thread(target=self.daily_reset_and_alert_volume_alert_count),
-                threading.Thread(target=self.monitor_price_change,
-                                 args=("15m",)),
-                threading.Thread(target=self.monitor_price_change,
-                                 args=("1h",))]
-
-            for t in monitor_threads:
-                t.start()
-            logging.info(f"exchanges: {len(self.exchanges)}")
-
-            self.klines_client.start()
-            self.klines_client.kline(
-                symbol=self.exchanges, id=self.id_count, interval="15m", callback=self.alert_15m
-            )
-            self.id_count += 1
-
-            time.sleep(5)
-            self.klines_client.kline(
-                symbol=self.exchanges, id=self.id_count, interval="1h", callback=self.alert_1h
-            )
-            self.id_count += 1
-
-            time.sleep(5)
-            auto_subscribe = threading.Thread(target=self.ten_min_subscribe_new_exchange)
-            auto_subscribe.start()
-            monitor_threads.append(auto_subscribe)
-
-            time.sleep(86400.0 * 365)
-            logging.info("closing ws connection")
-            self.klines_client.stop()
-            self.running = False
-            self.tg_bot_volume.stop()
-            for t in monitor_threads:
-                t.join()
-
-        except Exception as e:
-            error_count += 1
-            if error_count > self.MAX_ERROR:
-                raise e
-            time.sleep(1)
-
-    def _update_monthly_count(self, exchange):
-        if exchange not in self.exchange_volume_alert_monthly_count:
-            self.exchange_volume_alert_monthly_count[exchange] = [1, int(time.time())]
+    def _update_monthly_count(self, exchange, alert_type="15m_volume"):
+        if exchange not in self.exchange_alert_monthly_count[alert_type]:
+            self.exchange_alert_monthly_count[alert_type][exchange] = [1, int(time.time())]
         else:
-            if time.time() - self.exchange_volume_alert_monthly_count[exchange][1] > 1850:
-                self.exchange_volume_alert_monthly_count[exchange][0] += 1
-            self.exchange_volume_alert_monthly_count[exchange][1] = int(time.time())
+            if time.time() - self.exchange_alert_monthly_count[alert_type][exchange][1] > 1850:
+                self.exchange_alert_monthly_count[alert_type][exchange][0] += 1
+            self.exchange_alert_monthly_count[alert_type][exchange][1] = int(time.time())
 
-    def alert_15m(self, msg):
+    def _alert_15m(self, msg):
         """
         volume/price alert callback function for 15min klines
 
@@ -268,7 +298,7 @@ class BinancePriceVolumeAlert:
 
         """
         # logging.info(f"msg: {msg}")
-        alert_threshold = 500000.0
+        alert_threshold = self.settings["15m_price_change_percentage"]
         if "stream" not in msg or "data" not in msg or "k" not in msg["data"] or \
                 msg["data"]["k"]["x"] is False or msg["data"]["k"]["i"] != "15m":
             return
@@ -294,12 +324,12 @@ class BinancePriceVolumeAlert:
         if len(self.exchange_bar_dict_0[symbol]) == 2 and \
                 vol >= 50 * self.exchange_bar_dict_0[symbol][1] and amount >= alert_threshold:
             self._update_monthly_count(symbol)
-            self.tg_bot_volume.add_msg_to_queue(
+            self.tg_bot["15m_volume"].add_msg_to_queue(
                 f"{symbol} 15 min volume alert 2nd bar 50X: volume "
                 f"[{self.exchange_bar_dict_0[symbol][1]} "
                 f"-> {vol}]\namount: ${math.ceil(amount)}"
                 f"\nticker volume alert monthly count:"
-                f" {self.exchange_volume_alert_monthly_count[symbol][0]}")
+                f" {self.exchange_alert_monthly_count['15m_volume'][symbol][0]}")
         self.exchange_bar_dict_0[symbol] = [current_time, vol]
         # logging.info(f"exchange_bar_dict_0: {exchange_bar_dict_0}")
 
@@ -310,13 +340,13 @@ class BinancePriceVolumeAlert:
                 vol >= 50 * self.exchange_bar_dict_1[symbol][0] \
                 and amount >= alert_threshold:
             self._update_monthly_count(symbol)
-            self.tg_bot_volume.add_msg_to_queue(
+            self.tg_bot["15m_volume"].add_msg_to_queue(
                 f"{symbol} 15 min volume alert 3rd bar 50X: volume "
                 f"[{self.exchange_bar_dict_1[symbol][0]} "
                 f"-> {self.exchange_bar_dict_1[symbol][1]} "
                 f"-> {vol}]\namount: ${math.ceil(amount)}"
                 f"\nticker volume alert monthly count:"
-                f" {self.exchange_volume_alert_monthly_count[symbol][0]}")
+                f" {self.exchange_alert_monthly_count['15m_volume'][symbol][0]}")
             self.exchange_bar_dict_1[symbol].append(vol)
             self.exchange_bar_dict_1[symbol].pop(0)
         elif len(self.exchange_bar_dict_1[symbol]) == 2:
@@ -334,13 +364,13 @@ class BinancePriceVolumeAlert:
             if vol != 0.0 and vol >= 10 * self.exchange_bar_dict[symbol][1] \
                     and amount >= alert_threshold:
                 self._update_monthly_count(symbol)
-                self.tg_bot_volume.add_msg_to_queue(
+                self.tg_bot["15m_volume"].add_msg_to_queue(
                     f"{symbol} 15 min volume alert 2nd, 3rd bar 10X: volume "
                     f"[{self.exchange_bar_dict[symbol][1]} "
                     f"-> {self.exchange_bar_dict[symbol][2]} -> {vol}]"
                     f"\namount: ${math.ceil(amount)}"
                     f"\nticker volume alert monthly count:"
-                    f" {self.exchange_volume_alert_monthly_count[symbol][0]}")
+                    f" {self.exchange_alert_monthly_count['15m_volume'][symbol][0]}")
             self.exchange_bar_dict[symbol] = [current_time, vol]
         else:
             self.exchange_bar_dict[symbol] = [current_time, vol]
@@ -349,11 +379,11 @@ class BinancePriceVolumeAlert:
         self._price_alert_helper(symbol, close, "15m")
         self.lock_15m.release()
 
-    def alert_1h(self, msg):
+    def _alert_1h(self, msg):
         """
         For price alerts 1h klines
         """
-        alert_threshold = 1000000.0
+        alert_threshold = self.settings["1h_price_change_percentage"]
         if "stream" not in msg or "data" not in msg or "k" not in msg["data"] or \
                 msg["data"]["k"]["x"] is False or msg["data"]["k"]["i"] != "1h":
             return
@@ -370,22 +400,22 @@ class BinancePriceVolumeAlert:
         current_time = int(kline["t"])
         amount = vol * close if symbol[-3:] != "BTC" else vol * close * self.BTC_price
 
-        self.lock_15m.acquire()
+        self.lock_1h.acquire()
         # two bar alert
         if len(self.exchange_bar_dict_1h[symbol]) == 2 and \
                 vol >= 10 * self.exchange_bar_dict_1h[symbol][1] and amount >= alert_threshold:
-            self._update_monthly_count(symbol)
-            self.tg_bot_volume.add_msg_to_queue(
+            self._update_monthly_count(symbol, alert_type="1h_volume")
+            self.tg_bot["1h_volume"].add_msg_to_queue(
                 f"{symbol} 1h volume alert 2nd bar 10X: volume "
                 f"[{self.exchange_bar_dict_1h[symbol][1]} "
                 f"-> {vol}]\namount: ${math.ceil(amount)}"
                 f"\nticker volume alert monthly count:"
-                f" {self.exchange_volume_alert_monthly_count[symbol][0]}")
+                f" {self.exchange_alert_monthly_count['1h_volume'][symbol][0]}")
         self.exchange_bar_dict_1h[symbol] = [current_time, vol]
 
         # price alert
         self.price_dict["1h"][symbol] = [(high / low - 1) * 100]
-        self.lock_15m.release()
+        self.lock_1h.release()
 
     def _price_alert_helper(self, symbol, close, timeframe="15m"):
         """

@@ -1,19 +1,13 @@
+import json
 import requests
 import time
 import threading
 
 
 class TelegramBot:
-    TOKEN = "5503993388:AAEhkd7Q_b7iYrAowBdC5QsMM35UJl0uknw"
-    TELEGRAM_IDS = {
-        "CG_ALERT": "-808085014",  # CG Alert
-        "CG_SUM": "-804953236",  # CG Summary
-        "TEST": "-814886566",  # TEST
-        "VOLUME": "-859234465",  # Volume Alert
-        "PRICE_15M": "-824512265",  # Price Alert 15m
-        "PRICE_1H": "-824415540",  # Price Alert 1h
-        "CG_MAR_CAP": "-834195695"  # Market Cap Alert
-        }
+    tokens = json.load(open("tokens.json"))["TelegramBot"]
+    TOKEN = tokens["TOKEN"]
+    TELEGRAM_IDS = tokens["TELEGRAM_IDS"]
     MAX_ERROR = 10
 
     def __init__(self, alert_type="CG_ALERT", daemon=False):
