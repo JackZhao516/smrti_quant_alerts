@@ -141,20 +141,19 @@ class BinancePriceVolumeAlert:
 
         while self.running:
             time_now = datetime.now().strftime('%M:%S')
-            time_set = {"00:10", "15:10", "30:10", "45:10"} if timeframe == "15m" \
-                else {"00:12"}
+            time_set = {"00:58", "15:58", "30:58", "45:58"} if timeframe == "15m" \
+                else {"01:00"}
             if time_now in time_set:
-                logging.info(f"monitor price change for {timeframe} start")
-                if timeframe == "15m":
-                    self.lock_15m.acquire()
-                elif timeframe == "1h":
-                    self.lock_1h.acquire()
+                # if timeframe == "15m":
+                self.lock_15m.acquire()
+                # elif timeframe == "1h":
+                    # self.lock_1h.acquire()
+                
                 price_lists = [[k, v[0]] for k, v in self.price_dict[timeframe].items()]
                 largest, smallest = [], []
 
                 # get the largest five
                 price_lists.sort(key=lambda x: x[1], reverse=True)
-                logging.info(f"price_lists: {price_lists}")
                 for k, v in price_lists:
                     if v >= rate_threshold and len(largest) < 5:
                         v = round(v, 2)
@@ -164,7 +163,6 @@ class BinancePriceVolumeAlert:
 
                 # get the smallest five
                 price_lists.sort(key=lambda x: x[1], reverse=False)
-                # logging.info(f"price_lists: {price_lists}")
                 for k, v in price_lists:
                     if v <= -1 * rate_threshold and len(smallest) < 5:
                         v = round(v, 2)
@@ -189,10 +187,10 @@ class BinancePriceVolumeAlert:
                         f"negative price({price_type}) change in % over {rate_threshold}%: {smallest}")
 
                 time.sleep(1)
-                if timeframe == "15m":
-                    self.lock_15m.release()
-                elif timeframe == "1h":
-                    self.lock_1h.release()
+                # if timeframe == "15m":
+                self.lock_15m.release()
+                # elif timeframe == "1h":
+                    # self.lock_1h.release()
                 time.sleep(850 if timeframe == "15m" else 3550)
 
     def klines_alert(self):
@@ -346,7 +344,6 @@ class BinancePriceVolumeAlert:
             self.exchange_bar_dict[symbol] = [current_time, vol]
         else:
             self.exchange_bar_dict[symbol] = [current_time, vol]
-        # logging.info(exchange_bar_dict)
 
         # price alert
         self._price_alert_helper(symbol, close, "15m")
@@ -357,7 +354,6 @@ class BinancePriceVolumeAlert:
         For price alerts 1h klines
         """
         alert_threshold = 1000000.0
-        # logging.info(f"msg: {msg}")
         if "stream" not in msg or "data" not in msg or "k" not in msg["data"] or \
                 msg["data"]["k"]["x"] is False or msg["data"]["k"]["i"] != "1h":
             return
@@ -374,7 +370,7 @@ class BinancePriceVolumeAlert:
         current_time = int(kline["t"])
         amount = vol * close if symbol[-3:] != "BTC" else vol * close * self.BTC_price
 
-        self.lock_1h.acquire()
+        self.lock_15m.acquire()
         # two bar alert
         if len(self.exchange_bar_dict_1h[symbol]) == 2 and \
                 vol >= 10 * self.exchange_bar_dict_1h[symbol][1] and amount >= alert_threshold:
@@ -386,11 +382,10 @@ class BinancePriceVolumeAlert:
                 f"\nticker volume alert monthly count:"
                 f" {self.exchange_volume_alert_monthly_count[symbol][0]}")
         self.exchange_bar_dict_1h[symbol] = [current_time, vol]
-        # logging.info(f"exchange_bar_dict_0: {exchange_bar_dict_0}")
 
         # price alert
-        self.price_dict["1h"][symbol][0] = (high / low - 1) * 100
-        self.lock_1h.release()
+        self.price_dict["1h"][symbol] = [(high / low - 1) * 100]
+        self.lock_15m.release()
 
     def _price_alert_helper(self, symbol, close, timeframe="15m"):
         """
