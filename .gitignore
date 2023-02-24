@@ -139,3 +139,5 @@ tmp/
 *.out
 *.zip
 
+token.json
+

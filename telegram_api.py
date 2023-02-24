@@ -5,7 +5,7 @@ import threading
 
 
 class TelegramBot:
-    tokens = json.load(open("tokens.json"))["TelegramBot"]
+    tokens = json.load(open("token.json"))["TelegramBot"]
     TOKEN = tokens["TOKEN"]
     TELEGRAM_IDS = tokens["TELEGRAM_IDS"]
     MAX_ERROR = 10
@@ -33,7 +33,7 @@ class TelegramBot:
         api_url = f'https://api.telegram.org/bot{self.TOKEN}/' \
                   f'sendMessage?chat_id={self.telegram_chat_id}&text={message}'
         if blue_text:
-            api_url += '&parse_mode=MarkdownV2'
+            api_url += '&parse_mode=Markdown'
         requests.get(api_url, timeout=10).json()
 
     def safe_send_message(self, message, blue_text=False):

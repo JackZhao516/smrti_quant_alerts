@@ -167,28 +167,35 @@ class BinancePriceVolumeAlert:
 
     def _daily_reset_and_alert_volume_alert_count(self):
         """
-        Reset and alert volume alert count daily, top 40
+        Reset and alert volume alert count daily, top 30
         """
         logging.info(f"daily reset and alert volume start")
         while self.running:
             tz = pytz.timezone('Asia/Shanghai')
             shanghai_now = datetime.now(tz).strftime('%H:%M')
             if shanghai_now == "11:59":
-                self.lock_15m.acquire()
-                self.lock_1h.acquire()
-                for alert_type in ["15m_price", "1h_price", "15m_volume", "1h_volume"]:
+                l = ["15m_price", "15m_volume", "1h_price", "1h_volume"]
+                for alert_type in l:
+                    if alert_type == "15m_price" or "15m_volume":
+                        self.lock_15m.acquire()
+                    else:
+                        self.lock_1h.acquire()
+
                     message_string = ""
                     message_list = list(self.exchange_alert_monthly_count[alert_type].items())
                     message_list.sort(key=lambda x: x[1][0], reverse=True)
                     message_list = message_list[:30]
                     for exchange, count in message_list:
                         message_string += f"{exchange} monthly count: {count[0]}\n"
+                        
                     self.tg_bot[alert_type].send_message(
                         f"Daily {alert_type} alert ticker count:\n"
                         f"{message_string}", blue_text=True
                     )
-                self.lock_1h.release()
-                self.lock_15m.release()
+                    if alert_type == "15m_price" or "15m_volume":
+                        self.lock_15m.release()
+                    else:
+                        self.lock_1h.release()
                 time.sleep(86000)
 
     def _monthly_reset_volume_alert_count(self):
@@ -216,8 +223,8 @@ class BinancePriceVolumeAlert:
         :param timeframe: 15m or 1h
         """
         logging.info(f"monitor price change for {timeframe} start")
-        rate_threshold = self.settings["1h_volume_usd"] \
-            if timeframe == "1h" else self.settings["15m_volume_usd"]
+        rate_threshold = self.settings["1h_price_change_percentage"] \
+            if timeframe == "1h" else self.settings["15m_price_change_percentage"]
 
         while self.running:
             time_now = datetime.now().strftime('%M:%S')
@@ -284,7 +291,7 @@ class BinancePriceVolumeAlert:
         if exchange not in self.exchange_alert_monthly_count[alert_type]:
             self.exchange_alert_monthly_count[alert_type][exchange] = [1, int(time.time())]
         else:
-            if time.time() - self.exchange_alert_monthly_count[alert_type][exchange][1] > 1850:
+            if int(time.time()) - self.exchange_alert_monthly_count[alert_type][exchange][1] > 1850:
                 self.exchange_alert_monthly_count[alert_type][exchange][0] += 1
             self.exchange_alert_monthly_count[alert_type][exchange][1] = int(time.time())
 
@@ -298,7 +305,7 @@ class BinancePriceVolumeAlert:
 
         """
         # logging.info(f"msg: {msg}")
-        alert_threshold = self.settings["15m_price_change_percentage"]
+        alert_threshold = self.settings["15m_volume_usd"]
         if "stream" not in msg or "data" not in msg or "k" not in msg["data"] or \
                 msg["data"]["k"]["x"] is False or msg["data"]["k"]["i"] != "15m":
             return
@@ -383,7 +390,7 @@ class BinancePriceVolumeAlert:
         """
         For price alerts 1h klines
         """
-        alert_threshold = self.settings["1h_price_change_percentage"]
+        alert_threshold = self.settings["1h_volume_usd"]
         if "stream" not in msg or "data" not in msg or "k" not in msg["data"] or \
                 msg["data"]["k"]["x"] is False or msg["data"]["k"]["i"] != "1h":
             return
