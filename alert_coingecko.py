@@ -10,7 +10,7 @@ from binance.lib.utils import config_logging
 
 from crawl_coingecko import CoinGecKo
 from telegram_api import TelegramBot
-from utility import update_coins_exchanges_txt_300
+from utility import update_coins_exchanges_txt
 
 STABLE_COINS = {"USDT", "USDC", "DAI", "BUSD", "USDP", "GUSD",
                 "TUSD", "FRAX", "CUSD", "USDD", "DEI", "USDK",
@@ -20,24 +20,24 @@ STABLE_COINS = {"USDT", "USDC", "DAI", "BUSD", "USDP", "GUSD",
                 "HAY", "MIM", "EDGT", "ALUSD"}
 
 
-class CoinGecKo12H(CoinGecKo):
+class CoinGecKo4H(CoinGecKo):
     def __init__(self, coin_ids, coin_symbols, tg_type="CG_ALERT"):
         super().__init__(tg_type)
         self.coin_ids = coin_ids
         self.coin_symbols = coin_symbols
-        self.spot_over_h12_300 = set()
+        self.spot_over_h4 = set()
 
-    def h12_sma_180(self, coin_id, coin_symbol):
+    def h4_sma_200(self, coin_id, coin_symbol):
         try:
-            price = self.cg.get_coin_market_chart_by_id(id=coin_id, vs_currency='usd', days=90)
+            price = self.cg.get_coin_market_chart_by_id(id=coin_id, vs_currency='usd', days=35)
             price = price['prices']
             price = [i[1] for i in price]
             res = 0
             counter = 0
-            for i in range(0, len(price), 12):
-                if i == 2160:
+            for i in range(0, len(price), 4):
+                if i == 800:
                     break
-                res += float(price[i])
+                res += float(price[len(price) - 1 - i])
                 counter += 1
             sma = res / counter
             price = self.cg.get_coin_market_chart_by_id(id=coin_id, vs_currency='usd', days=1)
@@ -45,7 +45,7 @@ class CoinGecKo12H(CoinGecKo):
 
             logging.warning(f"{coin_symbol}: {price}, {sma}")
             if price > sma:
-                self.spot_over_h12_300.add(coin_symbol)
+                self.spot_over_h4.add(coin_symbol)
                 return True
 
         except Exception as e:
@@ -56,10 +56,10 @@ class CoinGecKo12H(CoinGecKo):
             coin_symbol = coin_symbol.upper()
             if coin_symbol in STABLE_COINS:
                 continue
-            self.h12_sma_180(coin_id, coin_symbol)
-        logging.warning(f"spot_over_h12_300: {self.spot_over_h12_300}")
+            self.h4_sma_200(coin_id, coin_symbol)
+        logging.warning(f"spot_over_h12_300: {self.spot_over_h4}")
 
-        return update_coins_exchanges_txt_300(self.spot_over_h12_300, "coins")
+        return update_coins_exchanges_txt(self.spot_over_h4, "coins")
 
 
 #########################################################################################

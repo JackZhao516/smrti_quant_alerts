@@ -8,7 +8,7 @@ from alert_coingecko import CoinGecKo12H, alert_coins, close_all_threads, CoinGe
 from telegram_api import TelegramBot
 from binance_indicator_alert import BinanceIndicatorAlert
 
-MODE = "CG_SUM"
+MODE = "TEST"
 tg_bot = TelegramBot(MODE)
 cg = CoinGecKo(MODE)
 

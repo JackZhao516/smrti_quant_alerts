@@ -13,14 +13,14 @@ from binance.lib.utils import config_logging
 from binance.websocket.spot.websocket_client import SpotWebsocketClient as Client
 
 from telegram_api import TelegramBot
-from utility import update_coins_exchanges_txt_300
+from utility import update_coins_exchanges_txt
 
 
 class BinanceIndicatorAlert:
     """
     first download, then run a websocket
     """
-    DATA_DOWNLOAD_ROOT_URL = "https://data.binance.vision/data/spot/daily/klines/"
+    DATA_DOWNLOAD_ROOT_URL = "https://data.binance.vision/?prefix=data/spot/daily/klines/"
     HTTP_URL = "https://api.binance.com/api/v3/klines?"
     MAX_ERROR = 5
     STABLE_EXCHANGES = {"wbtcbtc", "busdusdt"}
@@ -64,8 +64,8 @@ class BinanceIndicatorAlert:
                 } for exchange in exchanges
             }
 
-        # for calculating spot over h12 exchanges
-        self.spot_over_h12_300 = set()
+        # for calculating spot over h4 exchanges
+        self.spot_over_h4 = set()
 
         self.last_close_1m = {exchange: 0.0 for exchange in exchanges}
 
@@ -214,7 +214,7 @@ class BinanceIndicatorAlert:
             self.download_past_klines_threads(4)
             self.download_past_klines_threads(24)
         else:
-            self.download_past_klines_threads(12)
+            self.download_past_klines_threads(4)
 
         id_count = 0
         client = Client()
@@ -259,9 +259,9 @@ class BinanceIndicatorAlert:
             sleep(self.execution_time)
         client.stop()
 
-        logging.warning(f"{self.spot_over_h12_300} done")
+        logging.warning(f"{self.spot_over_h4} done")
         if self.alert_type == "alert_300":
-            return update_coins_exchanges_txt_300(self.spot_over_h12_300, "exchanges")
+            return update_coins_exchanges_txt(self.spot_over_h4, "exchanges", "300")
 
     def update_ma_4h(self, msg):
         if "stream" not in msg or "data" not in msg or "k" not in msg["data"]:
@@ -295,14 +295,15 @@ class BinanceIndicatorAlert:
             # self.close_lock.acquire()
             if self.alert_type == "alert_300":
                 self.close_lock.acquire()
-                print(f"close: {close}, ma: {np.mean(self.close[exchange]['12'])}")
+                logging.warning(f"{exchange} :"
+                                f"close: {close}, ma: {np.mean(self.close[exchange]['12'])}")
                 if close > np.mean(self.close[exchange]["12"]):
                     logging.warning(f"{exchange} over h12"
                                     f"close: {close}, ma: {np.mean(self.close[exchange]['12'])}")
-                    self.spot_over_h12_300.add(exchange.upper())
+                    self.spot_over_h4.add(exchange.upper())
                 else:
-                    if exchange.upper() in self.spot_over_h12_300:
-                        self.spot_over_h12_300.remove(exchange.upper())
+                    if exchange.upper() in self.spot_over_h4:
+                        self.spot_over_h4.remove(exchange.upper())
                 self.close_lock.release()
                 return
 
@@ -328,7 +329,6 @@ class BinanceIndicatorAlert:
             self.last_close_1m[exchange] = close
             # logging.warning(f"{exchange} 1m current {self.last_close_1m[exchange]}")
             self.close_lock.release()
-
 
     def alert_helper_1m(self, close, timeframe, exchange):
         timeframe = str(timeframe)
