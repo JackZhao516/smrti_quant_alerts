@@ -46,6 +46,11 @@ class BinancePriceVolumeAlert:
             "1h_volume": defaultdict(list),
         }
 
+        self.exchange_daily_new_alert = {
+            "15m_price": set(), "1h_price": set(),
+            "15m_volume": set(), "1h_volume": set()
+        }
+
         # monitored exchanges
         self.exchanges = self.cg.get_500_usdt_exchanges(market_cap=False)
         self.exchanges = [e.lower() for e in self.exchanges]
@@ -56,8 +61,8 @@ class BinancePriceVolumeAlert:
 
         # dict for 15min/1h price alert: symbol->[price_change_rate, last_price]
         self.price_dict = {
-            "15m": defaultdict(list),
-            "1h": defaultdict(list),
+            "15m": defaultdict(lambda: 0.0),
+            "1h": defaultdict(lambda: 0.0),
         }
         self.lock_1h = threading.Lock()
 
@@ -167,15 +172,16 @@ class BinancePriceVolumeAlert:
 
     def _daily_reset_and_alert_volume_alert_count(self):
         """
-        Reset and alert volume alert count daily, top 30
+        Reset and alert volume alert monthly count daily, top 30
+        Reset and alert new exchanges alert daily
         """
         logging.info(f"daily reset and alert volume start")
         while self.running:
             tz = pytz.timezone('Asia/Shanghai')
             shanghai_now = datetime.now(tz).strftime('%H:%M')
             if shanghai_now == "11:59":
-                l = ["15m_price", "15m_volume", "1h_price", "1h_volume"]
-                for alert_type in l:
+                alerts = ["15m_price", "15m_volume", "1h_price", "1h_volume"]
+                for alert_type in alerts:
                     if alert_type == "15m_price" or "15m_volume":
                         self.lock_15m.acquire()
                     else:
@@ -192,6 +198,13 @@ class BinancePriceVolumeAlert:
                         f"Daily {alert_type} alert ticker count:\n"
                         f"{message_string}", blue_text=True
                     )
+                    self.tg_bot[alert_type].send_message(
+                        f"Daily {alert_type} new alerts:\n"
+                        f"{self.exchange_daily_new_alert[alert_type]}",
+                        blue_text=True
+                    )
+                    self.exchange_daily_new_alert[alert_type] = []
+
                     if alert_type == "15m_price" or "15m_volume":
                         self.lock_15m.release()
                     else:
@@ -236,8 +249,10 @@ class BinancePriceVolumeAlert:
                 elif timeframe == "1h":
                     self.lock_1h.acquire()
                 
-                price_lists = [[k, v[0]] for k, v in self.price_dict[timeframe].items()]
+                price_lists = [[k, v] for k, v in self.price_dict[timeframe].items()]
                 largest, smallest = [], []
+
+                self.price_dict[timeframe] = defaultdict(lambda: 0.0)
 
                 # get the largest five
                 price_lists.sort(key=lambda x: x[1], reverse=True)
@@ -288,6 +303,14 @@ class BinancePriceVolumeAlert:
                 time.sleep(850 if timeframe == "15m" else 3550)
 
     def _update_monthly_count(self, exchange, alert_type="15m_volume"):
+        """
+        Update monthly count and daily new exchanges for alerts
+
+        :param exchange: exchange name
+        :param alert_type: 15m_volume or 1h_volume or 15m_price or 1h_price
+
+        """
+        self.exchange_daily_new_alert[alert_type].add(exchange)
         if exchange not in self.exchange_alert_monthly_count[alert_type]:
             self.exchange_alert_monthly_count[alert_type][exchange] = [1, int(time.time())]
         else:
@@ -317,8 +340,8 @@ class BinancePriceVolumeAlert:
         symbol = kline["s"]
         current_time = int(kline["t"])
         vol = float(kline["v"])
-        # logging.info(f"symbol: {symbol}")
         close = float(kline["c"])
+        open_p = float(kline["o"])
         amount = vol * close if symbol[-3:] != "BTC" else vol * close * self.BTC_price
 
         self.lock_15m.acquire()
@@ -383,7 +406,7 @@ class BinancePriceVolumeAlert:
             self.exchange_bar_dict[symbol] = [current_time, vol]
 
         # price alert
-        self._price_alert_helper(symbol, close, "15m")
+        self.price_dict["15min"][symbol] = (close / open_p - 1) * 100
         self.lock_15m.release()
 
     def _alert_1h(self, msg):
@@ -421,25 +444,8 @@ class BinancePriceVolumeAlert:
         self.exchange_bar_dict_1h[symbol] = [current_time, vol]
 
         # price alert
-        self.price_dict["1h"][symbol] = [(high / low - 1) * 100]
+        self.price_dict["1h"][symbol] = (high / low - 1) * 100
         self.lock_1h.release()
-
-    def _price_alert_helper(self, symbol, close, timeframe="15m"):
-        """
-        Helper function for price alerts
-
-        :param symbol: symbol of the price alert
-        :param close: close price of the price alert
-        :param timeframe: timeframe of the price alert
-                            "15m" for 15 min, "1h" for 1 hour
-        """
-
-        if symbol not in self.price_dict[timeframe]:
-            self.price_dict[timeframe][symbol] = [0.0, close]
-        else:
-            self.price_dict[timeframe][symbol][0] = \
-                (close / self.price_dict[timeframe][symbol][1] - 1) * 100
-            self.price_dict[timeframe][symbol][1] = close
 
 
 if __name__ == "__main__":

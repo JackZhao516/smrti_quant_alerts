@@ -401,7 +401,8 @@ class CoinGecKoMarketCapReport(CoinGecKo):
         while True:
             tz = pytz.timezone('Asia/Shanghai')
             shanghai_now = datetime.now(tz).strftime('%H:%M')
-            if shanghai_now == "11:59":
+            weekday = datetime.now(tz).weekday()
+            if shanghai_now == "00:00" and weekday == 0:
                 cur_set = set(self.top_n_list)
                 new_list = self.get_top_n_market_cap()
                 new_set = set(new_list)
@@ -418,7 +419,7 @@ class CoinGecKoMarketCapReport(CoinGecKo):
                                          f"Deleted: {deleted_list}\n"
                                          f"Added: {added_list}\n"
                                          f"(Added in market cap desc order)")
-                sleep(60 * 60 * 24 - 60)
+                sleep(60 * 60 * 24 * 7 - 60)
 
 
 if __name__ == '__main__':
