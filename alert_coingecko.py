@@ -419,7 +419,8 @@ class CoinGecKoMarketCapReport(CoinGecKo):
                                          f"Deleted: {deleted_list}\n"
                                          f"Added: {added_list}\n"
                                          f"(Added in market cap desc order)")
-                sleep(60 * 60 * 24 * 7 - 60)
+                sleep(60 * 60 * 24 * 7 - 70)
+            sleep(60)
 
 
 if __name__ == '__main__':

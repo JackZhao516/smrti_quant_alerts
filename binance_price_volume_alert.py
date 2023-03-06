@@ -16,7 +16,7 @@ from telegram_api import TelegramBot
 
 class BinancePriceVolumeAlert:
     MAX_ERROR = 20
-    config_logging(logging, logging.INFO)
+    config_logging(logging, logging.WARNING)
 
     def __init__(self):
         self.running = True
@@ -59,10 +59,10 @@ class BinancePriceVolumeAlert:
         # all exchanges on binance
         self.all_exchanges = set(self.cg.get_all_exchanges())
 
-        # dict for 15min/1h price alert: symbol->[price_change_rate, last_price]
+        # dict for 15min/1h price alert: symbol->price_change_rate
         self.price_dict = {
-            "15m": defaultdict(lambda: 0.0),
-            "1h": defaultdict(lambda: 0.0),
+            "15m": {},
+            "1h": {},
         }
         self.lock_1h = threading.Lock()
 
@@ -251,8 +251,7 @@ class BinancePriceVolumeAlert:
                 
                 price_lists = [[k, v] for k, v in self.price_dict[timeframe].items()]
                 largest, smallest = [], []
-
-                self.price_dict[timeframe] = defaultdict(lambda: 0.0)
+                self.price_dict[timeframe] = {}
 
                 # get the largest five
                 price_lists.sort(key=lambda x: x[1], reverse=True)
@@ -281,8 +280,9 @@ class BinancePriceVolumeAlert:
                     self._update_monthly_count(s[0], alert_type)
                     smallest[i].append(self.exchange_alert_monthly_count[alert_type][s[0]][0])
 
-                # logging.info(f"largest price change: {largest}")
-                # logging.info(f"smallest price change: {smallest}")
+               
+                # logging.warning(f"largest price change: {largest}")
+                # logging.warning(f"smallest price change: {smallest}")
 
                 price_type = "close" if timeframe == "15m" else "high/low"
 
@@ -406,7 +406,7 @@ class BinancePriceVolumeAlert:
             self.exchange_bar_dict[symbol] = [current_time, vol]
 
         # price alert
-        self.price_dict["15min"][symbol] = (close / open_p - 1) * 100
+        self.price_dict["15m"][symbol] = (close / open_p - 1) * 100
         self.lock_15m.release()
 
     def _alert_1h(self, msg):

@@ -4,7 +4,7 @@ import threading
 from time import sleep
 
 from crawl_coingecko import CoinGecKo
-from alert_coingecko import CoinGecKo12H, alert_coins, close_all_threads, CoinGecKoMarketCapReport
+from alert_coingecko import CoinGecKo4H, alert_coins, close_all_threads, CoinGecKoMarketCapReport
 from telegram_api import TelegramBot
 from binance_indicator_alert import BinanceIndicatorAlert
 
@@ -35,10 +35,11 @@ def alert_indicator(alert_type="alert_100"):
 def alert_300():
     logging.info("alert_300 start")
     exchanges, coin_ids, coin_symbols = cg.get_exchanges(num=300)
+    # exchanges = exchanges[:10]
     logging.warning("start coingecko alert")
     tg_type = "TEST"
-    coingecko_res = CoinGecKo12H(coin_ids, coin_symbols, tg_type=tg_type)
-    coins, newly_deleted_coins, newly_added_coins = coingecko_res.run()
+    # coingecko_res = CoinGecKo4H(coin_ids, coin_symbols, tg_type=tg_type)
+    # coins, newly_deleted_coins, newly_added_coins = coingecko_res.run()
     logging.warning(f"start binance indicator alert")
     logging.warning(f"exchanges: {len(exchanges)}, coins: {len(coin_ids)}")
     binance_alert = BinanceIndicatorAlert(exchanges, alert_type="alert_300", tg_type=tg_type)
