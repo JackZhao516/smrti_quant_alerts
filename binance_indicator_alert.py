@@ -20,7 +20,7 @@ class BinanceIndicatorAlert:
     """
     first download, then run a websocket
     """
-    DATA_DOWNLOAD_ROOT_URL = "https://data.binance.vision/?prefix=data/spot/daily/klines/"
+    DATA_DOWNLOAD_ROOT_URL = "https://data.binance.vision/data/spot/daily/klines/"
     HTTP_URL = "https://api.binance.com/api/v3/klines?"
     MAX_ERROR = 5
     STABLE_EXCHANGES = {"wbtcbtc", "busdusdt"}
@@ -46,23 +46,27 @@ class BinanceIndicatorAlert:
         self.close = {}
         self.close_lock = threading.Lock()
 
-        if self.alert_type == "alert_100":
-            self.close = {exchange: {
-                "4": np.zeros(self.window),
-                "12": np.zeros(self.window),
-                } for exchange in exchanges
-            }
-        elif self.alert_type == "alert_500":
-            self.close = {exchange: {
-                "4": np.zeros(self.window),
-                "24": np.zeros(self.window),
-                } for exchange in exchanges
-            }
-        else:
-            self.close = {exchange: {
-                "12": np.zeros(self.window),
-                } for exchange in exchanges
-            }
+        # if self.alert_type == "alert_100":
+        #     self.close = {exchange: {
+        #         "4": np.zeros(self.window),
+        #         "12": np.zeros(self.window),
+        #         } for exchange in exchanges
+        #     }
+        # elif self.alert_type == "alert_500":
+        #     self.close = {exchange: {
+        #         "4": np.zeros(self.window),
+        #         "24": np.zeros(self.window),
+        #         } for exchange in exchanges
+        #     }
+        # else:
+        #     self.close = {exchange: {
+        #         "4": np.zeros(self.window),
+        #         } for exchange in exchanges
+        #     }
+        self.close = {exchange: {
+            "4": np.zeros(self.window),
+            } for exchange in exchanges
+        }
 
         # for calculating spot over h4 exchanges
         self.spot_over_h4 = set()
@@ -95,7 +99,12 @@ class BinanceIndicatorAlert:
 
                 try:
                     # download single day csv file
-                    response = requests.get(url, timeout=100)
+                    headers = {
+                        "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_8_3) "
+                                      "AppleWebKit/537.36 (KHTML, like Gecko) "
+                                      "Chrome/54.0.2866.71 Safari/537.36"}
+                    response = requests.get(url, timeout=10, headers=headers)
+
                     open(f"{exchange}.zip", "wb").write(response.content)
                     with zipfile.ZipFile(f"{exchange}.zip", "r") as zip_ref:
                         zip_ref.extractall(self.csv_dir)
@@ -196,12 +205,15 @@ class BinanceIndicatorAlert:
         exchanges = [exchanges[i:i + incr] for i in range(0, len(exchanges), incr)]
 
         for exchange_list in exchanges:
+            print(exchange_list)
             t = threading.Thread(target=self.download_past_klines, args=(time_frame, exchange_list))
             threads.append(t)
             t.start()
             # sleep(1)
         for t in threads:
             t.join()
+
+        print("here")
 
     def run(self):
         """
@@ -254,7 +266,7 @@ class BinanceIndicatorAlert:
                 )
 
         if self.alert_type == "alert_300":
-            sleep(60*15)
+            sleep(60*5)
         else:
             sleep(self.execution_time)
         client.stop()
@@ -296,10 +308,10 @@ class BinanceIndicatorAlert:
             if self.alert_type == "alert_300":
                 self.close_lock.acquire()
                 logging.warning(f"{exchange} :"
-                                f"close: {close}, ma: {np.mean(self.close[exchange]['12'])}")
-                if close > np.mean(self.close[exchange]["12"]):
-                    logging.warning(f"{exchange} over h12"
-                                    f"close: {close}, ma: {np.mean(self.close[exchange]['12'])}")
+                                f"close: {close}, ma: {np.mean(self.close[exchange]['4'])}")
+                if close > np.mean(self.close[exchange]["4"]):
+                    logging.warning(f"{exchange} over h4"
+                                    f"close: {close}, ma: {np.mean(self.close[exchange]['4'])}")
                     self.spot_over_h4.add(exchange.upper())
                 else:
                     if exchange.upper() in self.spot_over_h4:
