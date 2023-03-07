@@ -15,7 +15,7 @@ urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 class CoinGecKo:
     COINGECKO_API_KEY = json.load(open("token.json"))["COINGECKO_API_KEY"]
-    DATA_DOWNLOAD_ROOT_URL = "https://data.binance.vision/?prefix=data/spot/daily/klines/"
+    DATA_DOWNLOAD_ROOT_URL = "https://data.binance.vision/data/spot/daily/klines/"
 
     def __init__(self, tg_type="TEST"):
         self.cg = CoinGeckoAPI(api_key=self.COINGECKO_API_KEY)
@@ -139,8 +139,8 @@ class CoinGecKo:
                   f"{exchange}-{time_frame}-{start_time_str}.zip"
             url_now = f"{self.DATA_DOWNLOAD_ROOT_URL}{exchange}/{time_frame}/" \
                       f"{exchange}-{time_frame}-{start_time_now_str}.zip"
-            response = requests.get(url, timeout=1000, verify=False)
-            response_now = requests.get(url_now, timeout=1000, verify=False)
+            response = requests.head(url, timeout=1000, verify=False)
+            response_now = requests.head(url_now, timeout=1000, verify=False)
             # print(f"{exchange} {start_time_now_str} {response.status_code} {response_now.status_code}")
 
             if response.status_code != 200 or response_now.status_code != 200:
