@@ -21,11 +21,12 @@ STABLE_COINS = {"USDT", "USDC", "DAI", "BUSD", "USDP", "GUSD",
 
 
 class CoinGecKo4H(CoinGecKo):
-    def __init__(self, coin_ids, coin_symbols, tg_type="CG_ALERT"):
+    def __init__(self, coin_ids, coin_symbols, tg_type="CG_ALERT", alert_type="300"):
         super().__init__(tg_type)
         self.coin_ids = coin_ids
         self.coin_symbols = coin_symbols
         self.spot_over_h4 = set()
+        self.alert_type = alert_type
 
     def h4_sma_200(self, coin_id, coin_symbol):
         try:
@@ -57,9 +58,9 @@ class CoinGecKo4H(CoinGecKo):
             if coin_symbol in STABLE_COINS:
                 continue
             self.h4_sma_200(coin_id, coin_symbol)
-        logging.warning(f"spot_over_h12_300: {self.spot_over_h4}")
+        logging.warning(f"spot_over_h12_{self.alert_type}: {self.spot_over_h4}")
 
-        return update_coins_exchanges_txt(self.spot_over_h4, "coins")
+        return update_coins_exchanges_txt(self.spot_over_h4, "coins", self.alert_type)
 
 
 #########################################################################################

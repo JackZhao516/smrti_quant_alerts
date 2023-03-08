@@ -203,7 +203,7 @@ class BinancePriceVolumeAlert:
                         f"{self.exchange_daily_new_alert[alert_type]}",
                         blue_text=True
                     )
-                    self.exchange_daily_new_alert[alert_type] = []
+                    self.exchange_daily_new_alert[alert_type] = set()
 
                     if alert_type == "15m_price" or "15m_volume":
                         self.lock_15m.release()
@@ -255,6 +255,7 @@ class BinancePriceVolumeAlert:
 
                 # get the largest five
                 price_lists.sort(key=lambda x: x[1], reverse=True)
+                # logging.warning(f"{timeframe}: {price_lists}")
                 for k, v in price_lists:
                     if v >= rate_threshold and len(largest) < 5:
                         v = round(v, 2)
@@ -311,6 +312,7 @@ class BinancePriceVolumeAlert:
 
         """
         self.exchange_daily_new_alert[alert_type].add(exchange)
+        # logging.warning(f"{self.exchange_daily_new_alert[alert_type]}")
         if exchange not in self.exchange_alert_monthly_count[alert_type]:
             self.exchange_alert_monthly_count[alert_type][exchange] = [1, int(time.time())]
         else:

@@ -16,6 +16,7 @@ urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 class CoinGecKo:
     COINGECKO_API_KEY = json.load(open("token.json"))["COINGECKO_API_KEY"]
     DATA_DOWNLOAD_ROOT_URL = "https://data.binance.vision/data/spot/daily/klines/"
+    API_URL = "https://api.binance.com/api/v3/"
 
     def __init__(self, tg_type="TEST"):
         self.cg = CoinGeckoAPI(api_key=self.COINGECKO_API_KEY)
@@ -24,7 +25,7 @@ class CoinGecKo:
         self.popular_exchanges_lock = threading.Lock()
 
     def get_exchanges(self, num=300):
-        exchanges = set(self.get_all_popular_exchanges())
+        exchanges = set(self.get_all_popular_exchanges(time_on_binance=1))
         # exchanges = set(self.get_all_exchanges())
         res = []
         coingeco_coins = []
@@ -76,17 +77,17 @@ class CoinGecKo:
         """
         Get all exchanges on binance
         """
-        api_url = f'https://api.binance.com/api/v3/exchangeInfo?permissions=SPOT'
+        api_url = f'{self.API_URL}exchangeInfo?permissions=SPOT'
         response = requests.get(api_url, timeout=10).json()
         exchanges = {exchange['symbol'] for exchange in response['symbols']}
         return exchanges
 
-    def get_all_popular_exchanges(self, time_on_binance=102, num_threads=50):
+    def get_all_popular_exchanges(self, time_on_binance=None):
         """
         BTC, ETH, USDT, BUSD exchanges older than time_on_binance days
         """
+        start = time.time()
         exchanges = self.get_all_exchanges()
-        print(f"{len(exchanges)} exchanges")
         res = []
 
         # choose BTC, ETH, USDT, BUSD exchanges
@@ -95,63 +96,35 @@ class CoinGecKo:
                     exchange[-4:] == "USDT" or exchange[-4:] == "BUSD":
                 res.append(exchange)
         self.popular_exchanges = set(res)
+        logging.warning(f"{len(self.popular_exchanges)} exchanges")
 
-        # test exchange old enough and still on binance
-        start_time = datetime.datetime.now() - datetime.timedelta(days=time_on_binance)
-        start_time_now = datetime.datetime.now() - datetime.timedelta(days=2)
-        start_time_str = start_time.strftime("%Y-%m-%d")
-        start_time_now_str = start_time_now.strftime("%Y-%m-%d")
-
-        threads = []
-        # res = ["BTCUSDT"]
-
-        incr = len(res) // num_threads
-        res = [res[i:i + incr] for i in range(0, len(res), incr)]
-
-        for exchanges in res:
-            t = threading.Thread(target=self.get_all_popular_exchanges_helper,
-                                 args=(exchanges, start_time_str, start_time_now_str))
-            threads.append(t)
-            t.start()
-
-        for t in threads:
-            t.join()
         res = list(self.popular_exchanges)
-        print(res)
-        return res
 
-    def get_all_popular_exchanges_helper(self, exchanges, start_time_str, start_time_now_str):
-        for exchange in exchanges:
-            try:
-                self.validate_popular_exchange_helper(exchange, start_time_str, start_time_now_str)
-            except Exception as e:
-                print(e)
-                continue
-
-    def validate_popular_exchange_helper(self, exchange, start_time_str, start_time_now_str):
-        """
-        Helper function for get_all_popular_exchanges
-        """
-        time_frames = ["12h", "4h", "1d"]
-
-        for time_frame in time_frames:
-            url = f"{self.DATA_DOWNLOAD_ROOT_URL}{exchange}/{time_frame}/" \
-                  f"{exchange}-{time_frame}-{start_time_str}.zip"
-            url_now = f"{self.DATA_DOWNLOAD_ROOT_URL}{exchange}/{time_frame}/" \
-                      f"{exchange}-{time_frame}-{start_time_now_str}.zip"
-            response = requests.head(url, timeout=1000, verify=False)
-            response_now = requests.head(url_now, timeout=1000, verify=False)
-            # print(f"{exchange} {start_time_now_str} {response.status_code} {response_now.status_code}")
-
-            if response.status_code != 200 or response_now.status_code != 200:
-                self.popular_exchanges_lock.acquire()
+        for exchange in res:
+            url = f"{self.API_URL}klines?symbol={exchange}&interval=1m&startTime={(int(time.time())-70)*1000}&limit=1000"
+            response = requests.get(url, timeout=2)
+            response = response.json()
+            if type(response) == dict or len(response) == 0:
                 self.popular_exchanges.remove(exchange)
-                self.popular_exchanges_lock.release()
+                continue
+        
+            if time_on_binance:
+                time_delta = time_on_binance * 24 * 60 * 60 * 1000
+                time_now = int(time.time()) * 1000
+                url = f"{self.API_URL}klines?symbol={exchange}&interval=1m&startTime={time_now - time_delta}&endTime={time_now - time_delta + 70000}&limit=1000"
+                response = requests.get(url, timeout=2)
+                response = response.json()
+                if type(response) == dict or len(response) == 0:
+                    self.popular_exchanges.remove(exchange)
+    
+        res = list(self.popular_exchanges)
 
-                return
-
+        logging.warning(len(res))
+        logging.warning(f"{time.time() - start} seconds")
+        return res
+        
     def get_500_usdt_exchanges(self, market_cap=True):
-        exchanges = self.get_all_popular_exchanges(time_on_binance=2)
+        exchanges = self.get_all_popular_exchanges()
         # exchanges = self.get_all_exchanges()
 
         res = []
@@ -239,7 +212,7 @@ class CoinGecKo:
 
 if __name__ == '__main__':
     coin = CoinGecKo(tg_type='TEST')
-    exchanges = coin.get_all_popular_exchanges()
+    exchanges = coin.get_all_popular_exchanges(time_on_binance=34)
     print(len(exchanges))
     # exchanges = set(exchanges)
     # coins = ["APTUSDT", "APTBTC", "BTTUSDT", "BTTBTC", "LUNABTC", "LUNAETH",

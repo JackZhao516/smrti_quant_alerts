@@ -6,6 +6,7 @@ import glob
 import csv
 import logging
 import threading
+import time
 from time import sleep
 
 import numpy as np
@@ -26,6 +27,7 @@ class BinanceIndicatorAlert:
     STABLE_EXCHANGES = {"wbtcbtc", "busdusdt"}
     config_logging(logging, logging.INFO)
     csv_dir = os.path.join(os.getcwd(), "klines_csv")
+
     try:
         os.mkdir(csv_dir)
     except FileExistsError:
@@ -40,33 +42,29 @@ class BinanceIndicatorAlert:
         self.exchanges_set = set(exchanges)
         self.alert_type = alert_type
         self.execution_time = execution_time
-        self.window = 100 if self.alert_type == "alert_500" else 200
+        self.window = 200
 
         # all mappings use lower case of exchange name
         self.close = {}
         self.close_lock = threading.Lock()
 
-        # if self.alert_type == "alert_100":
-        #     self.close = {exchange: {
-        #         "4": np.zeros(self.window),
-        #         "12": np.zeros(self.window),
-        #         } for exchange in exchanges
-        #     }
-        # elif self.alert_type == "alert_500":
-        #     self.close = {exchange: {
-        #         "4": np.zeros(self.window),
-        #         "24": np.zeros(self.window),
-        #         } for exchange in exchanges
-        #     }
-        # else:
-        #     self.close = {exchange: {
-        #         "4": np.zeros(self.window),
-        #         } for exchange in exchanges
-        #     }
-        self.close = {exchange: {
-            "4": np.zeros(self.window),
-            } for exchange in exchanges
-        }
+        if self.alert_type == "alert_100":
+            self.close = {exchange: {
+                "4": np.zeros(self.window),
+                "12": np.zeros(self.window),
+                } for exchange in exchanges
+            }
+        elif self.alert_type == "alert_500":
+            self.close = {exchange: {
+                "4": np.zeros(self.window),
+                "24": np.zeros(self.window),
+                } for exchange in exchanges
+            }
+        else:
+            self.close = {exchange: {
+                "4": np.zeros(self.window),
+                } for exchange in exchanges
+            }
 
         # for calculating spot over h4 exchanges
         self.spot_over_h4 = set()
@@ -74,6 +72,44 @@ class BinanceIndicatorAlert:
         self.last_close_1m = {exchange: 0.0 for exchange in exchanges}
 
         self.tg_bot = TelegramBot(tg_type)
+
+    def spot_cross_ma(self, time_frame):
+        """
+        find spot cross ma exchanges
+        """
+        for exchange in self.exchanges:
+            logging.warning(f"Downloading past klines {time_frame}h for {exchange}")
+            exchange = exchange.upper()
+            days_delta = time_frame * self.window // 24 + 1
+            start_time = (int(time.time()) - days_delta * 24 * 60 * 60) * 1000
+            now_time = (int(time.time()) - 60) * 1000
+
+            url = f"{self.HTTP_URL}symbol={exchange}&interval=4h&startTime={start_time}&limit=1000"
+            url_now = f"{self.HTTP_URL}symbol={exchange}&interval=1m&startTime={now_time}&limit=1000"
+            try:
+                response = requests.get(url, timeout=2).json()
+                response_now = requests.get(url_now, timeout=2).json()
+
+                current_close = float(response_now[-1][4])
+
+                count = 0
+                cum_sum = 0.0
+
+                for candle in reversed(response):
+                    cum_sum += float(candle[4])
+                    count += 1
+
+                    if count == self.window:
+                        break
+
+                ma = cum_sum / min(self.window, count)
+                if current_close > ma:
+                    self.spot_over_h4.add(exchange)
+                logging.warning(f"{exchange}: ma{time_frame}h {ma}, {current_close}")
+                logging.warning(f"len: {len(self.spot_over_h4)}")
+            except Exception as e:
+                continue
+        return update_coins_exchanges_txt(self.spot_over_h4, "exchanges", self.alert_type.split("_")[1])
 
     def download_past_klines(self, time_frame, exchange_list):
         """
@@ -134,6 +170,7 @@ class BinanceIndicatorAlert:
 
                 except Exception as e:
                     if error > self.MAX_ERROR:
+                        logging.warning(f"{exchange}: {e}")
                         return
                     error += 1
                     for count in range(24 // time_frame):
@@ -190,8 +227,6 @@ class BinanceIndicatorAlert:
                 self.close[exchange][time_frame] = np.roll(self.close[exchange][time_frame], -1)
                 self.close[exchange][time_frame][-1] = self.close[exchange][time_frame][-2]
 
-        # if log:
-        #     logging.warning(f"{exchange} ma_{time_frame}h:{self.close[exchange][time_frame]}")
         self.close_lock.release()
         return i
 
@@ -213,7 +248,7 @@ class BinanceIndicatorAlert:
         for t in threads:
             t.join()
 
-        print("here")
+        logging.warning(f"close len: {len(self.close)}")
 
     def run(self):
         """
@@ -309,7 +344,7 @@ class BinanceIndicatorAlert:
                 self.close_lock.acquire()
                 logging.warning(f"{exchange} :"
                                 f"close: {close}, ma: {np.mean(self.close[exchange]['4'])}")
-                if close > np.mean(self.close[exchange]["4"]):
+                if close > np.mean(self.close[exchange]["4"]) and np.mean(self.close[exchange]["4"]) != 0.0:
                     logging.warning(f"{exchange} over h4"
                                     f"close: {close}, ma: {np.mean(self.close[exchange]['4'])}")
                     self.spot_over_h4.add(exchange.upper())
