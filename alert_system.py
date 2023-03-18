@@ -7,6 +7,7 @@ from crawl_coingecko import CoinGecKo
 from alert_coingecko import CoinGecKo4H, alert_coins, close_all_threads, CoinGecKoMarketCapReport
 from telegram_api import TelegramBot
 from binance_indicator_alert import BinanceIndicatorAlert
+from binance_price_volume_alert import BinancePriceVolumeAlert
 
 MODE = "CG_SUM"
 tg_bot = TelegramBot(MODE)
@@ -81,10 +82,15 @@ def report_market_cap():
     sleep(60 * 60 * 24 * 365)
     logging.warning("report_market_cap finished")
 
+def price_volume():
+    BinancePriceVolumeAlert().klines_alert()
+
 
 if __name__ == "__main__":
     # sys.argv[1] is the mode
     if sys.argv[1] == "market_cap":
         report_market_cap()
+    elif sys.argv[1] == "price_volume":
+        price_volume()
     else:
         alert_spot_cross_ma(sys.argv[1])
