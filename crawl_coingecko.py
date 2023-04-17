@@ -176,6 +176,10 @@ class CoinGecKo:
         coingeco_coins, coingeco_names, ex = [], [], []
 
         for i, id in enumerate(ids):
+            if f"{id[1]}BTC" in exchanges:
+                ex.append(f"{id[1]}BTC")
+            if f"{id[1]}ETH" in exchanges:
+                ex.append(f"{id[1]}ETH")
             data = self.cg.get_coin_market_chart_by_id(id=id[0], vs_currency='usd', days=13, interval='daily')
             data = np.array(data['total_volumes'])
             if np.sum(data[:7, 1]) == 0:
@@ -184,10 +188,7 @@ class CoinGecKo:
 
             if volume_increase >= volume_threshold:
                 res.append([volume_increase, id[1], id[0]])
-            if f"{id[1]}BTC" in exchanges:
-                ex.append(f"{id[1]}BTC")
-            if f"{id[1]}ETH" in exchanges:
-                ex.append(f"{id[1]}ETH")
+ 
         res = sorted(res, key=lambda x: x[0], reverse=True)
 
         for volume_increase, symbol, coin_id in res:

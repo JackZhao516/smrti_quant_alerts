@@ -24,7 +24,7 @@ class BinanceIndicatorAlert:
     DATA_DOWNLOAD_ROOT_URL = "https://data.binance.vision/data/spot/daily/klines/"
     HTTP_URL = "https://api.binance.com/api/v3/klines?"
     MAX_ERROR = 5
-    STABLE_EXCHANGES = {"wbtcbtc", "busdusdt"}
+    STABLE_EXCHANGES = {"wbtcbtc", "busdusdt", "ustcbusd", "ustcusdt", "usdpusdt"}
     config_logging(logging, logging.INFO)
     csv_dir = os.path.join(os.getcwd(), "klines_csv")
 
@@ -78,6 +78,8 @@ class BinanceIndicatorAlert:
         find spot cross ma exchanges
         """
         for exchange in self.exchanges:
+            if exchange.lower() in self.STABLE_EXCHANGES:
+                continue
             logging.warning(f"Downloading past klines {time_frame}h for {exchange}")
             exchange = exchange.upper()
             days_delta = time_frame * self.window // 24 + 1
