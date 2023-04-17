@@ -7,6 +7,7 @@ from crawl_coingecko import CoinGecKo
 from alert_coingecko import CoinGecKo4H, alert_coins, close_all_threads, CoinGecKoMarketCapReport
 from telegram_api import TelegramBot
 from binance_indicator_alert import BinanceIndicatorAlert
+from binance_price_volume_alert import BinancePriceVolumeAlert
 
 # MODE = "CG_SUM"
 MODE = "TEST"
@@ -90,6 +91,9 @@ def alert_spot_cross_ma(exclude_coins, exclude_newly_deleted_coins,
 
 
 def report_market_cap():
+    """
+    market cap alerts
+    """
     logging.info("report_market_cap start")
     top_200 = threading.Thread(target=CoinGecKoMarketCapReport, args=(200,))
     top_200.start()
@@ -99,12 +103,18 @@ def report_market_cap():
     logging.warning("report_market_cap finished")
 
 
+def price_volume():
+    """
+    price/volume alerts
+    """
+    BinancePriceVolumeAlert().klines_alert()
+
+
 def routinely_sequential_alert_100_300_500():
     """
     sequentially alert 100, 300, 500 coins
     """
     logging.info("routinely_sequential_alert_100_300_500 start")
-
     while True:
         exclude_coins, exclude_newly_deleted_coins, exclude_newly_added_coin = set(), set(), set()
         for alert_type in ["alert_100", "alert_300", "alert_500"]:
@@ -118,6 +128,8 @@ if __name__ == "__main__":
     # sys.argv[1] is the mode
     if sys.argv[1] == "market_cap":
         report_market_cap()
+    elif sys.argv[1] == "price_volume":
+        price_volume()
     elif sys.argv[1] == "sequential":
         routinely_sequential_alert_100_300_500()
     else:
