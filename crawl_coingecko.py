@@ -68,10 +68,10 @@ class CoinGecKo:
                 coingeco_coins.append(coin_id)
                 coingeco_names.append(symbol)
             else:
-                if f"{symbol}BUSD" in exchanges:
-                    res.append(f"{symbol}BUSD")
                 if f"{symbol}USDT" in exchanges:
                     res.append(f"{symbol}USDT")
+                elif f"{symbol}BUSD" in exchanges:
+                    res.append(f"{symbol}BUSD")
                 if f"{symbol}BTC" in exchanges:
                     res.append(f"{symbol}BTC")
                 if f"{symbol}ETH" in exchanges:

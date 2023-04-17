@@ -18,7 +18,7 @@ def update_coins_exchanges_txt(spot_over_h4, txt_type="coins", mode="300"):
         spot_over_h4 = list(spot_over_h4)
         with open(f"{mode}_{txt_type}.txt", "w") as f:
             f.write("\n".join(spot_over_h4))
-        return list(spot_over_h4), newly_deleted, newly_added
+        return list(sorted(spot_over_h4)), newly_deleted, newly_added
     else:
         spot_over_h4 = list(spot_over_h4)
         with open(f"{mode}_{txt_type}.txt", "w") as f:
