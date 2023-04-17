@@ -52,12 +52,12 @@ class BinancePriceVolumeAlert:
         }
 
         # monitored exchanges
-        self.exchanges = self.cg.get_500_usdt_exchanges(market_cap=False)
+        self.exchanges = self.cg.get_all_exchanges_in_usdt_busd_btc()
         self.exchanges = [e.lower() for e in self.exchanges]
         self.exchanges.sort()
 
         # all exchanges on binance
-        self.all_exchanges = set(self.cg.get_all_exchanges())
+        self.all_exchanges = set(self.cg.get_all_binance_exchanges())
 
         # dict for 15min/1h price alert: symbol->price_change_rate
         self.price_dict = {
@@ -147,7 +147,7 @@ class BinancePriceVolumeAlert:
             if time_now[1] == "2":
                 self.settings = json.load(open("settings.json"))
                 logging.info("hourly subscribe new exchange start checking")
-                all_exchanges = set(self.cg.get_all_exchanges())
+                all_exchanges = set(self.cg.get_all_binance_exchanges())
                 if self.all_exchanges != all_exchanges:
                     exchange_diff = all_exchanges - self.all_exchanges
                     new_exchanges = []

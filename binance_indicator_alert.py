@@ -399,7 +399,7 @@ if __name__ == "__main__":
     logging.info("test")
     from crawl_coingecko import CoinGecKo
     cg = CoinGecKo()
-    ex, _, _ = cg.get_exchanges(num=300)
+    ex, _, _ = cg.get_top_market_cap_exchanges(num=300)
     print(f"---------------------------------------------------{len(ex)}")
     ex = ex[:40]
     alert = BinanceIndicatorAlert(ex, "alert_300", tg_type="TEST")

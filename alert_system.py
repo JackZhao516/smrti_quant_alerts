@@ -47,11 +47,11 @@ def alert_spot_cross_ma(exclude_coins, exclude_newly_deleted_coins,
     logging.info(f"{alert_type} start")
     count = alert_type.split("_")[1]
     if alert_type == "alert_100":
-        exchanges, coin_ids, coin_symbols = cg.get_exchanges(num=100)
+        exchanges, coin_ids, coin_symbols = cg.get_top_market_cap_exchanges(num=100)
     elif alert_type == "alert_500":
         exchanges, coin_ids, coin_symbols = cg.get_coins_with_weekly_volume_increase()
     else:
-        exchanges, coin_ids, coin_symbols = cg.get_exchanges(num=300)
+        exchanges, coin_ids, coin_symbols = cg.get_top_market_cap_exchanges(num=300)
     logging.warning("start coingecko alert")
     tg_type = "TEST"
     coingecko_res = CoinGecKo4H(coin_ids, coin_symbols, tg_type=tg_type, alert_type=count)
@@ -60,6 +60,11 @@ def alert_spot_cross_ma(exclude_coins, exclude_newly_deleted_coins,
     logging.warning(f"exchanges: {len(exchanges)}, coins: {len(coin_ids)}")
     binance_alert = BinanceIndicatorAlert(exchanges, alert_type=alert_type, tg_type=tg_type)
     exchanges, newly_deleted_exchanges, newly_added_exchanges = binance_alert.spot_cross_ma(4)
+
+    if alert_type == "alert_500":
+        # add all alt eth and btc exchanges for alert_500, despite the volume increase
+        exchanges = sorted(list(set(exchanges).union(cg.get_alt_eth_btc_exchanges())))
+
     coins.extend(exchanges)
     newly_deleted_coins.extend(newly_deleted_exchanges)
     newly_added_coins.extend(newly_added_exchanges)
