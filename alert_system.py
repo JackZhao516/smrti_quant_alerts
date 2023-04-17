@@ -54,7 +54,8 @@ def alert_spot_cross_ma(exclude_coins, exclude_newly_deleted_coins,
         exchanges, coin_ids, coin_symbols = cg.get_top_market_cap_exchanges(num=300)
     logging.warning("start coingecko alert")
     tg_type = "TEST"
-    coingecko_res = CoinGecKo4H(coin_ids, coin_symbols, tg_type=tg_type, alert_type=count)
+    coingecko_res = CoinGecKo4H(coin_ids, coin_symbols, cg.active_exchanges,
+                                tg_type=tg_type, alert_type=count)
     coins, newly_deleted_coins, newly_added_coins = coingecko_res.run()
     logging.warning(f"start binance indicator alert")
     logging.warning(f"exchanges: {len(exchanges)}, coins: {len(coin_ids)}")

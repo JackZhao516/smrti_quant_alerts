@@ -21,8 +21,8 @@ STABLE_COINS = {"USDT", "USDC", "DAI", "BUSD", "USDP", "GUSD",
 
 
 class CoinGecKo4H(CoinGecKo):
-    def __init__(self, coin_ids, coin_symbols, tg_type="CG_ALERT", alert_type="300"):
-        super().__init__(tg_type)
+    def __init__(self, coin_ids, coin_symbols, active_exchanges=None, tg_type="CG_SUM", alert_type="300"):
+        super().__init__(tg_type, active_exchanges=active_exchanges)
         self.coin_ids = coin_ids
         self.coin_symbols = coin_symbols
         self.spot_over_h4 = set()

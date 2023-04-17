@@ -18,26 +18,24 @@ class CoinGecKo:
     DATA_DOWNLOAD_ROOT_URL = "https://data.binance.vision/data/spot/daily/klines/"
     API_URL = "https://api.binance.com/api/v3/"
 
-    def __init__(self, tg_type="TEST"):
+    def __init__(self, tg_type="TEST", active_exchanges=None):
         self.cg = CoinGeckoAPI(api_key=self.COINGECKO_API_KEY)
         self.tg_bot = TelegramBot(alert_type=tg_type)
-        self.popular_exchanges = None
-        self.popular_exchanges_lock = threading.Lock()
-        self.popular_exchanges = self.get_all_binance_active_exchanges()
-        # self.popular_exchanges = self.get_all_binance_exchanges()
-        self.popular_exchanges_timestamp = time.time()
-        logging.info(f"start: {self.popular_exchanges_timestamp}")
+        self.active_exchanges_lock = threading.Lock()
+        if active_exchanges is not None:
+            self.active_exchanges = active_exchanges
+        else:
+            self.active_exchanges = self.get_all_binance_active_exchanges()
+        # self.active_exchanges = self.get_all_binance_exchanges()
+        self.active_exchanges_timestamp = time.time()
 
     def get_top_market_cap_exchanges(self, num=300):
         """
         get the top num market cap usdt eth busd btc exchanges
         """
-        logging.info(f"100: {self.popular_exchanges_timestamp}")
-        logging.info(time.time())
         self.update_popular_exchanges()
-        exchanges = set(self.popular_exchanges)
-        logging.info(time.time())
-        # exchanges = set(self.get_all_exchanges())
+        exchanges = set(self.active_exchanges)
+
         res = []
         coingeco_coins = []
         coingeco_names = []
@@ -86,7 +84,7 @@ class CoinGecKo:
         self.tg_bot.send_message(f"{datetime.datetime.now()}: "
                                  f"Top {num} coin exchanges that are on Binance:\n {l}")
         self.tg_bot.send_message(f"{r}")
-        self.logging("here")
+
         return res, coingeco_coins, coingeco_names
 
     def get_all_binance_exchanges(self):
@@ -111,10 +109,10 @@ class CoinGecKo:
             if exchange[-3:] == "BTC" or exchange[-3:] == "ETH" or \
                     exchange[-4:] == "USDT" or exchange[-4:] == "BUSD":
                 res.append(exchange)
-        self.popular_exchanges = set(res)
-        logging.warning(f"{len(self.popular_exchanges)} exchanges")
+        self.active_exchanges = set(res)
+        logging.warning(f"{len(self.active_exchanges)} exchanges")
 
-        res = list(self.popular_exchanges)
+        res = list(self.active_exchanges)
 
         for exchange in res:
             url = f"{self.API_URL}klines?symbol={exchange}&interval=1m&" \
@@ -122,7 +120,7 @@ class CoinGecKo:
             response = requests.get(url, timeout=2)
             response = response.json()
             if type(response) == dict or len(response) == 0:
-                self.popular_exchanges.remove(exchange)
+                self.active_exchanges.remove(exchange)
                 continue
         
             if time_on_binance:
@@ -134,9 +132,9 @@ class CoinGecKo:
                 response = requests.get(url, timeout=2)
                 response = response.json()
                 if type(response) == dict or len(response) == 0:
-                    self.popular_exchanges.remove(exchange)
+                    self.active_exchanges.remove(exchange)
     
-        res = list(self.popular_exchanges)
+        res = list(self.active_exchanges)
 
         logging.warning(len(res))
         logging.warning(f"{time.time() - start} seconds")
@@ -146,11 +144,9 @@ class CoinGecKo:
         """
         Update popular exchanges if last update was more than 1 hour ago
         """
-        logging.info(f"update: {self.popular_exchanges_timestamp}")
-        logging.info(time.time() - self.popular_exchanges_timestamp)
-        if (time.time() - self.popular_exchanges_timestamp) >= 3600:
-            self.popular_exchanges = self.get_all_binance_active_exchanges()
-            self.popular_exchanges_timestamp = time.time()
+        if (time.time() - self.active_exchanges_timestamp) >= 3600:
+            self.active_exchanges = self.get_all_binance_active_exchanges()
+            self.active_exchanges_timestamp = time.time()
         
     def get_all_exchanges_in_usdt_busd_btc(self):
         """
@@ -159,15 +155,15 @@ class CoinGecKo:
         self.update_popular_exchanges()
         res = []
         coins = set()
-        for i in self.popular_exchanges:
+        for i in self.active_exchanges:
             if i[-4:] == "USDT":
                 res.append(i)
                 coins.add(i[:-4])
-        for i in self.popular_exchanges:
+        for i in self.active_exchanges:
             if i[-4:] == "BUSD" and i[:-4] not in coins:
                 res.append(i)
                 coins.add(i[:-4])
-        for i in self.popular_exchanges:
+        for i in self.active_exchanges:
             if i[-3:] == "BTC" and i[:-3] not in coins:
                 res.append(i)
         res = list(set(res))
@@ -213,20 +209,20 @@ class CoinGecKo:
         res = sorted(res, key=lambda x: x[0], reverse=True)
 
         for volume_increase, symbol, coin_id in res:
-            if f"{symbol}USDT" not in self.popular_exchanges and \
-                    f"{symbol}BTC" not in self.popular_exchanges and \
-                    f"{symbol}ETH" not in self.popular_exchanges and \
-                    f"{symbol}BUSD" not in self.popular_exchanges:
+            if f"{symbol}USDT" not in self.active_exchanges and \
+                    f"{symbol}BTC" not in self.active_exchanges and \
+                    f"{symbol}ETH" not in self.active_exchanges and \
+                    f"{symbol}BUSD" not in self.active_exchanges:
                 coingeco_coins.append(coin_id)
                 coingeco_names.append(symbol)
             else:
-                if f"{symbol}USDT" in self.popular_exchanges:
+                if f"{symbol}USDT" in self.active_exchanges:
                     ex.append(f"{symbol}USDT")
-                elif f"{symbol}BUSD" in self.popular_exchanges:
+                elif f"{symbol}BUSD" in self.active_exchanges:
                     ex.append(f"{symbol}BUSD")
-                elif f"{symbol}BTC" in self.popular_exchanges:
+                elif f"{symbol}BTC" in self.active_exchanges:
                     ex.append(f"{symbol}BTC")
-                elif f"{symbol}ETH" in self.popular_exchanges:
+                elif f"{symbol}ETH" in self.active_exchanges:
                     ex.append(f"{symbol}ETH")
 
         res = np.array(res)
@@ -258,9 +254,9 @@ class CoinGecKo:
         res = []
 
         for i, id in enumerate(ids):
-            if f"{id}ETH" in self.popular_exchanges:
+            if f"{id}ETH" in self.active_exchanges:
                 res.append(f"{id}ETH")
-            if f"{id}BTC" in self.popular_exchanges:
+            if f"{id}BTC" in self.active_exchanges:
                 res.append(f"{id}BTC")
         return res
 
