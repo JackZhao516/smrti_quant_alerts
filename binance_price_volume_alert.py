@@ -1,3 +1,4 @@
+import os
 import time
 import math
 import json
@@ -45,10 +46,17 @@ class BinancePriceVolumeAlert:
             "15m_volume": defaultdict(list),
             "1h_volume": defaultdict(list),
         }
+        if os.path.isfile("monthly_count.json"):
+            f = open("monthly_count.json", "r")
+            ans = json.load(f)
+            for k, v in ans.items():
+                for k1, v1 in v.items():
+                    self.exchange_alert_monthly_count[k][k1] = v1
+            f.close()
 
         self.exchange_daily_new_alert = {
-            "15m_price": set(), "1h_price": set(),
-            "15m_volume": set(), "1h_volume": set()
+            "15m_price": defaultdict(lambda: 0), "1h_price": defaultdict(lambda: 0),
+            "15m_volume": defaultdict(lambda: 0), "1h_volume": defaultdict(lambda: 0)
         }
 
         # monitored exchanges
@@ -67,7 +75,7 @@ class BinancePriceVolumeAlert:
         self.lock_1h = threading.Lock()
 
         # BTC_price
-        self.BTC_price = 21000
+        self.BTC_price = 29000
 
         # binance websocket client
         self.klines_client = Client()
@@ -180,6 +188,12 @@ class BinancePriceVolumeAlert:
             tz = pytz.timezone('Asia/Shanghai')
             shanghai_now = datetime.now(tz).strftime('%H:%M')
             if shanghai_now == "11:59":
+                # store the monthly count
+                f = open("monthly_count.json", "w")
+                json.dump(self.exchange_alert_monthly_count, f)
+                f.close()
+
+                # alert the monthly count and daily new exchanges
                 alerts = ["15m_price", "15m_volume", "1h_price", "1h_volume"]
                 for alert_type in alerts:
                     if alert_type == "15m_price" or "15m_volume":
@@ -198,12 +212,14 @@ class BinancePriceVolumeAlert:
                         f"Daily {alert_type} alert ticker count:\n"
                         f"{message_string}", blue_text=True
                     )
+                    tmp = [[k, v] for k, v in self.exchange_daily_new_alert[alert_type].items() if v != 0]
+                    tmp.sort(key=lambda x: x[1], reverse=True)
                     self.tg_bot[alert_type].send_message(
                         f"Daily {alert_type} new alerts:\n"
-                        f"{self.exchange_daily_new_alert[alert_type]}",
+                        f"{tmp}",
                         blue_text=True
                     )
-                    self.exchange_daily_new_alert[alert_type] = set()
+                    self.exchange_daily_new_alert[alert_type] = defaultdict(lambda: 0)
 
                     if alert_type == "15m_price" or "15m_volume":
                         self.lock_15m.release()
@@ -281,10 +297,6 @@ class BinancePriceVolumeAlert:
                     self._update_monthly_count(s[0], alert_type)
                     smallest[i].append(self.exchange_alert_monthly_count[alert_type][s[0]][0])
 
-               
-                # logging.warning(f"largest price change: {largest}")
-                # logging.warning(f"smallest price change: {smallest}")
-
                 price_type = "close" if timeframe == "15m" else "high/low"
 
                 if len(largest) > 0:
@@ -311,7 +323,7 @@ class BinancePriceVolumeAlert:
         :param alert_type: 15m_volume or 1h_volume or 15m_price or 1h_price
 
         """
-        self.exchange_daily_new_alert[alert_type].add(exchange)
+        self.exchange_daily_new_alert[alert_type][exchange] += 1
         # logging.warning(f"{self.exchange_daily_new_alert[alert_type]}")
         if exchange not in self.exchange_alert_monthly_count[alert_type]:
             self.exchange_alert_monthly_count[alert_type][exchange] = [1, int(time.time())]
@@ -324,9 +336,13 @@ class BinancePriceVolumeAlert:
         """
         volume/price alert callback function for 15min klines
 
-        alert if second bar is 10X first bar and third bar is 10X first bar
-        alert if second bar is 50X first bar
-        alert if third bar is 50X first bar
+        Volume:
+            alert if second bar is 10X first bar and third bar is 10X first bar
+                , and volume over threshold
+            alert if second bar is 50X first bar, and volume over threshold
+            alert if third bar is 50X first bar, and volume over threshold
+        Price:
+            record the price change in % for close and open price
 
         """
         # logging.info(f"msg: {msg}")
@@ -413,7 +429,12 @@ class BinancePriceVolumeAlert:
 
     def _alert_1h(self, msg):
         """
-        For price alerts 1h klines
+        volume/price alert callback function for 1h klines
+
+        Volume:
+            alert if second bar is 10X first bar, and volume over threshold
+        Price:
+            record the price change in % for high and low price
         """
         alert_threshold = self.settings["1h_volume_usd"]
         if "stream" not in msg or "data" not in msg or "k" not in msg["data"] or \
