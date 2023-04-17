@@ -62,10 +62,6 @@ def alert_spot_cross_ma(exclude_coins, exclude_newly_deleted_coins,
     binance_alert = BinanceIndicatorAlert(exchanges, alert_type=alert_type, tg_type=tg_type)
     exchanges, newly_deleted_exchanges, newly_added_exchanges = binance_alert.spot_cross_ma(4)
 
-    if alert_type == "alert_500":
-        # add all alt eth and btc exchanges for alert_500, despite the volume increase
-        exchanges = sorted(list(set(exchanges).union(cg.get_alt_eth_btc_exchanges())))
-
     coins.extend(exchanges)
     newly_deleted_coins.extend(newly_deleted_exchanges)
     newly_added_coins.extend(newly_added_exchanges)
@@ -81,7 +77,8 @@ def alert_spot_cross_ma(exclude_coins, exclude_newly_deleted_coins,
     tg_bot.safe_send_message(f"{alert_type}: market cap top {count}")
 
     if alert_type == "alert_500":
-        tg_bot.safe_send_message("and weekly volume increase >= 30%")
+        tg_bot.safe_send_message("and weekly volume increase >= 30% "
+                                 "for alt/busd, alt/usdt pairs")
     tg_bot.safe_send_message(f"Top {count} coins/coin exchanges spot over H4 MA200:\n{l}")
     tg_bot.safe_send_message(f"{r}")
 

@@ -182,6 +182,7 @@ class CoinGecKo:
     def get_coins_with_weekly_volume_increase(self, volume_threshold=1.3):
         """
         Get top 500 market cap coins with weekly volume increase larger than volume_threshold
+        for alt/btc, alt/eth, despite the volume increase threshold
         """
         self.update_popular_exchanges()
         ids = self.cg.get_coins_markets(vs_currency='usd',
@@ -196,6 +197,12 @@ class CoinGecKo:
         coingeco_coins, coingeco_names, ex = [], [], []
 
         for i, id in enumerate(ids):
+            # add alt/btc, alt/eth exchanges
+            if f"{id[1]}BTC" in self.active_exchanges:
+                ex.append(f"{id[1]}BTC")
+            if f"{id[1]}ETH" in self.active_exchanges:
+                ex.append(f"{id[1]}ETH")
+
             data = self.cg.get_coin_market_chart_by_id(
                 id=id[0], vs_currency='usd', days=13, interval='daily')
             data = np.array(data['total_volumes'])
@@ -220,10 +227,6 @@ class CoinGecKo:
                     ex.append(f"{symbol}USDT")
                 elif f"{symbol}BUSD" in self.active_exchanges:
                     ex.append(f"{symbol}BUSD")
-                elif f"{symbol}BTC" in self.active_exchanges:
-                    ex.append(f"{symbol}BTC")
-                elif f"{symbol}ETH" in self.active_exchanges:
-                    ex.append(f"{symbol}ETH")
 
         res = np.array(res)
         l, m1, m2, m3, m4, r = res[:len(res) // 6, :2], res[len(res) // 6: len(res) // 3, :2], \
