@@ -160,13 +160,20 @@ class CoinGecKo:
         ids = [[id['id'], id['symbol'].upper()] for id in ids]
         return ids
 
-    def get_coins_with_weekly_volume_increase(self, volume_threshold=1.3, usdt_only=False):
+    def get_coins_with_weekly_volume_increase(self, volume_threshold=1.3):
+        """
+        Get top 500 market cap coins with weekly volume increase larger than volume_threshold,
+        for alt/eth and alt/btc, alert all despite the volume increase.
+
+        """
         ids = self.cg.get_coins_markets(vs_currency='usd', order='market_cap_desc', per_page=250, page=1,
                                    sparkline=False)
         ids += self.cg.get_coins_markets(vs_currency='usd', order='market_cap_desc', per_page=250, page=2,
                                     sparkline=False)
         ids = [[id['id'], id['symbol'].upper()] for id in ids]
+        exchanges = self.get_all_popular_exchanges()
         res = []
+        coingeco_coins, coingeco_names, ex = [], [], []
 
         for i, id in enumerate(ids):
             data = self.cg.get_coin_market_chart_by_id(id=id[0], vs_currency='usd', days=13, interval='daily')
@@ -177,10 +184,11 @@ class CoinGecKo:
 
             if volume_increase >= volume_threshold:
                 res.append([volume_increase, id[1], id[0]])
-
+            if f"{id[1]}BTC" in exchanges:
+                ex.append(f"{id[1]}BTC")
+            if f"{id[1]}ETH" in exchanges:
+                ex.append(f"{id[1]}ETH")
         res = sorted(res, key=lambda x: x[0], reverse=True)
-        exchanges = self.get_all_popular_exchanges()
-        coingeco_coins, coingeco_names, ex = [], [], []
 
         for volume_increase, symbol, coin_id in res:
             if f"{symbol}USDT" not in exchanges and f"{symbol}BTC" not in exchanges\
@@ -190,13 +198,9 @@ class CoinGecKo:
             else:
                 if f"{symbol}USDT" in exchanges:
                     ex.append(f"{symbol}USDT")
-                if not usdt_only:
-                    if f"{symbol}BUSD" in exchanges:
-                        ex.append(f"{symbol}BUSD")
-                    if f"{symbol}BTC" in exchanges:
-                        ex.append(f"{symbol}BTC")
-                    if f"{symbol}ETH" in exchanges:
-                        ex.append(f"{symbol}ETH")
+                elif f"{symbol}BUSD" in exchanges:
+                    ex.append(f"{symbol}BUSD")
+
         res = np.array(res)
         l, m1, m2, m3, m4, r = res[:len(res) // 6, :2], res[len(res) // 6: len(res) // 3, :2], res[len(res) // 3: len(res) // 2, :2], \
                                res[len(res) // 2: 2 * len(res) // 3, :2], res[2 * len(res) // 3: 5 * len(res) // 6, :2], \
