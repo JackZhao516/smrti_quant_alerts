@@ -26,13 +26,17 @@ class CoinGecKo:
         self.popular_exchanges = self.get_all_binance_active_exchanges()
         # self.popular_exchanges = self.get_all_binance_exchanges()
         self.popular_exchanges_timestamp = time.time()
+        logging.info(f"start: {self.popular_exchanges_timestamp}")
 
     def get_top_market_cap_exchanges(self, num=300):
         """
         get the top num market cap usdt eth busd btc exchanges
         """
+        logging.info(f"100: {self.popular_exchanges_timestamp}")
+        logging.info(time.time())
         self.update_popular_exchanges()
         exchanges = set(self.popular_exchanges)
+        logging.info(time.time())
         # exchanges = set(self.get_all_exchanges())
         res = []
         coingeco_coins = []
@@ -82,7 +86,7 @@ class CoinGecKo:
         self.tg_bot.send_message(f"{datetime.datetime.now()}: "
                                  f"Top {num} coin exchanges that are on Binance:\n {l}")
         self.tg_bot.send_message(f"{r}")
-
+        self.logging("here")
         return res, coingeco_coins, coingeco_names
 
     def get_all_binance_exchanges(self):
@@ -142,7 +146,9 @@ class CoinGecKo:
         """
         Update popular exchanges if last update was more than 1 hour ago
         """
-        if time.time() - self.popular_exchanges_timestamp >= 3600:
+        logging.info(f"update: {self.popular_exchanges_timestamp}")
+        logging.info(time.time() - self.popular_exchanges_timestamp)
+        if (time.time() - self.popular_exchanges_timestamp) >= 3600:
             self.popular_exchanges = self.get_all_binance_active_exchanges()
             self.popular_exchanges_timestamp = time.time()
         
