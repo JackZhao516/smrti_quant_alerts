@@ -54,10 +54,18 @@ class BinancePriceVolumeAlert:
                     self.exchange_alert_monthly_count[k][k1] = v1
             f.close()
 
+        # alert daily count
         self.exchange_daily_new_alert = {
             "15m_price": defaultdict(lambda: 0), "1h_price": defaultdict(lambda: 0),
             "15m_volume": defaultdict(lambda: 0), "1h_volume": defaultdict(lambda: 0)
         }
+        if os.path.isfile("daily_count.json"):
+            f = open("daily_count.json", "r")
+            ans = json.load(f)
+            for k, v in ans.items():
+                for k1, v1 in v.items():
+                    self.exchange_daily_new_alert[k][k1] = v1
+            f.close()
 
         # monitored exchanges
         self.exchanges = self.cg.get_all_exchanges_in_usdt_busd_btc()
@@ -212,8 +220,10 @@ class BinancePriceVolumeAlert:
                         f"Daily {alert_type} alert ticker count:\n"
                         f"{message_string}", blue_text=True
                     )
-                    tmp = [[k, v] for k, v in self.exchange_daily_new_alert[alert_type].items() if v != 0]
-                    tmp.sort(key=lambda x: x[1], reverse=True)
+                    tmp = sorted(self.exchange_daily_new_alert[alert_type].items(), key=lambda x: x[1], reverse=True)
+                    tmp = [f"{i[0]}: {i[1]}" for i in tmp if i[1] != 0]
+                    tmp = ", ".join(tmp)
+
                     self.tg_bot[alert_type].send_message(
                         f"Daily {alert_type} new alerts:\n"
                         f"{tmp}",
@@ -226,6 +236,25 @@ class BinancePriceVolumeAlert:
                     else:
                         self.lock_1h.release()
                 time.sleep(86000)
+
+    def _quarterly_save_daily_counts_json(self):
+        """
+        Quarterly save daily counts to json file
+        """
+        logging.info("quarterly save daily counts start")
+        while self.running:
+            time_now = datetime.now().strftime('%M:%S')
+            time_set = {"02:00", "17:00", "32:00", "47:00"}
+            if time_now in time_set:
+                self.lock_15m.acquire()
+                self.lock_1h.acquire()
+                f = open("daily_count.json", "w")
+                json.dump(self.exchange_daily_new_alert, f)
+                f.close()
+                self.lock_1h.release()
+                self.lock_15m.release()
+
+                time.sleep(850)
 
     def _monthly_reset_volume_alert_count(self):
         """
