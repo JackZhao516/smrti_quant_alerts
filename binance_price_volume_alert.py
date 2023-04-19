@@ -93,7 +93,12 @@ class BinancePriceVolumeAlert:
         self.settings = json.load(open("settings.json"))
 
         # # for testing only
-        # self.tg_bot_test = TelegramBot("TEST")
+        # self.tg_bot = {
+        #     "15m_price": TelegramBot("TEST", daemon=False),
+        #     "1h_price": TelegramBot("TEST", daemon=False),
+        #     "15m_volume": TelegramBot("TEST", daemon=True),
+        #     "1h_volume": TelegramBot("TEST", daemon=True),
+        # }
 
     def klines_alert(self):
         """
@@ -116,7 +121,8 @@ class BinancePriceVolumeAlert:
                                  args=("15m",)),
                 threading.Thread(target=self._monitor_price_change,
                                  args=("1h",)),
-                threading.Thread(target=self._quarterly_save_daily_counts_json)]
+                threading.Thread(target=self._quarterly_save_daily_counts_json)
+                ]
 
             for t in monitor_threads:
                 t.start()
@@ -186,6 +192,8 @@ class BinancePriceVolumeAlert:
                     self.all_exchanges = all_exchanges
                     logging.info(f"adding new exchanges: {new_exchanges}")
                 time.sleep(550)
+            else:
+                time.sleep(1)
 
     def _daily_reset_and_alert_volume_alert_count(self):
         """
@@ -237,6 +245,8 @@ class BinancePriceVolumeAlert:
                     else:
                         self.lock_1h.release()
                 time.sleep(86000)
+            else:
+                time.sleep(1)
 
     def _quarterly_save_daily_counts_json(self):
         """
@@ -256,6 +266,8 @@ class BinancePriceVolumeAlert:
                 self.lock_15m.release()
 
                 time.sleep(850)
+            else:
+                time.sleep(1)
 
     def _monthly_reset_volume_alert_count(self):
         """
@@ -344,6 +356,8 @@ class BinancePriceVolumeAlert:
                 elif timeframe == "1h":
                     self.lock_1h.release()
                 time.sleep(850 if timeframe == "15m" else 3550)
+            else:
+                time.sleep(1)
 
     def _update_monthly_count(self, exchange, alert_type="15m_volume"):
         """
