@@ -9,8 +9,8 @@ from telegram_api import TelegramBot
 from binance_indicator_alert import BinanceIndicatorAlert
 from binance_price_volume_alert import BinancePriceVolumeAlert
 
-# MODE = "CG_SUM"
-MODE = "TEST"
+MODE = "CG_SUM"
+# MODE = "TEST"
 tg_bot = TelegramBot(MODE)
 cg = CoinGecKo("TEST")
 

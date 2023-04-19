@@ -115,7 +115,8 @@ class BinancePriceVolumeAlert:
                 threading.Thread(target=self._monitor_price_change,
                                  args=("15m",)),
                 threading.Thread(target=self._monitor_price_change,
-                                 args=("1h",))]
+                                 args=("1h",)),
+                threading.Thread(target=self._quarterly_save_daily_counts_json)]
 
             for t in monitor_threads:
                 t.start()
