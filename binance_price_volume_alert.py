@@ -11,7 +11,7 @@ import pytz
 from binance.lib.utils import config_logging
 from binance.websocket.spot.websocket_client import SpotWebsocketClient as Client
 
-from crawl_coingecko import CoinGecKo
+from crawl_exchange_list import CoinGecKo
 from telegram_api import TelegramBot
 
 
@@ -164,12 +164,12 @@ class BinancePriceVolumeAlert:
         """
         Subscribe new exchange every ten minutes
         """
-        logging.info("hourly subscribe new exchange start")
+        logging.info("subscribe new exchange start every ten minutes")
         while self.running:
             time_now = datetime.now().strftime('%M')
             if time_now[1] == "2":
                 self.settings = json.load(open("settings.json"))
-                logging.info("hourly subscribe new exchange start checking")
+                logging.info("subscribe new exchange start checking every ten minutes")
                 all_exchanges = set(self.cg.get_all_binance_exchanges())
                 if self.all_exchanges != all_exchanges:
                     exchange_diff = all_exchanges - self.all_exchanges
@@ -178,20 +178,21 @@ class BinancePriceVolumeAlert:
                         if exchange[-4:] == ("USDT" or "BUSD") or \
                                 exchange[-3:] == "BTC":
                             new_exchanges.append(exchange.lower())
-                    self.klines_client.kline(
-                        symbol=new_exchanges, id=self.id_count, interval="15m", callback=self._alert_15m
-                    )
-                    self.id_count += 1
-                    self.klines_client.kline(
-                        symbol=new_exchanges, id=self.id_count, interval="1h", callback=self._alert_1h
-                    )
-                    self.id_count += 1
 
-                    self.exchanges += new_exchanges
-                    self.exchanges.sort()
-                    self.all_exchanges = all_exchanges
-                    logging.info(f"adding new exchanges: {new_exchanges}")
-                time.sleep(550)
+                    if new_exchanges:
+                        self.klines_client.kline(
+                            symbol=new_exchanges, id=self.id_count, interval="15m", callback=self._alert_15m
+                        )
+                        self.id_count += 1
+                        self.klines_client.kline(
+                            symbol=new_exchanges, id=self.id_count, interval="1h", callback=self._alert_1h
+                        )
+                        self.id_count += 1
+
+                        self.exchanges += new_exchanges
+                        self.exchanges.sort()
+                        self.all_exchanges = all_exchanges
+                        logging.info(f"adding new exchanges: {new_exchanges}")
             else:
                 time.sleep(1)
 
@@ -272,20 +273,29 @@ class BinancePriceVolumeAlert:
     def _monthly_reset_volume_alert_count(self):
         """
         Reset volume alert count monthly
+        reset monthly count at 11:59:30
         """
         logging.info("monthly reset volume count start")
         while self.running:
             time.sleep(86400 * 30)
-            self.lock_15m.acquire()
-            self.lock_1h.acquire()
-            self.exchange_alert_monthly_count = {
-                "15m_price": defaultdict(list),
-                "1h_price": defaultdict(list),
-                "15m_volume": defaultdict(list),
-                "1h_volume": defaultdict(list),
-            }
-            self.lock_1h.release()
-            self.lock_15m.release()
+            tz = pytz.timezone('Asia/Shanghai')
+            shanghai_now = datetime.now(tz).strftime('%H:%M:%S')
+            if shanghai_now == "11:59:30":
+                self.lock_15m.acquire()
+                self.lock_1h.acquire()
+                self.exchange_alert_monthly_count = {
+                    "15m_price": defaultdict(list),
+                    "1h_price": defaultdict(list),
+                    "15m_volume": defaultdict(list),
+                    "1h_volume": defaultdict(list),
+                }
+                f = open("monthly_count.json", "w")
+                json.dump({}, f)
+                f.close()
+                self.lock_1h.release()
+                self.lock_15m.release()
+            else:
+                time.sleep(1)
 
     def _monitor_price_change(self, timeframe="15m"):
         """
@@ -332,11 +342,11 @@ class BinancePriceVolumeAlert:
 
                 alert_type = timeframe + "_price"
                 for i, l in enumerate(largest):
-                    self._update_monthly_count(l[0], alert_type)
+                    self._update_monthly_daily_count(l[0], alert_type)
                     largest[i].append(self.exchange_alert_monthly_count[alert_type][l[0]][0])
 
                 for i, s in enumerate(smallest):
-                    self._update_monthly_count(s[0], alert_type)
+                    self._update_monthly_daily_count(s[0], alert_type)
                     smallest[i].append(self.exchange_alert_monthly_count[alert_type][s[0]][0])
 
                 price_type = "close" if timeframe == "15m" else "high/low"
@@ -359,22 +369,30 @@ class BinancePriceVolumeAlert:
             else:
                 time.sleep(1)
 
-    def _update_monthly_count(self, exchange, alert_type="15m_volume"):
+    def _update_monthly_daily_count(self, exchange, alert_type="15m_volume"):
         """
         Update monthly count and daily new exchanges for alerts
+        add count only if last alert is more than 30 minutes ago
 
         :param exchange: exchange name
         :param alert_type: 15m_volume or 1h_volume or 15m_price or 1h_price
 
         """
-        self.exchange_daily_new_alert[alert_type][exchange] += 1
-        # logging.warning(f"{self.exchange_daily_new_alert[alert_type]}")
+        # update monthly count and last alert time
         if exchange not in self.exchange_alert_monthly_count[alert_type]:
             self.exchange_alert_monthly_count[alert_type][exchange] = [1, int(time.time())]
         else:
             if int(time.time()) - self.exchange_alert_monthly_count[alert_type][exchange][1] > 1850:
                 self.exchange_alert_monthly_count[alert_type][exchange][0] += 1
             self.exchange_alert_monthly_count[alert_type][exchange][1] = int(time.time())
+
+        # update daily new exchanges count using last alert time stored in monthly count
+        # since monthly count is comprehensive, we can use it to check if exchange is new
+        if exchange not in self.exchange_daily_new_alert[alert_type]:
+            self.exchange_daily_new_alert[alert_type][exchange] = 1
+        else:
+            if int(time.time()) - self.exchange_alert_monthly_count[alert_type][exchange][1] > 1850:
+                self.exchange_daily_new_alert[alert_type][exchange] += 1
 
     def _alert_15m(self, msg):
         """
@@ -415,7 +433,7 @@ class BinancePriceVolumeAlert:
         # two bars alert
         if len(self.exchange_bar_dict_0[symbol]) == 2 and \
                 vol >= 50 * self.exchange_bar_dict_0[symbol][1] and amount >= alert_threshold:
-            self._update_monthly_count(symbol)
+            self._update_monthly_daily_count(symbol)
             self.tg_bot["15m_volume"].add_msg_to_queue(
                 f"{symbol} 15 min volume alert 2nd bar 50X: volume "
                 f"[{self.exchange_bar_dict_0[symbol][1]} "
@@ -431,7 +449,7 @@ class BinancePriceVolumeAlert:
         elif len(self.exchange_bar_dict_1[symbol]) == 2 and \
                 vol >= 50 * self.exchange_bar_dict_1[symbol][0] \
                 and amount >= alert_threshold:
-            self._update_monthly_count(symbol)
+            self._update_monthly_daily_count(symbol)
             self.tg_bot["15m_volume"].add_msg_to_queue(
                 f"{symbol} 15 min volume alert 3rd bar 50X: volume "
                 f"[{self.exchange_bar_dict_1[symbol][0]} "
@@ -455,7 +473,7 @@ class BinancePriceVolumeAlert:
         elif len(self.exchange_bar_dict[symbol]) == 3:
             if vol != 0.0 and vol >= 10 * self.exchange_bar_dict[symbol][1] \
                     and amount >= alert_threshold:
-                self._update_monthly_count(symbol)
+                self._update_monthly_daily_count(symbol)
                 self.tg_bot["15m_volume"].add_msg_to_queue(
                     f"{symbol} 15 min volume alert 2nd, 3rd bar 10X: volume "
                     f"[{self.exchange_bar_dict[symbol][1]} "
@@ -501,7 +519,7 @@ class BinancePriceVolumeAlert:
         # two bar alert
         if len(self.exchange_bar_dict_1h[symbol]) == 2 and \
                 vol >= 10 * self.exchange_bar_dict_1h[symbol][1] and amount >= alert_threshold:
-            self._update_monthly_count(symbol, alert_type="1h_volume")
+            self._update_monthly_daily_count(symbol, alert_type="1h_volume")
             self.tg_bot["1h_volume"].add_msg_to_queue(
                 f"{symbol} 1h volume alert 2nd bar 10X: volume "
                 f"[{self.exchange_bar_dict_1h[symbol][1]} "

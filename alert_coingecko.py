@@ -8,7 +8,7 @@ import pytz
 import numpy as np
 from binance.lib.utils import config_logging
 
-from crawl_coingecko import CoinGecKo
+from crawl_exchange_list import CoinGecKo
 from telegram_api import TelegramBot
 from utility import update_coins_exchanges_txt
 

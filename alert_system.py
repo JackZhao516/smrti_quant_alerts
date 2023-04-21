@@ -3,7 +3,7 @@ import logging
 import threading
 from time import sleep
 
-from crawl_coingecko import CoinGecKo
+from crawl_exchange_list import CoinGecKo
 from alert_coingecko import CoinGecKo4H, alert_coins, close_all_threads, CoinGecKoMarketCapReport
 from telegram_api import TelegramBot
 from binance_indicator_alert import BinanceIndicatorAlert

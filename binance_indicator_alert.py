@@ -397,7 +397,7 @@ class BinanceIndicatorAlert:
 
 if __name__ == "__main__":
     logging.info("test")
-    from crawl_coingecko import CoinGecKo
+    from crawl_exchange_list import CoinGecKo
     cg = CoinGecKo()
     ex, _, _ = cg.get_top_market_cap_exchanges(num=300)
     print(f"---------------------------------------------------{len(ex)}")

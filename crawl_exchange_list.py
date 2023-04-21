@@ -15,7 +15,7 @@ urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 class CoinGecKo:
     COINGECKO_API_KEY = json.load(open("token.json"))["COINGECKO_API_KEY"]
-    DATA_DOWNLOAD_ROOT_URL = "https://data.binance.vision/data/spot/daily/klines/"
+    # DATA_DOWNLOAD_ROOT_URL = "https://data.binance.vision/data/spot/daily/klines/"
     API_URL = "https://api.binance.com/api/v3/"
 
     def __init__(self, tg_type="TEST", active_exchanges=None):
