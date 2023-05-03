@@ -352,11 +352,11 @@ class BinancePriceVolumeAlert:
                 price_type = "close" if timeframe == "15m" else "high/low"
 
                 if len(largest) > 0:
-                    self.tg_bot[alert_type].safe_send_message(
+                    self.tg_bot[alert_type].send_message(
                         f"{timeframe} top {len(largest)} "
                         f"positive price({price_type}) change in % over {rate_threshold}%: {largest}")
                 if len(smallest) > 0:
-                    self.tg_bot[alert_type].safe_send_message(
+                    self.tg_bot[alert_type].send_message(
                         f"{timeframe} top {len(smallest)} "
                         f"negative price({price_type}) change in % over {rate_threshold}%: {smallest}")
 
@@ -434,7 +434,7 @@ class BinancePriceVolumeAlert:
         if len(self.exchange_bar_dict_0[symbol]) == 2 and \
                 vol >= 50 * self.exchange_bar_dict_0[symbol][1] and amount >= alert_threshold:
             self._update_monthly_daily_count(symbol)
-            self.tg_bot["15m_volume"].add_msg_to_queue(
+            self.tg_bot["15m_volume"].send_message(
                 f"{symbol} 15 min volume alert 2nd bar 50X: volume "
                 f"[{self.exchange_bar_dict_0[symbol][1]} "
                 f"-> {vol}]\namount: ${math.ceil(amount)}"
@@ -450,7 +450,7 @@ class BinancePriceVolumeAlert:
                 vol >= 50 * self.exchange_bar_dict_1[symbol][0] \
                 and amount >= alert_threshold:
             self._update_monthly_daily_count(symbol)
-            self.tg_bot["15m_volume"].add_msg_to_queue(
+            self.tg_bot["15m_volume"].send_message(
                 f"{symbol} 15 min volume alert 3rd bar 50X: volume "
                 f"[{self.exchange_bar_dict_1[symbol][0]} "
                 f"-> {self.exchange_bar_dict_1[symbol][1]} "
@@ -474,7 +474,7 @@ class BinancePriceVolumeAlert:
             if vol != 0.0 and vol >= 10 * self.exchange_bar_dict[symbol][1] \
                     and amount >= alert_threshold:
                 self._update_monthly_daily_count(symbol)
-                self.tg_bot["15m_volume"].add_msg_to_queue(
+                self.tg_bot["15m_volume"].send_message(
                     f"{symbol} 15 min volume alert 2nd, 3rd bar 10X: volume "
                     f"[{self.exchange_bar_dict[symbol][1]} "
                     f"-> {self.exchange_bar_dict[symbol][2]} -> {vol}]"
@@ -520,7 +520,7 @@ class BinancePriceVolumeAlert:
         if len(self.exchange_bar_dict_1h[symbol]) == 2 and \
                 vol >= 10 * self.exchange_bar_dict_1h[symbol][1] and amount >= alert_threshold:
             self._update_monthly_daily_count(symbol, alert_type="1h_volume")
-            self.tg_bot["1h_volume"].add_msg_to_queue(
+            self.tg_bot["1h_volume"].send_message(
                 f"{symbol} 1h volume alert 2nd bar 10X: volume "
                 f"[{self.exchange_bar_dict_1h[symbol][1]} "
                 f"-> {vol}]\namount: ${math.ceil(amount)}"

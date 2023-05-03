@@ -12,9 +12,9 @@ from binance_price_volume_alert import BinancePriceVolumeAlert
 MODE = "CG_SUM"
 # MODE = "TEST"
 tg_bot = TelegramBot(MODE)
-cg = CoinGecKo("TEST")
+cg = CoinGecKo("CG_SUM_RAW")
 
-
+logging.disable(logging.WARNING)
 # def alert_indicator(alert_type="alert_100"):
 #     logging.info(f"{alert_type} start")
 #     if alert_type == "alert_100":
@@ -46,19 +46,21 @@ def alert_spot_cross_ma(exclude_coins, exclude_newly_deleted_coins,
     """
     logging.info(f"{alert_type} start")
     count = alert_type.split("_")[1]
+    # get coin list
     if alert_type == "alert_100":
         exchanges, coin_ids, coin_symbols = cg.get_top_market_cap_exchanges(num=100)
     elif alert_type == "alert_500":
-        exchanges, coin_ids, coin_symbols = cg.get_coins_with_weekly_volume_increase()
+        exchanges, coin_ids, coin_symbols = cg.get_coins_with_weekly_volume_increase(tg_alert=True)
     else:
         exchanges, coin_ids, coin_symbols = cg.get_top_market_cap_exchanges(num=300)
-    logging.warning("start coingecko alert")
+
+    logging.info("start coingecko alert")
     tg_type = "TEST"
     coingecko_res = CoinGecKo4H(coin_ids, coin_symbols, cg.active_exchanges,
                                 tg_type=tg_type, alert_type=count)
     coins, newly_deleted_coins, newly_added_coins = coingecko_res.run()
-    logging.warning(f"start binance indicator alert")
-    logging.warning(f"exchanges: {len(exchanges)}, coins: {len(coin_ids)}")
+    logging.info(f"start binance indicator alert")
+    logging.info(f"exchanges: {len(exchanges)}, coins: {len(coin_ids)}")
     binance_alert = BinanceIndicatorAlert(exchanges, alert_type=alert_type, tg_type=tg_type)
     exchanges, newly_deleted_exchanges, newly_added_exchanges = binance_alert.spot_cross_ma(4)
 
@@ -72,20 +74,15 @@ def alert_spot_cross_ma(exclude_coins, exclude_newly_deleted_coins,
     newly_added_coins = [coin for coin in newly_added_coins if coin not in exclude_newly_added_coin]
 
     # send alert and return
-    l, r = coins[:len(coins) // 2], coins[len(coins) // 2:]
-
-    tg_bot.safe_send_message(f"{alert_type}: market cap top {count}")
-
+    tg_bot.send_message(f"{alert_type}: market cap top {count}")
     if alert_type == "alert_500":
-        tg_bot.safe_send_message("and weekly volume increase >= 30% "
-                                 "for alt/busd, alt/usdt pairs")
-    tg_bot.safe_send_message(f"Top {count} coins/coin exchanges spot over H4 MA200:\n{l}")
-    tg_bot.safe_send_message(f"{r}")
-
-    tg_bot.safe_send_message(f"Top {count} coins/coin exchanges exchanges spot"
-                             f" over H4 MA200 newly added:\n{newly_added_coins}")
-    tg_bot.safe_send_message(f"Top {count} coins/coin exchanges exchanges spot"
-                             f" over H4 MA200 newly deleted:\n{newly_deleted_coins}")
+        tg_bot.send_message("and weekly volume increase >= 30% "
+                            "for alt/busd, alt/usdt pairs\n")
+    tg_bot.send_message(f"Top {count} coins/coin exchanges spot over H4 MA200:\n{coins}\n"
+                        f"Top {count} coins/coin exchanges exchanges spot"
+                        f" over H4 MA200 newly added:\n{newly_added_coins}\n"
+                        f"Top {count} coins/coin exchanges exchanges spot"
+                        f" over H4 MA200 newly deleted:\n{newly_deleted_coins}\n")
 
     logging.warning(f"{alert_type} finished")
     return set(coins).union(exclude_coins), \
@@ -103,7 +100,7 @@ def report_market_cap():
     top_500 = threading.Thread(target=CoinGecKoMarketCapReport, args=(500,))
     top_500.start()
     sleep(60 * 60 * 24 * 365)
-    logging.warning("report_market_cap finished")
+    logging.info("report_market_cap finished")
 
 
 def price_volume():

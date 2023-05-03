@@ -227,20 +227,20 @@ class CoinGecKoAlert(CoinGecKo):
             # print(price, self.list_4h, self.counter_4h, self.ma_4h, np.sum(self.list_4h))
 
         if self.spot_over_ma_12h and price < self.ma_12h:
-            self.tg_bot.add_msg_to_queue(
+            self.tg_bot.send_message(
                  f"100_{self.symbol} spot: {str(price)} crossunder H12 ma180: {str(self.ma_12h)}")
             self.spot_over_ma_12h = False
         elif not self.spot_over_ma_12h and price > self.ma_12h:
-            self.tg_bot.add_msg_to_queue(
+            self.tg_bot.send_message(
                  f"100_{self.symbol} spot: {str(price)} crossover H12 ma180: {str(self.ma_12h)}")
             self.spot_over_ma_12h = True
 
         if self.spot_over_ma_4h and price < self.ma_4h:
-            self.tg_bot.add_msg_to_queue(
+            self.tg_bot.send_message(
                 f"100_{self.symbol} spot: {str(price)} crossunder H4 ma200: {str(self.ma_4h)}")
             self.spot_over_ma_4h = False
         elif not self.spot_over_ma_4h and price > self.ma_4h:
-            self.tg_bot.add_msg_to_queue(
+            self.tg_bot.send_message(
                 f"100_{self.symbol} spot: {str(price)} crossover H4 ma200: {str(self.ma_4h)}")
             self.spot_over_ma_4h = True
 
@@ -268,20 +268,20 @@ class CoinGecKoAlert(CoinGecKo):
             # print(price, self.list_4h, self.counter_4h, self.ma_4h, np.sum(self.list_4h))
 
         if self.spot_over_ma_1d and price < self.ma_1d:
-            self.tg_bot.add_msg_to_queue(
+            self.tg_bot.send_message(
                  f"500_{self.symbol} spot: {str(price)} crossunder D1 ma90: {str(self.ma_1d)}")
             self.spot_over_ma_1d = False
         elif not self.spot_over_ma_1d and price > self.ma_1d:
-            self.tg_bot.add_msg_to_queue(
+            self.tg_bot.send_message(
                  f"500_{self.symbol} spot: {str(price)} crossover D1 ma90: {str(self.ma_1d)}")
             self.spot_over_ma_1d = True
 
         if self.spot_over_ma_4h_500 and price < self.ma_4h_500:
-            self.tg_bot.add_msg_to_queue(
+            self.tg_bot.send_message(
                 f"500_{self.symbol} spot: {str(price)} crossunder H4 ma100: {str(self.ma_4h_500)}")
             self.spot_over_ma_4h_500 = False
         elif not self.spot_over_ma_4h_500 and price > self.ma_4h_500:
-            self.tg_bot.add_msg_to_queue(
+            self.tg_bot.send_message(
                 f"500_{self.symbol} spot: {str(price)} crossover H4 ma100: {str(self.ma_4h_500)}")
             self.spot_over_ma_4h_500 = True
         # print(f"{self.symbol} spot: {str(price)} D1: {str(self.ma_1d)} H4 ma100: {str(self.ma_4h_500)}")
@@ -384,28 +384,16 @@ class CoinGecKoMarketCapReport(CoinGecKo):
         self.top_n_list = None
         self.run()
 
-    def get_top_n_market_cap(self):
-        if self.top_n == 200:
-            ids = self.cg.get_coins_markets(vs_currency='usd', order='market_cap_desc', per_page=200, page=1,
-                                            sparkline=False)
-        else:
-            ids = self.cg.get_coins_markets(vs_currency='usd', order='market_cap_desc', per_page=250, page=1,
-                                            sparkline=False)
-            ids += self.cg.get_coins_markets(vs_currency='usd', order='market_cap_desc', per_page=250, page=2,
-                                             sparkline=False)
-        ids = [id['symbol'].upper() for id in ids]
-        logging.info(f"Top {self.top_n} Market Cap List: {ids}")
-        return ids
-
     def run(self):
-        self.top_n_list = self.get_top_n_market_cap()
+        market_list = self.get_top_n_market_cap_coins(n=self.top_n)
+        self.top_n_list = [coin[1] for coin in market_list]
         while True:
             tz = pytz.timezone('Asia/Shanghai')
             shanghai_now = datetime.now(tz).strftime('%H:%M')
             weekday = datetime.now(tz).weekday()
             if shanghai_now == "00:00" and weekday == 0:
                 cur_set = set(self.top_n_list)
-                new_list = self.get_top_n_market_cap()
+                new_list = [coin[1] for coin in self.get_top_n_market_cap_coins(n=self.top_n)]
                 new_set = set(new_list)
                 deleted_list = []
                 added_list = []

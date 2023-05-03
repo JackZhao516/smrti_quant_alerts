@@ -386,11 +386,11 @@ class BinanceIndicatorAlert:
         mode = self.alert_type.split("_")[1]
 
         if close > current_ma > self.last_close_1m[exchange]:
-            self.tg_bot.safe_send_message(f"{mode}_{exchange.upper()} spot: {close}"
+            self.tg_bot.send_message(f"{mode}_{exchange.upper()} spot: {close}"
                                           f" crossover {timeframe_str} ma{self.window}: {current_ma}")
             logging.warning(f"{exchange}_{mode} ma {current_ma}, close {close}")
         elif close < current_ma < self.last_close_1m[exchange]:
-            self.tg_bot.safe_send_message(f"{mode}_{exchange.upper()} spot: {close}"
+            self.tg_bot.send_message(f"{mode}_{exchange.upper()} spot: {close}"
                                           f" crossunder {timeframe_str} ma{self.window}: {current_ma}")
             logging.warning(f"{exchange}_{mode} ma {current_ma}, close {close}")
 

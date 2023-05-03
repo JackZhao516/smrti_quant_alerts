@@ -3,21 +3,23 @@ import logging
 from binance.lib.utils import config_logging
 from binance.websocket.spot.websocket_client import SpotWebsocketClient as Client
 
-config_logging(logging, logging.DEBUG)
+
 
 
 def message_handler(message):
-    print(f"ttt{message}")
+    pass
 def message_handler_0(message):
     print(f"0{message}")
 
-#
+
+# logging.info("test")
 # my_client = Client()
+# config_logging(my_client._logger, logging.WARNING)
 # my_client.start()
 #
 # my_client.kline(symbol=["btcusdt", "btcbusd"], id=1, interval="1m", callback=message_handler)
 #
-# time.sleep(1)
+# time.sleep(1200)
 #
 # my_client.kline(
 #     symbol=["bnbusdt", "ethusdt"], id=2, interval="1m", callback=message_handler
@@ -65,27 +67,11 @@ import requests
 # spot_client = Client(api_key=api_key)
 #
 # # logging.info(spot_client.historical_trades("BTCUSDT"))
-# logging.info(len(spot_client.historical_trades("BTCUSDT", limit=1000)))
-import os
-import json
-from collections import defaultdict
-from telegram_api import TelegramBot
-exchange_alert_monthly_count = {
-                "15m_price": defaultdict(lambda : 0),
 
-            }
+coins = ["APTUSDT", "APTBTC", "BTTUSDT", "BTTBTC", "LUNABTC", "LUNAETH",
+             "DAIBTC", "DAIUSDT", "HNTBTC", "HNTUSDT", "OSMOBTC", "OSMOUSDT",
+          "RPLBTC", "RPLUSDT", "TUSDBTC", "TUSDETH", "TUSDUSDT", "USDCUSDT",
+              "USDPUSDT"]
+print(str(coins))
 
-exchange_alert_monthly_count["15m_price"]["BTCUSDT"] = 1
-exchange_alert_monthly_count["15m_price"]["ETHUSDT"] = 2
-exchange_alert_monthly_count["15m_price"]["BNBUSDT"] = 3
-a = exchange_alert_monthly_count["15m_price"]
-
-print(a)
-a = sorted(a.items(), key=lambda x: x[1], reverse=True)
-a = [f"{i[0]}: {i[1]}" for i in a]
-a = ", ".join(a)
-tg = TelegramBot("TEST", daemon=False)
-tg.safe_send_message(a, True)
-
-f = open("test.json", "w")
 
