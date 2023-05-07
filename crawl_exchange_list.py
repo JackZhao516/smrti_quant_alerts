@@ -1,12 +1,13 @@
 import logging
-import requests
 import json
 import time
+import requests
 
 import numpy as np
 from pycoingecko import CoinGeckoAPI
 
 from telegram_api import TelegramBot
+from error import error_handling
 
 
 class CoinGecKo:
@@ -17,13 +18,13 @@ class CoinGecKo:
         self.cg = CoinGeckoAPI(api_key=self.COINGECKO_API_KEY)
         self.tg_bot = TelegramBot(alert_type=tg_type)
         self.active_exchanges = []
+        self.active_exchanges_timestamp = 0
         if active_exchanges is not None:
             self.active_exchanges = active_exchanges
-        else:
-            self.active_exchanges = self.get_all_binance_active_exchanges()
+            self.active_exchanges_timestamp = time.time()
+
         self.active_exchanges_set = set(self.active_exchanges)
         # self.active_exchanges = self.get_all_binance_exchanges()
-        self.active_exchanges_timestamp = time.time()
 
     def _update_popular_exchanges(self):
         """
@@ -34,6 +35,7 @@ class CoinGecKo:
             self.active_exchanges_set = set(self.active_exchanges)
             self.active_exchanges_timestamp = time.time()
 
+    @error_handling("binance", "get_all_binance_exchanges")
     def get_all_binance_exchanges(self):
         """
         Get all exchanges on binance
@@ -41,10 +43,12 @@ class CoinGecKo:
         :return: [exchanges]
         """
         api_url = f'{self.API_URL}exchangeInfo?permissions=SPOT'
-        response = requests.get(api_url, timeout=10).json()
-        exchanges = {exchange['symbol'] for exchange in response['symbols']}
-        return exchanges
 
+        response = requests.get(api_url, timeout=2)
+        response = response.json()
+        return list({exchange['symbol'] for exchange in response['symbols']})
+
+    @error_handling("binance", "get_all_binance_active_exchanges")
     def get_all_binance_active_exchanges(self, time_on_binance=None):
         """
         BTC, ETH, USDT, BUSD exchanges older than <time_on_binance> days
@@ -54,7 +58,7 @@ class CoinGecKo:
         :return: [exchanges]
         """
         start = time.time()
-        exchanges = self.get_all_binance_exchanges()
+        exchanges = set(self.get_all_binance_exchanges())
         res = []
 
         # choose BTC, ETH, USDT, BUSD exchanges
@@ -68,13 +72,11 @@ class CoinGecKo:
             return res
 
         active_exchanges_set = set(res)
-        # res = list(self.active_exchanges)
 
         for exchange in res:
             url = f"{self.API_URL}klines?symbol={exchange}&interval=1m&" \
                   f"startTime={(int(time.time()) - 70) * 1000}&limit=1000"
-            response = requests.get(url, timeout=2)
-            response = response.json()
+            response = requests.get(url, timeout=2).json()
             if type(response) == dict or len(response) == 0:
                 active_exchanges_set.remove(exchange)
 
@@ -85,8 +87,7 @@ class CoinGecKo:
                 url = f"{self.API_URL}klines?symbol={exchange}&interval=1m&" \
                       f"startTime={time_now - time_delta}&" \
                       f"endTime={time_now - time_delta + 70000}&limit=1000"
-                response = requests.get(url, timeout=2)
-                response = response.json()
+                response = requests.get(url, timeout=2).json()
                 if type(response) == dict or len(response) == 0:
                     active_exchanges_set.remove(exchange)
 
@@ -96,6 +97,7 @@ class CoinGecKo:
         logging.info(f"active_exchanges took {time.time() - start} seconds")
         return res
 
+    @error_handling("coingecko", "get_top_n_market_cap_coins")
     def get_top_n_market_cap_coins(self, n=100):
         """
         get the top n market cap coins on coingecko
@@ -128,8 +130,10 @@ class CoinGecKo:
     def get_top_market_cap_exchanges(self, num=300, tg_alert=False):
         """
         get the top <num> market cap
-        coin/usdt coin/eth coin/busd coin/btc exchanges on binance,
-        if not on binance, get coin_id, and coin_name from coingeco
+        coin/usdt coin/eth coin/busd coin/btc exchanges on binance:
+            [exchanges_on_binance]
+        if not on binance, get coin_id, and coin_name from coingeco:
+            [coin_ids_on_coingeco], [coin_names_on_coingeco]
 
 
         :param num: number of exchanges to get
@@ -170,7 +174,7 @@ class CoinGecKo:
         
     def get_all_exchanges_in_usdt_busd_btc(self):
         """
-        Get all exchanges in either USDT, BUSD, or BTC format
+        Get all exchanges in either USDT, BUSD, or BTC format on binance
 
         :return: [exchanges]
         """
@@ -192,10 +196,16 @@ class CoinGecKo:
         logging.info(f"Got {len(res)} coins in USDT, BUSD, or BTC format")
         return res
 
+    @error_handling("coingecko", "get_coins_with_weekly_volume_increase")
     def get_coins_with_weekly_volume_increase(self, volume_threshold=1.3, num=500, tg_alert=False):
         """
         Get top <num> market cap coins with weekly volume increase larger than volume_threshold
-        for alt/btc, alt/eth, despite the volume increase threshold
+        for alt/btc, alt/eth, ignore the volume increase threshold
+
+        After the filtering,
+        if a coin exchange is on binance, put its exchange name into [exchanges_on_binance]
+        if a coin exchange is not on binance, put its coin_id and coin_name from coingeco
+        into [coin_ids_on_coingeco], [coin_names_on_coingeco]
 
         :param volume_threshold: weekly volume increase threshold
         :param num: top <num> market cap coins
@@ -205,7 +215,6 @@ class CoinGecKo:
         """
         self._update_popular_exchanges()
         market_list = self.get_top_n_market_cap_coins(num)
-        # ids = [[id['id'], id['symbol'].upper()] for id in ids]
 
         res = []
         coingeco_coins, coingeco_names, exchange = [], [], []
@@ -253,17 +262,4 @@ class CoinGecKo:
 
 if __name__ == '__main__':
     cg = CoinGecKo(tg_type='TEST')
-    # exchanges = coin.get_all_binance_active_exchanges(time_on_binance=34)
-    # print(len(exchanges))
-    # exchanges = set(exchanges)
-    # coins = ["APTUSDT", "APTBTC", "BTTUSDT", "BTTBTC", "LUNABTC", "LUNAETH",
-    #          "DAIBTC", "DAIUSDT", "HNTBTC", "HNTUSDT", "OSMOBTC", "OSMOUSDT",
-    #          "RPLBTC", "RPLUSDT", "TUSDBTC", "TUSDETH", "TUSDUSDT", "USDCUSDT",
-    #          "USDPUSDT"]
-    #
-    # for c in coins:
-    #     if c in exchanges:
-    #         print(c)
-    #
-    # ex, c, _ = coin.get_coins_with_weekly_volume_increase(volume_threshold=1.3)
-    # print(len(ex), len(c))
+    cg.get_all_binance_exchanges()

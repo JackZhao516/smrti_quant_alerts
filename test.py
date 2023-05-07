@@ -65,13 +65,11 @@ import requests
 #
 # # historical_trades requires api key in request header
 # spot_client = Client(api_key=api_key)
-#
-# # logging.info(spot_client.historical_trades("BTCUSDT"))
 
-coins = ["APTUSDT", "APTBTC", "BTTUSDT", "BTTBTC", "LUNABTC", "LUNAETH",
-             "DAIBTC", "DAIUSDT", "HNTBTC", "HNTUSDT", "OSMOBTC", "OSMOUSDT",
-          "RPLBTC", "RPLUSDT", "TUSDBTC", "TUSDETH", "TUSDUSDT", "USDCUSDT",
-              "USDPUSDT"]
-print(str(coins))
+
+from error import error_handling
+
+
+# print(response.json())
 
 

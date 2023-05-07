@@ -1,16 +1,15 @@
 import json
-import requests
-from requests.exceptions import RequestException
-import logging
 import time
 import threading
+import requests
+
+from error import error_handling
 
 
 class TelegramBot:
     tokens = json.load(open("token.json"))["TelegramBot"]
     TOKEN = tokens["TOKEN"]
     TELEGRAM_IDS = tokens["TELEGRAM_IDS"]
-    MAX_ERROR = 10
 
     def __init__(self, alert_type="CG_ALERT", daemon=False):
         """
@@ -26,7 +25,6 @@ class TelegramBot:
 
         """
         self.telegram_chat_id = self.TELEGRAM_IDS[alert_type]
-        self.error = 0
 
         # message queue
         self.msg_queue_lock = threading.Lock()
@@ -36,6 +34,7 @@ class TelegramBot:
         if daemon:
             self.msg_thread.start()
 
+    @error_handling("telegram", "send_message")
     def _send_message(self, message, blue_text=False):
         """
         helper method for sending message to telegram
@@ -48,13 +47,7 @@ class TelegramBot:
                   f'sendMessage?chat_id={self.telegram_chat_id}&text={message}'
         if blue_text:
             api_url += '&parse_mode=Markdown'
-        try:
-            requests.get(api_url, timeout=10)
-        except RequestException:
-            self.error += 1
-            if self.error > self.MAX_ERROR:
-                logging.error("telegram api request error")
-                self.stop()
+        requests.get(api_url, timeout=2)
 
     def _release_msg_from_queue(self):
         """
@@ -91,6 +84,9 @@ class TelegramBot:
         self.msg_queue_lock.release()
 
     def stop(self):
+        """
+        stop TelegramBot
+        """
         if not self.running:
             return
         self.running = False
@@ -101,6 +97,6 @@ if __name__ == "__main__":
     tg_bot = TelegramBot("TEST", daemon=False)
     a = ""
     l = [1, 2, 4, 5, 6, 7, 8, 9, 10]
-    for i in range(100):
+    for i in range(1):
         a += f"test test test test test {l}"
     tg_bot.send_message(a, blue_text=True)
