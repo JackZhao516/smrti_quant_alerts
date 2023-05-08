@@ -10,7 +10,7 @@ from telegram_api import TelegramBot
 from error import error_handling
 
 
-class CoinGecKo:
+class CrawlExchangeList:
     COINGECKO_API_KEY = json.load(open("token.json"))["COINGECKO_API_KEY"]
     API_URL = "https://api.binance.com/api/v3/"
 
@@ -261,5 +261,5 @@ class CoinGecKo:
 
 
 if __name__ == '__main__':
-    cg = CoinGecKo(tg_type='TEST')
+    cg = CrawlExchangeList(tg_type='TEST')
     cg.get_all_binance_exchanges()

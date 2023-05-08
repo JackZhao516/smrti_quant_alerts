@@ -11,7 +11,7 @@ import pytz
 from binance.lib.utils import config_logging
 from binance.websocket.spot.websocket_client import SpotWebsocketClient as Client
 
-from crawl_exchange_list import CoinGecKo
+from crawl_exchange_list import CrawlExchangeList
 from telegram_api import TelegramBot
 
 
@@ -21,7 +21,7 @@ class BinancePriceVolumeAlert:
 
     def __init__(self):
         self.running = True
-        self.cg = CoinGecKo("TEST")
+        self.cg = CrawlExchangeList("TEST")
         self.tg_bot = {
             "15m_price": TelegramBot("PRICE_15M", daemon=False),
             "1h_price": TelegramBot("PRICE_1H", daemon=False),
