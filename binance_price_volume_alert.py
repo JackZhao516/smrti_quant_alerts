@@ -193,8 +193,7 @@ class BinancePriceVolumeAlert:
                         self.exchanges.sort()
                         self.all_exchanges = all_exchanges
                         logging.info(f"adding new exchanges: {new_exchanges}")
-            else:
-                time.sleep(1)
+            time.sleep(60)
 
     def _daily_reset_and_alert_volume_alert_count(self):
         """
