@@ -1,5 +1,6 @@
 import time
 import threading
+import logging
 from datetime import datetime
 import pytz
 
@@ -11,7 +12,7 @@ from error import error_handling
 class CGAltsAlert:
     def __init__(self):
         self.cel = CrawlExchangeList("TEST")
-        self.tg_bot = TelegramBot("TEST")
+        self.tg_bot = TelegramBot("ALTS")
 
         # alts coins are from market cap 500 - 3000
         self.alts_coins = []
@@ -32,7 +33,7 @@ class CGAltsAlert:
             tz = pytz.timezone('Asia/Shanghai')
             shanghai_now = datetime.now(tz).strftime('%H:%M')
             # coingecko update daily price and volume at 8:00
-            if shanghai_now == "8:00":
+            if shanghai_now == "08:00":
                 start = time.time()
                 # alts coins are from market cap 500 - 3000
                 self.alts_coins = self.cel.get_top_n_market_cap_coins(3000)[500:]
@@ -57,7 +58,7 @@ class CGAltsAlert:
                                          f"market cap >= 100k), "
                                          f"in market cap desc order: {res}")
                 end = time.time()
-                print(f"Time used: {end - start}")
+                logging.info(f"Time used: {end - start}")
                 time.sleep(60 * 60 * 24 - 100)
             time.sleep(1)
 
