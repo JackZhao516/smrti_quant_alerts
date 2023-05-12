@@ -6,7 +6,6 @@ import pytz
 
 from crawl_exchange_list import CrawlExchangeList
 from telegram_api import TelegramBot
-from error import error_handling
 
 
 class CGAltsAlert:
@@ -20,7 +19,6 @@ class CGAltsAlert:
         self.thread = threading.Thread(target=self.daily_report)
         self.thread.start()
 
-    @error_handling("coingecko", "daily_report")
     def daily_report(self):
         """
         Alert daily at noon, 12:00
@@ -37,29 +35,40 @@ class CGAltsAlert:
                 start = time.time()
                 # alts coins are from market cap 500 - 3000
                 self.alts_coins = self.cel.get_top_n_market_cap_coins(3000)[500:]
-
+                alts_coin_ids = [coin[0] for coin in self.alts_coins]
+                market_info = self.cel.get_coins_market_info(
+                    alts_coin_ids, ["market_cap", "price_change_percentage_24h"])
                 res = []
-                for coin_id, coin_symbol in self.alts_coins:
-                    data = self.cel.cg.get_coin_market_chart_by_id(
-                        id=coin_id, vs_currency="usd", days=1, interval="daily")
-                    if len(data["prices"]) < 2:
+
+                # first filter: price change >= 100% in 24 hours and market cap >= 1M
+                market_info_filtered = []
+                for coin_info in market_info:
+                    if (not coin_info["price_change_percentage_24h"] or
+                        coin_info["price_change_percentage_24h"] >= 100) \
+                            and coin_info["market_cap"] and coin_info["market_cap"] >= 1000000:
+                        market_info_filtered.append((coin_info["id"], coin_info["symbol"]))
+
+                # second filter: volume change >= 100% in 24 hours, volume >= 10k in USD
+                for coin_id, coin_symbol in market_info_filtered:
+                    data = self.cel.get_coin_market_info(coin_id, ["total_volumes"], days=1)
+                    if len(data["total_volumes"]) < 2:
                         continue
-                    price_double = data["prices"][-2][-1] == 0.0 or \
-                                   (data["prices"][-1][-1] / data["prices"][-2][-1]) >= 2.0
                     volume_double = data["total_volumes"][-2][-1] == 0.0 or \
                                     (data["total_volumes"][-1][-1] / data["total_volumes"][-2][-1]) >= 2.0
                     volume_over_10k = data["total_volumes"][-1][-1] >= 10000
-                    market_cap_over_1m = data["market_caps"][-1][-1] >= 1000000
-                    if price_double and volume_double and volume_over_10k and market_cap_over_1m:
+
+                    if volume_double and volume_over_10k:
                         res.append(coin_symbol)
 
+                logging.info(res)
                 self.tg_bot.send_message(f"Alts coins daily alerts "
                                          f"(price doubled, volume doubled and >= 10k, "
                                          f"market cap >= 100k), "
                                          f"in market cap desc order: {res}")
-                end = time.time()
-                logging.info(f"Time used: {end - start}")
-                time.sleep(60 * 60 * 24 - 100)
+
+                time_used = time.time() - start
+                logging.info(f"Time used: {time_used}")
+                time.sleep(60 * 60 * 24 - time_used * 2)
             time.sleep(1)
 
 

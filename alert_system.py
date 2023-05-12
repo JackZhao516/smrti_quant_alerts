@@ -8,6 +8,7 @@ from alert_coingecko import CrawlExchangeList4H, alert_coins, close_all_threads,
 from telegram_api import TelegramBot
 from binance_indicator_alert import BinanceIndicatorAlert
 from binance_price_volume_alert import BinancePriceVolumeAlert
+from coingecko_alts_alert import CGAltsAlert
 
 MODE = "CG_SUM"
 # MODE = "TEST"
@@ -124,6 +125,14 @@ def routinely_sequential_alert_100_300_500():
         sleep(2 * 24 * 60 * 60)
 
 
+def alts_alert():
+    """
+    alert alt coins
+    """
+    logging.info("alts_alert start")
+    CGAltsAlert()
+
+
 if __name__ == "__main__":
     # sys.argv[1] is the mode
     if sys.argv[1] == "market_cap":
@@ -132,6 +141,8 @@ if __name__ == "__main__":
         price_volume()
     elif sys.argv[1] == "sequential":
         routinely_sequential_alert_100_300_500()
+    elif sys.argv[1] == "alts":
+        alts_alert()
     else:
         while True:
             alert_spot_cross_ma([], [], [], sys.argv[1])

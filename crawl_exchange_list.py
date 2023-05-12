@@ -1,6 +1,7 @@
 import logging
 import json
 import time
+import math
 import requests
 
 import numpy as np
@@ -107,7 +108,7 @@ class CrawlExchangeList:
         :return: [(coin_id, coin_symbol_upper), ...]
         """
         # coingecko only allows 250 coins per page
-        pages = n // 250 + 1
+        pages = math.ceil(n / 250)
 
         market_list = []
         for page in range(1, pages + 1):
@@ -126,6 +127,51 @@ class CrawlExchangeList:
                 seen.add(coin)
 
         return res
+
+    @error_handling("coingecko", "get_coins_market_info")
+    def get_coins_market_info(self, coin_ids, market_attribute_name_list):
+        """
+        get coin market info from coingecko
+
+        :param coin_ids: [coin_id, ...]
+        :param market_attribute_name_list: [market_attribute_name, ...]
+        :param order: order of the results
+
+        :return: [{"id": <id>, "symbol": <symbol>, <market_attribute_name>: value, ...}]
+        """
+        pages = math.ceil(len(coin_ids) / 250)
+        market_info = []
+        for page in range(pages):
+            cur_full_info = self.cg.get_coins_markets(
+                vs_currency='usd', ids=coin_ids[page * 250:(page + 1) * 250],
+                per_page=250, page=1, sparkline=False,
+                price_change_percentage='24h', locale='en')
+
+            for info in cur_full_info:
+                cur_info = {"id": info['id'], "symbol": info['symbol'].upper()}
+                for market_attribute_name in market_attribute_name_list:
+                    cur_info[market_attribute_name] = info[market_attribute_name]
+
+                market_info.append(cur_info)
+
+        return market_info
+
+    @error_handling("coingecko", "get_coin_market_info")
+    def get_coin_market_info(self, coin_id, market_attribute_name_list, days, interval="daily"):
+        """
+        get coin market info from coingecko
+
+        :param coin_id: coin_id
+        :param market_attribute_name_list: [market_attribute_name, ...]
+        :param days: number of days to get
+        :param interval: interval of the data
+
+        :return: [{"id": <id>, "symbol": <symbol>, <market_attribute_name>: value, ...}]
+        """
+        coin_info = self.cg.get_coin_market_chart_by_id(
+            id=coin_id, vs_currency='usd', days=days, interval=interval)
+
+        return {name: coin_info[name] for name in market_attribute_name_list}
 
     def get_top_market_cap_exchanges(self, num=300, tg_alert=False):
         """
@@ -228,8 +274,8 @@ class CrawlExchangeList:
                 exchange.append(f"{symbol}ETH")
 
             # get volume increase ratio
-            data = self.cg.get_coin_market_chart_by_id(
-                id=coin_id, vs_currency='usd', days=13, interval='daily')
+            data = self.get_coin_market_info(coin_id, ["total_volume"], days=13, interval='daily')
+
             data = np.array(data['total_volumes'])
             if np.sum(data[:7, 1]) == 0:
                 continue
@@ -262,4 +308,7 @@ class CrawlExchangeList:
 
 if __name__ == '__main__':
     cg = CrawlExchangeList(tg_type='TEST')
-    cg.get_all_binance_exchanges()
+    alts_coins = cg.get_top_n_market_cap_coins(3000)[500:]
+    alts_coin_ids = [coin[0] for coin in alts_coins]
+    market_info = cg.get_coins_market_info(alts_coin_ids, ["market_cap", "price_change_24h"])
+
