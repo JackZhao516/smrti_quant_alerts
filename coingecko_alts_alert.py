@@ -40,21 +40,21 @@ class CGAltsAlert:
                     alts_coin_ids, ["market_cap", "price_change_percentage_24h"])
                 res = []
 
-                # first filter: price change >= 100% in 24 hours and market cap >= 1M
+                # first filter: price change >= 50% in 24 hours and market cap >= 1M
                 market_info_filtered = []
                 for coin_info in market_info:
                     if (not coin_info["price_change_percentage_24h"] or
-                        coin_info["price_change_percentage_24h"] >= 100) \
+                        coin_info["price_change_percentage_24h"] >= 50) \
                             and coin_info["market_cap"] and coin_info["market_cap"] >= 1000000:
                         market_info_filtered.append((coin_info["id"], coin_info["symbol"]))
 
-                # second filter: volume change >= 100% in 24 hours, volume >= 10k in USD
+                # second filter: volume change >= 50% in 24 hours, volume >= 10k in USD
                 for coin_id, coin_symbol in market_info_filtered:
                     data = self.cel.get_coin_market_info(coin_id, ["total_volumes"], days=1)
                     if len(data["total_volumes"]) < 2:
                         continue
                     volume_double = data["total_volumes"][-2][-1] == 0.0 or \
-                                    (data["total_volumes"][-1][-1] / data["total_volumes"][-2][-1]) >= 2.0
+                                    (data["total_volumes"][-1][-1] / data["total_volumes"][-2][-1]) >= 1.5
                     volume_over_10k = data["total_volumes"][-1][-1] >= 10000
 
                     if volume_double and volume_over_10k:
