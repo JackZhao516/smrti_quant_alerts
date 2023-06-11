@@ -274,7 +274,7 @@ class CrawlExchangeList:
                 exchange.append(f"{symbol}ETH")
 
             # get volume increase ratio
-            data = self.get_coin_market_info(coin_id, ["total_volume"], days=13, interval='daily')
+            data = self.get_coin_market_info(coin_id, ["total_volumes"], days=13, interval='daily')
 
             data = np.array(data['total_volumes'])
             if np.sum(data[:7, 1]) == 0:
