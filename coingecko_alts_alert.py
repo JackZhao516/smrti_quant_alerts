@@ -22,8 +22,8 @@ class CGAltsAlert:
     def daily_report(self):
         """
         Alert daily at noon, 12:00
-        Alts coin: price change >= 100% in 24 hours
-                   Volume change >= 100% in 24 hours, Volume >= 10k in USD
+        Alts coin: price change >= 50% in 24 hours
+                   Volume change >= 50% in 24 hours, Volume >= 10k in USD
                    Market Cap >= 1M
         """
 
@@ -62,7 +62,8 @@ class CGAltsAlert:
 
                 logging.info(res)
                 self.tg_bot.send_message(f"Alts coins daily alerts "
-                                         f"(price doubled, volume doubled and >= 10k, "
+                                         f"(price increase by 50%, " 
+                                         f"volume increase by 50% and >= 10k, "
                                          f"market cap >= 100k), "
                                          f"in market cap desc order: {res}")
 
