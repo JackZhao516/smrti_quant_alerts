@@ -4,8 +4,8 @@ import logging
 from datetime import datetime
 import pytz
 
-from crawl_exchange_list import CrawlExchangeList
-from telegram_api import TelegramBot
+from coin_list.crawl_exchange_list import CrawlExchangeList
+from telegram.telegram_api import TelegramBot
 
 
 class CGAltsAlert:

@@ -3,12 +3,12 @@ import logging
 import threading
 from time import sleep
 
-from crawl_exchange_list import CrawlExchangeList
-from alert_coingecko import CrawlExchangeList4H, alert_coins, close_all_threads, CrawlExchangeListMarketCapReport
-from telegram_api import TelegramBot
-from binance_indicator_alert import BinanceIndicatorAlert
-from binance_price_volume_alert import BinancePriceVolumeAlert
-from coingecko_alts_alert import CGAltsAlert
+from coin_list.crawl_exchange_list import CrawlExchangeList
+from alerts.coingecko_alert import CoingeckoAlert4H, CoingeckoMarketCapReport
+from telegram.telegram_api import TelegramBot
+from alerts.binance_indicator_alert import BinanceIndicatorAlert
+from alerts.binance_price_volume_alert import BinancePriceVolumeAlert
+from alerts.coingecko_alts_alert import CGAltsAlert
 
 MODE = "CG_SUM"
 # MODE = "TEST"
@@ -57,8 +57,8 @@ def alert_spot_cross_ma(exclude_coins, exclude_newly_deleted_coins,
 
     logging.info("start coingecko alert")
     tg_type = "TEST"
-    coingecko_res = CrawlExchangeList4H(coin_ids, coin_symbols, cg.active_exchanges,
-                                        tg_type=tg_type, alert_type=count)
+    coingecko_res = CoingeckoAlert4H(coin_ids, coin_symbols, cg.active_exchanges,
+                                     tg_type=tg_type, alert_type=count)
     coins, newly_deleted_coins, newly_added_coins = coingecko_res.run()
     logging.info(f"start binance indicator alert")
     logging.info(f"exchanges: {len(exchanges)}, coins: {len(coin_ids)}")
@@ -96,9 +96,9 @@ def report_market_cap():
     market cap alerts
     """
     logging.info("report_market_cap start")
-    top_200 = threading.Thread(target=CrawlExchangeListMarketCapReport, args=(200,))
+    top_200 = threading.Thread(target=CoingeckoMarketCapReport, args=(200,))
     top_200.start()
-    top_500 = threading.Thread(target=CrawlExchangeListMarketCapReport, args=(500,))
+    top_500 = threading.Thread(target=CoingeckoMarketCapReport, args=(500,))
     top_500.start()
     sleep(60 * 60 * 24 * 365)
     logging.info("report_market_cap finished")

@@ -7,12 +7,12 @@ import requests
 import numpy as np
 from pycoingecko import CoinGeckoAPI
 
-from telegram_api import TelegramBot
-from error import error_handling
+from telegram.telegram_api import TelegramBot
+from error_handling.error import error_handling
 
 
 class CrawlExchangeList:
-    COINGECKO_API_KEY = json.load(open("token.json"))["COINGECKO_API_KEY"]
+    COINGECKO_API_KEY = json.load(open("../token.json"))["COINGECKO_API_KEY"]
     API_URL = "https://api.binance.com/api/v3/"
 
     def __init__(self, tg_type="TEST", active_exchanges=None):

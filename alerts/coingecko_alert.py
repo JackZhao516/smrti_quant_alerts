@@ -8,8 +8,8 @@ import pytz
 import numpy as np
 from binance.lib.utils import config_logging
 
-from crawl_exchange_list import CrawlExchangeList
-from telegram_api import TelegramBot
+from coin_list.crawl_exchange_list import CrawlExchangeList
+from telegram.telegram_api import TelegramBot
 from utility import update_coins_exchanges_txt
 
 STABLE_COINS = {"USDT", "USDC", "DAI", "BUSD", "USDP", "GUSD",
@@ -20,7 +20,7 @@ STABLE_COINS = {"USDT", "USDC", "DAI", "BUSD", "USDP", "GUSD",
                 "HAY", "MIM", "EDGT", "ALUSD"}
 
 
-class CrawlExchangeList4H(CrawlExchangeList):
+class CoingeckoAlert4H(CrawlExchangeList):
     def __init__(self, coin_ids, coin_symbols, active_exchanges=None, tg_type="CG_SUM", alert_type="300"):
         super().__init__(tg_type, active_exchanges=active_exchanges)
         self.coin_ids = coin_ids
@@ -66,7 +66,7 @@ class CrawlExchangeList4H(CrawlExchangeList):
 #########################################################################################
 running = True
 config_logging(logging, logging.INFO)
-class CrawlExchangeListAlert(CrawlExchangeList):
+class CoingeckoAlert(CrawlExchangeList):
     def __init__(self, coin_id, symbol, alert_type="alert_100", tg_type="CG_ALERT"):
         super().__init__("TEST")
         self.coin_id = coin_id
@@ -327,7 +327,7 @@ def alert_coins(coin_ids, coin_symbols, alert_type="alert_100", tg_type="CG_ALER
         if coin_symbol in STABLE_COINS:
             continue
         coin_ids_without_stable.append(coin_id)
-        coins[coin_id] = CrawlExchangeListAlert(coin_id, coin_symbol, alert_type, tg_type)
+        coins[coin_id] = CoingeckoAlert(coin_id, coin_symbol, alert_type, tg_type)
         coins[coin_id].alert_spot_init()
 
     # update coins
@@ -376,7 +376,7 @@ def close_all_threads(thread):
 #########################################################################################
 
 
-class CrawlExchangeListMarketCapReport(CrawlExchangeList):
+class CoingeckoMarketCapReport(CrawlExchangeList):
     def __init__(self, top_n=200, tg_type="CG_MAR_CAP"):
         super().__init__("TEST")
         self.tg_bot = TelegramBot(tg_type)
@@ -415,7 +415,7 @@ class CrawlExchangeListMarketCapReport(CrawlExchangeList):
 if __name__ == '__main__':
     # test = CoinGecKo12H(["bitcoin"], ["BTC"], "TEST")
     # res = test.run()
-    test = CrawlExchangeListMarketCapReport()
+    test = CoingeckoMarketCapReport()
     test.run()
 
     # from crawl_coingecko import CoinGecKo

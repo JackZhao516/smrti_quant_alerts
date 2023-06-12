@@ -3,11 +3,11 @@ import time
 import threading
 import requests
 
-from error import error_handling
+from error_handling.error import error_handling
 
 
 class TelegramBot:
-    tokens = json.load(open("token.json"))["TelegramBot"]
+    tokens = json.load(open("../token.json"))["TelegramBot"]
     TOKEN = tokens["TOKEN"]
     TELEGRAM_IDS = tokens["TELEGRAM_IDS"]
 
