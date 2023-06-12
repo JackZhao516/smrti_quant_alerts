@@ -2,7 +2,7 @@
 
 
 [![License](https://img.shields.io/badge/license-MIT-green)](https://github.com/cuongitl/python-bitget/-/blob/main/LICENSE)
-[![smrti_quant_alert Python Versions](https://img.shields.io/pypi/pyversions/python-bitget?logo=pypi)]
+![smrti_quant_alert Python Versions](https://img.shields.io/pypi/pyversions/python-bitget?logo=pypi)
 
 This repo includes several real-time alerts for crypto trading, built with Coingecko and Binance APIs. Alerts are sent to Telegram groups/channels.
 
