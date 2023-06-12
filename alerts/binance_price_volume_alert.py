@@ -46,8 +46,8 @@ class BinancePriceVolumeAlert:
             "15m_volume": defaultdict(list),
             "1h_volume": defaultdict(list),
         }
-        if os.path.isfile("../monthly_count.json"):
-            f = open("../monthly_count.json", "r")
+        if os.path.isfile("monthly_count.json"):
+            f = open("monthly_count.json", "r")
             ans = json.load(f)
             for k, v in ans.items():
                 for k1, v1 in v.items():
@@ -90,7 +90,7 @@ class BinancePriceVolumeAlert:
         self.id_count = 1
 
         # threshold for price/volume alert
-        self.settings = json.load(open("../settings.json"))
+        self.settings = json.load(open("settings.json"))
 
         # # for testing only
         # self.tg_bot = {
@@ -168,7 +168,7 @@ class BinancePriceVolumeAlert:
         while self.running:
             time_now = datetime.now().strftime('%M')
             if time_now[1] == "2":
-                self.settings = json.load(open("../settings.json"))
+                self.settings = json.load(open("settings.json"))
                 logging.info("subscribe new exchange start checking every ten minutes")
                 all_exchanges = set(self.cg.get_all_binance_exchanges())
                 if self.all_exchanges != all_exchanges:
@@ -206,7 +206,7 @@ class BinancePriceVolumeAlert:
             shanghai_now = datetime.now(tz).strftime('%H:%M')
             if shanghai_now == "11:59":
                 # store the monthly count
-                f = open("../monthly_count.json", "w")
+                f = open("monthly_count.json", "w")
                 json.dump(self.exchange_alert_monthly_count, f)
                 f.close()
 
@@ -288,7 +288,7 @@ class BinancePriceVolumeAlert:
                     "15m_volume": defaultdict(list),
                     "1h_volume": defaultdict(list),
                 }
-                f = open("../monthly_count.json", "w")
+                f = open("monthly_count.json", "w")
                 json.dump({}, f)
                 f.close()
                 self.lock_1h.release()
