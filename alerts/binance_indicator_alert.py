@@ -14,7 +14,7 @@ from binance.lib.utils import config_logging
 from binance.websocket.spot.websocket_client import SpotWebsocketClient as Client
 
 from telegram.telegram_api import TelegramBot
-from utility import update_coins_exchanges_txt
+from alerts.utility import update_coins_exchanges_txt
 
 
 class BinanceIndicatorAlert:

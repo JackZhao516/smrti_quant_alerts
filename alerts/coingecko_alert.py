@@ -8,7 +8,7 @@ from binance.lib.utils import config_logging
 
 from coin_list.crawl_exchange_list import CrawlExchangeList
 from telegram.telegram_api import TelegramBot
-from utility import update_coins_exchanges_txt
+from alerts.utility import update_coins_exchanges_txt
 
 STABLE_COINS = {"USDT", "USDC", "DAI", "BUSD", "USDP", "GUSD",
                 "TUSD", "FRAX", "CUSD", "USDD", "DEI", "USDK",
