@@ -1,10 +1,8 @@
 import time
-from datetime import datetime
 from time import sleep
 import threading
 import logging
 
-import pytz
 import numpy as np
 from binance.lib.utils import config_logging
 
@@ -373,63 +371,14 @@ def close_all_threads(thread):
     thread.join()
     running = True
 
-#########################################################################################
-
-
-class CoingeckoMarketCapReport(CrawlExchangeList):
-    def __init__(self, top_n=200, tg_type="CG_MAR_CAP"):
-        super().__init__("TEST")
-        self.tg_bot = TelegramBot(tg_type)
-        self.top_n = top_n
-        self.top_n_list = None
-        self.run()
-
-    def run(self):
-        market_list = self.get_top_n_market_cap_coins(n=self.top_n)
-        self.top_n_list = [coin[1] for coin in market_list]
-        while True:
-            tz = pytz.timezone('Asia/Shanghai')
-            shanghai_now = datetime.now(tz).strftime('%H:%M')
-            weekday = datetime.now(tz).weekday()
-            if shanghai_now == "00:00" and weekday == 0:
-                cur_set = set(self.top_n_list)
-                new_list = [coin[1] for coin in self.get_top_n_market_cap_coins(n=self.top_n)]
-                new_set = set(new_list)
-                deleted_list = []
-                added_list = []
-                if cur_set != new_set:
-                    deleted_list = list(cur_set - new_set)
-                    added = new_set - cur_set
-                    for i, a in enumerate(new_list):
-                        if a in added:
-                            added_list.append(a)
-                    self.top_n_list = new_list
-                self.tg_bot.send_message(f"Top {self.top_n} Market Cap Report: \n"
-                                         f"Deleted: {deleted_list}\n"
-                                         f"Added: {added_list}\n"
-                                         f"(Added in market cap desc order)")
-                sleep(60 * 60 * 24 * 7 - 70)
-            sleep(60)
-
-
 if __name__ == '__main__':
-    # test = CoinGecKo12H(["bitcoin"], ["BTC"], "TEST")
-    # res = test.run()
-    test = CoingeckoMarketCapReport()
-    test.run()
+    from coin_list.crawl_exchange_list import CrawlExchangeList
+    cg = CrawlExchangeList("TEST")
+    exchanges, coin_ids, coin_symbols = cg.get_top_market_cap_exchanges(num=100)
+    print(coin_ids, coin_symbols)
+    t = alert_coins(coin_ids, coin_symbols, "alert_100", "TEST")
+    sleep(1800)
+    print("here")
+    close_all_threads(t)
+    print("done")
 
-    # from crawl_coingecko import CoinGecKo
-    # cg = CoinGecKo("TEST")
-    # exchanges, coin_ids, coin_symbols = cg.get_exchanges(num=100)
-    # print(coin_ids, coin_symbols)
-    # t = alert_coins(coin_ids, coin_symbols, "alert_100", "TEST")
-    # sleep(1800)
-    # print("here")
-    # close_all_threads(t)
-    # print("done")
-    # from pycoingecko import CoinGeckoAPI
-    # cg = CoinGeckoAPI(api_key="CG-wAukVxNxrR322gkZYEgZWtV1")
-    # price = cg.get_price(ids="bitcoin", vs_currencies='usd', include_last_updated_at=True,
-    #                      precision="full")
-    # price = np.float64(price["bitcoin"]["usd"])
-    # print(price)

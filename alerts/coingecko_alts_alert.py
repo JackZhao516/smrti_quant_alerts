@@ -1,3 +1,7 @@
+"""
+Alert daily for top 500-3000 market cap coins.
+"""
+
 import time
 import threading
 import logging

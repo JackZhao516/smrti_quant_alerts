@@ -4,7 +4,8 @@ import threading
 from time import sleep
 
 from coin_list.crawl_exchange_list import CrawlExchangeList
-from alerts.coingecko_alert import CoingeckoAlert4H, CoingeckoMarketCapReport
+from alerts.coingecko_alert import CoingeckoAlert4H
+from alerts.coingecko_market_cap_alert import CoingeckoMarketCapReport
 from telegram.telegram_api import TelegramBot
 from alerts.binance_indicator_alert import BinanceIndicatorAlert
 from alerts.binance_price_volume_alert import BinancePriceVolumeAlert
