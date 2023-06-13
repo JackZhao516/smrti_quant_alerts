@@ -17,7 +17,7 @@ pre-requisites: binance api token, coingecko api token, telegram bot token, tele
 
 > 1. Change your API KEY and your SECRET KEY in ``token.json``
 
-> 2. Run ``./start.sh <alert_type>`
+> 2. Run ``./start.sh <alert_type>``
 > Available alert types: ``market_cap``, ``price_volume``, ``sequential``, ``alts``, ``alert_100``, ``alert_300``, ``alert_500``
 
 > 3. python scripts to run those alerts are in ``alert_system.py``
