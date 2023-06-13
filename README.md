@@ -17,14 +17,16 @@ pre-requisites: binance api token, coingecko api token, telegram bot token, tele
 
 > 1. Change your API KEY and your SECRET KEY in ``token.json``
 
-> 2. Run ``./start.sh <alert_type>``
+> 2. Run ``./start.sh <alert_type>`
 > Available alert types: ``market_cap``, ``price_volume``, ``sequential``, ``alts``, ``alert_100``, ``alert_300``, ``alert_500``
+
+> 3. python scripts to run those alerts are in ``alert_system.py``
 ### Alert Type Description
-* ``market_cap``: a weekly report of newly deleted and newly added
-top 200 & 500 market cap coins.
-* ``price_volume``: real-time alerts for coins with large price and volume changes in 15min/1h timeframe.
-* ``alts``: daily report of top 500-3000 market cap alts coin with huge price and volume change.
-* ``alert_100, alert_300, alert_500``: bi-daily report of top 100/300/500 market cap coins/exchanges with spot price over 4H MA200.
+* ``"market_cap"``: ``alerts/coingecko_market_cap_alert.py``: a weekly report of newly deleted and newly added
+top 200 & 500 market cap coins. 
+* ``price_volume``: ``alerts/binance_price_volume_alert.py``: real-time alerts for coins with large price and volume changes in 15min/1h timeframe.
+* ``alts``: ``alerts/coingecko_alts_alert.py``: daily report of top 500-3000 market cap alts coin with huge price and volume change.
+* ``alert_100, alert_300, alert_500``: ``alerts/top_market_cap_spot_over_ma_alert.py``: bi-daily report of top 100/300/500 market cap coins/exchanges with spot price over 4H MA200.
 * ``sequential``: sequentially execute ``alert_100, alert_300, alert_500``.
 
 ## Donate / Sponsor

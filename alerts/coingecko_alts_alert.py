@@ -30,7 +30,7 @@ class CGAltsAlert:
                    Volume change >= 50% in 24 hours, Volume >= 10k in USD
                    Market Cap >= 1M
         """
-
+        logging.info("alts_alert start")
         while self.running:
             tz = pytz.timezone('Asia/Shanghai')
             shanghai_now = datetime.now(tz).strftime('%H:%M')

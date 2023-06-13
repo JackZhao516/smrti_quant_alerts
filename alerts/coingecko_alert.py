@@ -8,7 +8,6 @@ from binance.lib.utils import config_logging
 
 from coin_list.crawl_exchange_list import CrawlExchangeList
 from telegram.telegram_api import TelegramBot
-from alerts.utility import update_coins_exchanges_txt
 
 STABLE_COINS = {"USDT", "USDC", "DAI", "BUSD", "USDP", "GUSD",
                 "TUSD", "FRAX", "CUSD", "USDD", "DEI", "USDK",
@@ -16,54 +15,10 @@ STABLE_COINS = {"USDT", "USDC", "DAI", "BUSD", "USDP", "GUSD",
                 "TRIBE", "LUSD", "EURS", "VUSDC", "USDX", "SUSD",
                 "VAI", "RSV", "CEUR", "USDS", "CUSDT", "DOLA", 
                 "HAY", "MIM", "EDGT", "ALUSD"}
-
-
-class CoingeckoAlert4H(CrawlExchangeList):
-    def __init__(self, coin_ids, coin_symbols, active_exchanges=None, tg_type="CG_SUM", alert_type="300"):
-        super().__init__(tg_type, active_exchanges=active_exchanges)
-        self.coin_ids = coin_ids
-        self.coin_symbols = coin_symbols
-        self.spot_over_h4 = set()
-        self.alert_type = alert_type
-
-    def h4_sma_200(self, coin_id, coin_symbol):
-        try:
-            price = self.cg.get_coin_market_chart_by_id(id=coin_id, vs_currency='usd', days=35)
-            price = price['prices']
-            price = [i[1] for i in price]
-            res = 0
-            counter = 0
-            for i in range(0, len(price), 4):
-                if i == 800:
-                    break
-                res += float(price[len(price) - 1 - i])
-                counter += 1
-            sma = res / counter
-            price = self.cg.get_coin_market_chart_by_id(id=coin_id, vs_currency='usd', days=1)
-            price = float(price['prices'][-1][1])
-
-            logging.warning(f"{coin_symbol}: {price}, {sma}")
-            if price > sma:
-                self.spot_over_h4.add(coin_symbol)
-                return True
-
-        except Exception as e:
-            return False
-
-    def run(self):
-        for coin_id, coin_symbol in zip(self.coin_ids, self.coin_symbols):
-            coin_symbol = coin_symbol.upper()
-            if coin_symbol in STABLE_COINS:
-                continue
-            self.h4_sma_200(coin_id, coin_symbol)
-        logging.warning(f"spot_over_h12_{self.alert_type}: {self.spot_over_h4}")
-
-        return update_coins_exchanges_txt(self.spot_over_h4, "coins", self.alert_type)
-
-
-#########################################################################################
 running = True
 config_logging(logging, logging.INFO)
+
+
 class CoingeckoAlert(CrawlExchangeList):
     def __init__(self, coin_id, symbol, alert_type="alert_100", tg_type="CG_ALERT"):
         super().__init__("TEST")
@@ -125,10 +80,6 @@ class CoingeckoAlert(CrawlExchangeList):
         self.counter_12h = len(price) // 12
         self.ma_12h = np.sum(self.list_12h)/self.counter_12h
         self.spot_over_ma_12h = price[0][1] > self.ma_12h
-        # print(f"h12 init: {self.coin_id}, ma_12h: {self.ma_12h}, list_12h{self.list_12h}, spot_over_ma_12h: {self.spot_over_ma_12h}")
-        # except Exception as e:
-        #     sleep(60)
-        #     self.h12_init()
 
     def h4_init(self):
         # try:
