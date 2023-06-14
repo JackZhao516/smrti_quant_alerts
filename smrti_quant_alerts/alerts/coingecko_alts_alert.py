@@ -8,8 +8,8 @@ import logging
 from datetime import datetime
 import pytz
 
-from coin_list.crawl_exchange_list import CrawlExchangeList
-from telegram.telegram_api import TelegramBot
+from smrti_quant_alerts.crawl_exchange_list import CrawlExchangeList
+from smrti_quant_alerts.telegram_api import TelegramBot
 
 
 class CGAltsAlert:

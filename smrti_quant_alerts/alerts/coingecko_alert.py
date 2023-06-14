@@ -6,8 +6,8 @@ import logging
 import numpy as np
 from binance.lib.utils import config_logging
 
-from coin_list.crawl_exchange_list import CrawlExchangeList
-from telegram.telegram_api import TelegramBot
+from smrti_quant_alerts.crawl_exchange_list import CrawlExchangeList
+from smrti_quant_alerts.telegram_api import TelegramBot
 
 STABLE_COINS = {"USDT", "USDC", "DAI", "BUSD", "USDP", "GUSD",
                 "TUSD", "FRAX", "CUSD", "USDD", "DEI", "USDK",
@@ -323,7 +323,7 @@ def close_all_threads(thread):
     running = True
 
 if __name__ == '__main__':
-    from coin_list.crawl_exchange_list import CrawlExchangeList
+    from smrti_quant_alerts.crawl_exchange_list import CrawlExchangeList
     cg = CrawlExchangeList("TEST")
     exchanges, coin_ids, coin_symbols = cg.get_top_market_cap_exchanges(num=100)
     print(coin_ids, coin_symbols)

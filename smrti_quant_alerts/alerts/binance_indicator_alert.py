@@ -12,8 +12,8 @@ import numpy as np
 from binance.lib.utils import config_logging
 from binance.websocket.spot.websocket_client import SpotWebsocketClient as Client
 
-from telegram.telegram_api import TelegramBot
-from alerts.utility import update_coins_exchanges_txt
+from smrti_quant_alerts.telegram_api import TelegramBot
+from smrti_quant_alerts.alerts.utility import update_coins_exchanges_txt
 
 
 class BinanceIndicatorAlert:
@@ -356,7 +356,7 @@ class BinanceIndicatorAlert:
 
 if __name__ == "__main__":
     logging.info("test")
-    from coin_list.crawl_exchange_list import CrawlExchangeList
+    from smrti_quant_alerts.crawl_exchange_list import CrawlExchangeList
     cg = CrawlExchangeList()
     ex, _, _ = cg.get_top_market_cap_exchanges(num=300)
     print(f"---------------------------------------------------{len(ex)}")

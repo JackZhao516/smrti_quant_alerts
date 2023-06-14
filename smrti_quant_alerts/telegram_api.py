@@ -1,13 +1,13 @@
-import json
 import time
 import threading
 import requests
 
-from error_handling.error import error_handling
+from smrti_quant_alerts.error import error_handling
+from smrti_quant_alerts.token import Config
 
 
 class TelegramBot:
-    tokens = json.load(open("token.json"))["TelegramBot"]
+    tokens = Config.TOKENS["TelegramBot"]
     TOKEN = tokens["TOKEN"]
     TELEGRAM_IDS = tokens["TELEGRAM_IDS"]
 

@@ -3,19 +3,19 @@ import logging
 import threading
 from time import sleep
 
-from coin_list.crawl_exchange_list import CrawlExchangeList
-from alerts.coingecko_market_cap_alert import CoingeckoMarketCapReport
-from alerts.binance_price_volume_alert import BinancePriceVolumeAlert
-from alerts.coingecko_alts_alert import CGAltsAlert
-from alerts.top_market_cap_spot_over_ma_alert import alert_spot_cross_ma
-from telegram.telegram_api import TelegramBot
+from smrti_quant_alerts.crawl_exchange_list import CrawlExchangeList
+from smrti_quant_alerts.alerts.coingecko_market_cap_alert import CoingeckoMarketCapReport
+from smrti_quant_alerts.alerts.binance_price_volume_alert import BinancePriceVolumeAlert
+from smrti_quant_alerts.alerts.coingecko_alts_alert import CGAltsAlert
+from smrti_quant_alerts.alerts.top_market_cap_spot_over_ma_alert import alert_spot_cross_ma
+from smrti_quant_alerts.telegram_api import TelegramBot
 
 MODE = "CG_SUM"
 # MODE = "TEST"
 tg_bot = TelegramBot(MODE)
 cg = CrawlExchangeList("CG_SUM_RAW")
 
-logging.disable(logging.WARNING)
+logging.disable(logging.INFO)
 # def alert_indicator(alert_type="alert_100"):
 #     logging.info(f"{alert_type} start")
 #     if alert_type == "alert_100":

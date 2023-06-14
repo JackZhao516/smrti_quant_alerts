@@ -1,5 +1,4 @@
 import logging
-import json
 import time
 import math
 import requests
@@ -7,13 +6,14 @@ import requests
 import numpy as np
 from pycoingecko import CoinGeckoAPI
 
-from telegram.telegram_api import TelegramBot
-from error_handling.error import error_handling
+from smrti_quant_alerts.telegram_api import TelegramBot
+from smrti_quant_alerts.error import error_handling
+from smrti_quant_alerts.token import Config
 
 
 class CrawlExchangeList:
-    COINGECKO_API_KEY = json.load(open("token.json"))["COINGECKO_API_KEY"]
-    API_URL = "https://api.binance.com/api/v3/"
+    COINGECKO_API_KEY = Config.TOKENS["COINGECKO_API_KEY"]
+    BINANCE_API_URL = "https://api.binance.com/api/v3/"
 
     def __init__(self, tg_type="TEST", active_exchanges=None):
         self.cg = CoinGeckoAPI(api_key=self.COINGECKO_API_KEY)
@@ -43,11 +43,11 @@ class CrawlExchangeList:
 
         :return: [exchanges]
         """
-        api_url = f'{self.API_URL}exchangeInfo?permissions=SPOT'
+        api_url = f'{self.BINANCE_API_URL}exchangeInfo?permissions=SPOT'
 
         response = requests.get(api_url, timeout=2)
         response = response.json()
-        return list({exchange['symbol'] for exchange in response['symbols']})
+        return [exchange['symbol'] for exchange in response['symbols']]
 
     @error_handling("binance", "get_all_binance_active_exchanges")
     def get_all_binance_active_exchanges(self, time_on_binance=None):
@@ -75,7 +75,7 @@ class CrawlExchangeList:
         active_exchanges_set = set(res)
 
         for exchange in res:
-            url = f"{self.API_URL}klines?symbol={exchange}&interval=1m&" \
+            url = f"{self.BINANCE_API_URL}klines?symbol={exchange}&interval=1m&" \
                   f"startTime={(int(time.time()) - 70) * 1000}&limit=1000"
             response = requests.get(url, timeout=2).json()
             if type(response) == dict or len(response) == 0:
@@ -85,7 +85,7 @@ class CrawlExchangeList:
             for exchange in res:
                 time_delta = time_on_binance * 24 * 60 * 60 * 1000
                 time_now = int(time.time()) * 1000
-                url = f"{self.API_URL}klines?symbol={exchange}&interval=1m&" \
+                url = f"{self.BINANCE_API_URL}klines?symbol={exchange}&interval=1m&" \
                       f"startTime={time_now - time_delta}&" \
                       f"endTime={time_now - time_delta + 70000}&limit=1000"
                 response = requests.get(url, timeout=2).json()

@@ -11,8 +11,8 @@ import pytz
 from binance.lib.utils import config_logging
 from binance.websocket.spot.websocket_client import SpotWebsocketClient as Client
 
-from coin_list.crawl_exchange_list import CrawlExchangeList
-from telegram.telegram_api import TelegramBot
+from smrti_quant_alerts.crawl_exchange_list import CrawlExchangeList
+from smrti_quant_alerts.telegram_api import TelegramBot
 
 
 class BinancePriceVolumeAlert:
