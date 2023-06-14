@@ -22,7 +22,7 @@ pre-requisites: binance api token, coingecko api token, telegram bot token, tele
 
 > 3. python scripts to run those alerts are in ``alert_system.py``
 ### Alert Type Description
-* ``"market_cap"``: ``alerts/coingecko_market_cap_alert.py``: a weekly report of newly deleted and newly added
+* ``market_cap``: ``alerts/coingecko_market_cap_alert.py``: a weekly report of newly deleted and newly added
 top 200 & 500 market cap coins. 
 * ``price_volume``: ``alerts/binance_price_volume_alert.py``: real-time alerts for coins with large price and volume changes in 15min/1h timeframe.
 * ``alts``: ``alerts/coingecko_alts_alert.py``: daily report of top 500-3000 market cap alts coin with huge price and volume change.
