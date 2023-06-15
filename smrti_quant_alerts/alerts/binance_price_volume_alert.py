@@ -13,6 +13,7 @@ from binance.websocket.spot.websocket_client import SpotWebsocketClient as Clien
 
 from smrti_quant_alerts.crawl_exchange_list import CrawlExchangeList
 from smrti_quant_alerts.telegram_api import TelegramBot
+from smrti_quant_alerts.settings import Config
 
 
 class BinancePriceVolumeAlert:
@@ -90,7 +91,7 @@ class BinancePriceVolumeAlert:
         self.id_count = 1
 
         # threshold for price/volume alert
-        self.settings = json.load(open("settings.json"))
+        self.settings = Config.SETTINGS
 
         # # for testing only
         # self.tg_bot = {

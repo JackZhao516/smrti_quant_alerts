@@ -9,6 +9,7 @@ from smrti_quant_alerts.alerts.binance_price_volume_alert import BinancePriceVol
 from smrti_quant_alerts.alerts.coingecko_alts_alert import CGAltsAlert
 from smrti_quant_alerts.alerts.top_market_cap_spot_over_ma_alert import alert_spot_cross_ma
 from smrti_quant_alerts.telegram_api import TelegramBot
+from smrti_quant_alerts.settings import Config
 
 MODE = "CG_SUM"
 # MODE = "TEST"
@@ -88,6 +89,7 @@ def alts_alert():
 
 
 if __name__ == "__main__":
+    Config()
     # sys.argv[1] is the mode
     if sys.argv[1] == "market_cap":
         report_market_cap()

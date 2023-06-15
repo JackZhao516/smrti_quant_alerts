@@ -8,7 +8,7 @@ from pycoingecko import CoinGeckoAPI
 
 from smrti_quant_alerts.telegram_api import TelegramBot
 from smrti_quant_alerts.error import error_handling
-from smrti_quant_alerts.token import Config
+from smrti_quant_alerts.settings import Config
 
 
 class CrawlExchangeList:

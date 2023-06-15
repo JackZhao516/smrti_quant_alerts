@@ -9,11 +9,16 @@ class Config:
         logging.error("token.json not found")
         exit(1)
     TOKENS = json.load(open(f"{current_dir}token.json"))
+    SETTINGS = json.load(open(f"{current_dir}settings.json"))
 
     def __init__(self):
         self.validate_tokens()
+        self.validate_settings()
 
     def validate_tokens(self):
+        """
+        validate token.json
+        """
         necessary_keys = ["TelegramBot", "BINANCE", "COINGECKO_API_KEY"]
         for key in necessary_keys:
             if key not in self.TOKENS:
@@ -33,4 +38,18 @@ class Config:
                         'Fill in the Telegram channel/group ID for each alert type')
         logging.info("token.json validated")
 
+    def validate_settings(self):
+        """
+        validate settings.json
+        """
+        keys = ["15m_volume_usd", "1h_volume_usd",
+                "15m_price_change_percentage", "1h_price_change_percentage"]
+        for key in keys:
+            if key not in self.SETTINGS:
+                logging.warning(f'settings.json does not contain "{key}", '
+                                f'cannot run "price_volume" alerts')
+                break
 
+
+if __name__ == "__main__":
+    Config()

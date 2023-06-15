@@ -3,7 +3,7 @@ import threading
 import requests
 
 from smrti_quant_alerts.error import error_handling
-from smrti_quant_alerts.token import Config
+from smrti_quant_alerts.settings import Config
 
 
 class TelegramBot:
