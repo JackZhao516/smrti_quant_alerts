@@ -30,12 +30,12 @@ class Config:
                           "TelegramBot.TOKEN or TelegramBot.TELEGRAM_IDS")
             exit(1)
 
-        logging.warning('"TELEGRAM_IDS" in token.json:'
-                        '"CG_SUM": alert_100, alert_300, alert_500, sequential'
-                        '"VOLUME_15M", "VOLUME_1H", "PRICE_15M", "PRICE_1H": price_volume'
-                        '"CG_MAR_CAP": market_cap'
-                        '"ALTS": alts'
-                        'Fill in the Telegram channel/group ID for each alert type')
+        logging.warning('"TELEGRAM_IDS" in token.json:\n'
+                        '"CG_SUM": alert_100, alert_300, alert_500, sequential\n'
+                        '"VOLUME_15M", "VOLUME_1H", "PRICE_15M", "PRICE_1H": price_volume\n'
+                        '"CG_MAR_CAP": market_cap\n'
+                        '"ALTS": alts\n'
+                        'Remember to fill in the Telegram channel/group ID for each alert type')
         logging.info("token.json validated")
 
     def validate_settings(self):

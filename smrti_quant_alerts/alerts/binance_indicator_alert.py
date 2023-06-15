@@ -13,7 +13,7 @@ from binance.lib.utils import config_logging
 from binance.websocket.spot.websocket_client import SpotWebsocketClient as Client
 
 from smrti_quant_alerts.telegram_api import TelegramBot
-from smrti_quant_alerts.alerts.utility import update_coins_exchanges_txt
+from .utility import update_coins_exchanges_txt
 
 
 class BinanceIndicatorAlert:

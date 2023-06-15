@@ -4,7 +4,7 @@ import time
 import requests
 from binance.lib.utils import config_logging
 
-from smrti_quant_alerts.alerts.utility import update_coins_exchanges_txt
+from .utility import update_coins_exchanges_txt
 from smrti_quant_alerts.crawl_exchange_list import CrawlExchangeList
 from smrti_quant_alerts.telegram_api import TelegramBot
 

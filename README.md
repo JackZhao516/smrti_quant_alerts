@@ -13,6 +13,7 @@ This repo includes several real-time alerts for crypto trading, built with Coing
 * Run on server in areas where Binance and Coingecko apis are not banned.
 # Install
     pip install -r requirements.txt
+    pip install .
 # Usage
 
 > 1. Change your API KEY and your SECRET KEY in ``token.json``
