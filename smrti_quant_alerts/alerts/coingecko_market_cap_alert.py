@@ -24,13 +24,12 @@ class CoingeckoMarketCapReport(CrawlExchangeList):
         market_list = self.get_top_n_market_cap_coins(n=self.top_n)
         self.top_n_list = [coin[1] for coin in market_list]
         while True:
-            # alerts every Monday 00:00 in Shanghai Time
+            # alerts every day 00:00 in Shanghai Time
             # can easily change time and frequency here
             # if you want to change the frequency, remember to change the sleep time
             tz = pytz.timezone('Asia/Shanghai')
             shanghai_now = datetime.now(tz).strftime('%H:%M')
-            weekday = datetime.now(tz).weekday()
-            if shanghai_now == "00:00" and weekday == 0:
+            if shanghai_now == "00:00":
                 cur_set = set(self.top_n_list)
                 new_list = [coin[1] for coin in self.get_top_n_market_cap_coins(n=self.top_n)]
                 new_set = set(new_list)
@@ -47,7 +46,7 @@ class CoingeckoMarketCapReport(CrawlExchangeList):
                                          f"Deleted: {deleted_list}\n"
                                          f"Added: {added_list}\n"
                                          f"(Added in market cap desc order)")
-                sleep(60 * 60 * 24 * 7 - 70)
+                sleep(60 * 60 * 24 - 70)
             sleep(60)
 
 

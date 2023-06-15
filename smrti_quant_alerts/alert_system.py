@@ -40,10 +40,10 @@ def report_market_cap():
     market cap alerts
     """
     logging.info("report_market_cap start")
-    top_200 = threading.Thread(target=CoingeckoMarketCapReport, args=(200,))
-    top_200.start()
-    top_500 = threading.Thread(target=CoingeckoMarketCapReport, args=(500,))
-    top_500.start()
+    nums = [100, 200, 300, 400, 500]
+    for num in nums:
+        thread = threading.Thread(target=CoingeckoMarketCapReport, args=(num,))
+        thread.start()
     sleep(60 * 60 * 24 * 365)
     logging.info("report_market_cap finished")
 
@@ -66,7 +66,7 @@ def routinely_sequential_alert_100_300_500():
             exclude_coins, exclude_newly_deleted_coins, exclude_newly_added_coin = \
                 alert_spot_cross_ma(exclude_coins, exclude_newly_deleted_coins,
                                     exclude_newly_added_coin, alert_type, tg_mode=MODE)
-        sleep(2 * 24 * 60 * 60)
+        sleep(24 * 60 * 60)
 
 
 def alert_100_300_500(alert_type):

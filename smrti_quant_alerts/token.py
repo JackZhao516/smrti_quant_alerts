@@ -4,10 +4,11 @@ import logging
 
 
 class Config:
-    if not os.path.isfile("token.json"):
+    current_dir = os.getcwd().split("smrti_quant_alerts")[0] + "smrti_quant_alerts/"
+    if not os.path.isfile(f"{current_dir}token.json"):
         logging.error("token.json not found")
         exit(1)
-    TOKENS = json.load(open("token.json"))
+    TOKENS = json.load(open(f"{current_dir}token.json"))
 
     def __init__(self):
         self.validate_tokens()
