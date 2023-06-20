@@ -42,12 +42,10 @@ def report_market_cap():
     """
     logging.info("report_market_cap start")
     nums = [100, 200, 300, 400, 500]
-    for num in nums:
-        thread = threading.Thread(target=CoingeckoMarketCapReport, args=(num,))
-        thread.start()
+    thread = threading.Thread(target=CoingeckoMarketCapReport, args=(nums,))
+    thread.start()
     sleep(60 * 60 * 24 * 365)
     logging.info("report_market_cap finished")
-
 
 def price_volume():
     """
