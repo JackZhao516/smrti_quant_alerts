@@ -8,11 +8,11 @@ from datetime import datetime
 
 import pytz
 
-from smrti_quant_alerts.crawl_exchange_list import CrawlExchangeList
+from smrti_quant_alerts.get_exchange_list import GetExchangeList
 from smrti_quant_alerts.telegram_api import TelegramBot
 
 
-class CoingeckoMarketCapReport(CrawlExchangeList):
+class CoingeckoMarketCapReport(GetExchangeList):
     def __init__(self, top_n=200, tg_type="CG_MAR_CAP"):
         super().__init__("TEST")
         self.tg_bot = TelegramBot(tg_type)

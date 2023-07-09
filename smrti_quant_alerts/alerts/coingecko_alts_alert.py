@@ -8,13 +8,13 @@ import logging
 from datetime import datetime
 import pytz
 
-from smrti_quant_alerts.crawl_exchange_list import CrawlExchangeList
+from smrti_quant_alerts.get_exchange_list import GetExchangeList
 from smrti_quant_alerts.telegram_api import TelegramBot
 
 
 class CGAltsAlert:
     def __init__(self):
-        self.cel = CrawlExchangeList("TEST")
+        self.cel = GetExchangeList("TEST")
         self.tg_bot = TelegramBot("ALTS")
 
         # alts coins are from market cap 500 - 3000

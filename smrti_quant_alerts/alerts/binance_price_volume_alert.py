@@ -11,7 +11,7 @@ import pytz
 from binance.lib.utils import config_logging
 from binance.websocket.spot.websocket_client import SpotWebsocketClient as Client
 
-from smrti_quant_alerts.crawl_exchange_list import CrawlExchangeList
+from smrti_quant_alerts.get_exchange_list import GetExchangeList
 from smrti_quant_alerts.telegram_api import TelegramBot
 from smrti_quant_alerts.settings import Config
 
@@ -22,7 +22,7 @@ class BinancePriceVolumeAlert:
 
     def __init__(self):
         self.running = True
-        self.cg = CrawlExchangeList("TEST")
+        self.cg = GetExchangeList("TEST")
         self.tg_bot = {
             "15m_price": TelegramBot("PRICE_15M", daemon=False),
             "1h_price": TelegramBot("PRICE_1H", daemon=False),

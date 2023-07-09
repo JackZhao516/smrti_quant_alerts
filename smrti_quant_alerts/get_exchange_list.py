@@ -11,7 +11,7 @@ from smrti_quant_alerts.error import error_handling
 from smrti_quant_alerts.settings import Config
 
 
-class CrawlExchangeList:
+class GetExchangeList:
     COINGECKO_API_KEY = Config.TOKENS["COINGECKO_API_KEY"]
     BINANCE_API_URL = "https://api.binance.com/api/v3/"
 
@@ -307,7 +307,7 @@ class CrawlExchangeList:
 
 
 if __name__ == '__main__':
-    cg = CrawlExchangeList(tg_type='TEST')
+    cg = GetExchangeList(tg_type='TEST')
     alts_coins = cg.get_top_n_market_cap_coins(3000)[500:]
     alts_coin_ids = [coin[0] for coin in alts_coins]
     market_info = cg.get_coins_market_info(alts_coin_ids, ["market_cap", "price_change_24h"])

@@ -6,7 +6,7 @@ import logging
 import numpy as np
 from binance.lib.utils import config_logging
 
-from smrti_quant_alerts.crawl_exchange_list import CrawlExchangeList
+from smrti_quant_alerts.get_exchange_list import GetExchangeList
 from smrti_quant_alerts.telegram_api import TelegramBot
 
 STABLE_COINS = {"USDT", "USDC", "DAI", "BUSD", "USDP", "GUSD",
@@ -19,7 +19,7 @@ running = True
 config_logging(logging, logging.INFO)
 
 
-class CoingeckoAlert(CrawlExchangeList):
+class CoingeckoAlert(GetExchangeList):
     def __init__(self, coin_id, symbol, alert_type="alert_100", tg_type="CG_ALERT"):
         super().__init__("TEST")
         self.coin_id = coin_id
@@ -323,8 +323,8 @@ def close_all_threads(thread):
     running = True
 
 if __name__ == '__main__':
-    from smrti_quant_alerts.crawl_exchange_list import CrawlExchangeList
-    cg = CrawlExchangeList("TEST")
+    from smrti_quant_alerts.get_exchange_list import GetExchangeList
+    cg = GetExchangeList("TEST")
     exchanges, coin_ids, coin_symbols = cg.get_top_market_cap_exchanges(num=100)
     print(coin_ids, coin_symbols)
     t = alert_coins(coin_ids, coin_symbols, "alert_100", "TEST")

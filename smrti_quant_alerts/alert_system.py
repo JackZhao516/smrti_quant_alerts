@@ -3,7 +3,7 @@ import logging
 import threading
 from time import sleep
 
-from crawl_exchange_list import CrawlExchangeList
+from get_exchange_list import GetExchangeList
 from alerts.coingecko_market_cap_alert import CoingeckoMarketCapReport
 from alerts.binance_price_volume_alert import BinancePriceVolumeAlert
 from alerts.coingecko_alts_alert import CGAltsAlert
@@ -14,7 +14,7 @@ from settings import Config
 MODE = "CG_SUM"
 # MODE = "TEST"
 tg_bot = TelegramBot(MODE)
-cg = CrawlExchangeList("CG_SUM_RAW")
+cg = GetExchangeList("CG_SUM_RAW")
 
 logging.disable(logging.INFO)
 # def alert_indicator(alert_type="alert_100"):

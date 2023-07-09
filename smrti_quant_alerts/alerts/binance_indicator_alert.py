@@ -356,8 +356,8 @@ class BinanceIndicatorAlert:
 
 if __name__ == "__main__":
     logging.info("test")
-    from smrti_quant_alerts.crawl_exchange_list import CrawlExchangeList
-    cg = CrawlExchangeList()
+    from smrti_quant_alerts.get_exchange_list import GetExchangeList
+    cg = GetExchangeList()
     ex, _, _ = cg.get_top_market_cap_exchanges(num=300)
     print(f"---------------------------------------------------{len(ex)}")
     ex = ex[:40]

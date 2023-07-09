@@ -5,7 +5,7 @@ import requests
 from binance.lib.utils import config_logging
 
 from .utility import update_coins_exchanges_txt
-from smrti_quant_alerts.crawl_exchange_list import CrawlExchangeList
+from smrti_quant_alerts.get_exchange_list import GetExchangeList
 from smrti_quant_alerts.telegram_api import TelegramBot
 
 STABLE_COINS = {"USDT", "USDC", "DAI", "BUSD", "USDP", "GUSD",
@@ -16,7 +16,7 @@ STABLE_COINS = {"USDT", "USDC", "DAI", "BUSD", "USDP", "GUSD",
                 "HAY", "MIM", "EDGT", "ALUSD"}
 
 
-class CoingeckoAlert4H(CrawlExchangeList):
+class CoingeckoAlert4H(GetExchangeList):
     def __init__(self, coin_ids, coin_symbols, active_exchanges=None, tg_type="CG_SUM", alert_type="300"):
         super().__init__(tg_type, active_exchanges=active_exchanges)
         self.coin_ids = coin_ids
@@ -131,7 +131,7 @@ def alert_spot_cross_ma(exclude_coins, exclude_newly_deleted_coins,
     """
     logging.info(f"{alert_type} start")
     count = alert_type.split("_")[1]
-    cg = CrawlExchangeList("CG_SUM_RAW")
+    cg = GetExchangeList("CG_SUM_RAW")
     tg_bot = TelegramBot(tg_mode)
     # get coin list
     if alert_type == "alert_100":
