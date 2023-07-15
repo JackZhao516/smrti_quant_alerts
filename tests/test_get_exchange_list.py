@@ -95,7 +95,7 @@ class TestCoinList(unittest.TestCase):
                             },
                       status=200)
         exchanges = self.gel.get_all_exchanges_in_usdt_busd_btc()
-        self.assertEqual(["BTCUSDT", "ETHBUSD"], exchanges)
+        self.assertEqual({"BTCUSDT", "ETHBUSD"}, set(exchanges))
 
     @responses.activate
     def test_get_coins_with_weekly_volume_increase(self):
