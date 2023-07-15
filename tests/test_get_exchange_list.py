@@ -9,6 +9,7 @@ class TestCoinList(unittest.TestCase):
     COINGECKO_API_KEY = Config.TOKENS["COINGECKO_API_KEY"]
     BINANCE_API_URL = "https://api.binance.com/api/v3/"
     gel = GetExchangeList("TEST")
+
     @responses.activate
     def test_get_all_binance_exchanges(self):
         api_url = f'{self.BINANCE_API_URL}exchangeInfo?permissions=SPOT'
@@ -98,4 +99,43 @@ class TestCoinList(unittest.TestCase):
 
     @responses.activate
     def test_get_coins_with_weekly_volume_increase(self):
-        pass
+        api_url = f'{self.BINANCE_API_URL}exchangeInfo?permissions=SPOT'
+        responses.add(responses.GET, api_url,
+                      json={"symbols": [{"symbol": "BTCUSDT"}, {"symbol": "ETHBUSD"},
+                                        {"symbol": "SOLETH"}, {"symbol": "ETHSOL"}]
+                            },
+                      status=200)
+        api_url = "https://pro-api.coingecko.com/api/v3/coins/markets?" \
+                  f"x_cg_pro_api_key={self.COINGECKO_API_KEY}&vs_currency=usd&" \
+                  "order=market_cap_desc&per_page=250&page=1&sparkline=false"
+        responses.add(responses.GET, api_url,
+                      json=[{"id": "bitcoin", "symbol": "btc"}, {"id": "ethereum", "symbol": "eth"},
+                            {"id": "sol", "symbol": "sol"}],
+                      status=200, match_querystring=True)
+
+        api_url = f"https://pro-api.coingecko.com/api/v3/coins/bitcoin/market_chart?" \
+                  f"vs_currency=usd&days=13&interval=daily&x_cg_pro_api_key={self.COINGECKO_API_KEY}"
+        responses.add(responses.GET, api_url,
+                      json={"id": "bitcoin", "symbol": "btc",
+                            "total_volumes": [[1, 100], [2, 100], [3, 100], [1, 100], [2, 100],
+                                              [3, 100], [1, 100], [1, 100], [2, 100], [3, 100],
+                                              [1, 100], [2, 100], [3, 100], [1, 100]]},
+                      status=200, match_querystring=True)
+        api_url = f"https://pro-api.coingecko.com/api/v3/coins/ethereum/market_chart?" \
+                  f"vs_currency=usd&days=13&interval=daily&x_cg_pro_api_key={self.COINGECKO_API_KEY}"
+        responses.add(responses.GET, api_url,
+                      json={"id": "ethereum", "symbol": "eth",
+                            "total_volumes": [[1, 100], [2, 100], [3, 100], [1, 100], [2, 100],
+                                              [3, 100], [1, 100], [1, 1000], [2, 1000], [3, 1000],
+                                              [1, 1000], [2, 1000], [3, 100], [1, 1000]]},
+                      status=200, match_querystring=True)
+        api_url = f"https://pro-api.coingecko.com/api/v3/coins/sol/market_chart?" \
+                  f"vs_currency=usd&days=13&interval=daily&x_cg_pro_api_key={self.COINGECKO_API_KEY}"
+        responses.add(responses.GET, api_url,
+                      json={"id": "sol", "symbol": "sol",
+                            "total_volumes": [[1, 100], [2, 100], [3, 100], [1, 100], [2, 100],
+                                              [3, 100], [1, 100], [1, 100], [2, 100], [3, 100],
+                                              [1, 100], [2, 100], [3, 100], [1, 100]]},
+                      status=200, match_querystring=True)
+        res, _, _ = self.gel.get_coins_with_weekly_volume_increase(1.3, 3, False)
+        self.assertEqual(["SOLETH", "ETHBUSD"], res)
