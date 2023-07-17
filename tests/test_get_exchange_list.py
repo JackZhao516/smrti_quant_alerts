@@ -1,5 +1,6 @@
 import responses
 import unittest
+from decimal import Decimal
 
 from smrti_quant_alerts.get_exchange_list import GetExchangeList
 from smrti_quant_alerts.settings import Config
@@ -7,28 +8,54 @@ from smrti_quant_alerts.settings import Config
 
 class TestCoinList(unittest.TestCase):
     COINGECKO_API_KEY = Config.TOKENS["COINGECKO_API_KEY"]
-    BINANCE_API_URL = "https://api.binance.com/api/v3/"
+    BINANCE_SPOT_API_URL = "https://api.binance.com/api/v3/"
+    BINANCE_FUTURE_API_URL = "https://fapi.binance.com/fapi/v1/"
     gel = GetExchangeList("TEST")
 
     @responses.activate
-    def test_get_all_binance_exchanges(self):
-        api_url = f'{self.BINANCE_API_URL}exchangeInfo?permissions=SPOT'
+    def test_get_all_binance_spot_exchanges(self):
+        api_url = f'{self.BINANCE_SPOT_API_URL}exchangeInfo?permissions=SPOT'
         responses.add(responses.GET, api_url,
                       json={"symbols": [{"symbol": "BTCUSDT"}, {"symbol": "ETHUSDT"}]},
                       status=200)
-        exchanges = self.gel.get_all_binance_exchanges()
+        exchanges = self.gel.get_all_binance_spot_exchanges()
         self.assertEqual(["BTCUSDT", "ETHUSDT"], exchanges)
 
     @responses.activate
-    def test_get_all_binance_active_exchanges(self):
-        api_url = f'{self.BINANCE_API_URL}exchangeInfo?permissions=SPOT'
+    def test_get_all_binance_active_spot_exchanges(self):
+        api_url = f'{self.BINANCE_SPOT_API_URL}exchangeInfo?permissions=SPOT'
         responses.add(responses.GET, api_url,
                       json={"symbols": [{"symbol": "BTCUSDT"}, {"symbol": "ETHBUSD"},
                                         {"symbol": "SOLETH"}, {"symbol": "ETHSOL"}]
                             },
                       status=200)
-        active_exchanges = set(self.gel.get_all_binance_active_exchanges())
+        active_exchanges = set(self.gel.get_all_binance_active_spot_exchanges())
         self.assertEqual({"BTCUSDT", "ETHBUSD", "SOLETH"}, active_exchanges)
+
+    @responses.activate
+    def test_get_all_binance_future_exchanges(self):
+        api_url = f'{self.BINANCE_FUTURE_API_URL}exchangeInfo'
+        responses.add(responses.GET, api_url,
+                      json={"symbols": [{"symbol": "BTCUSDT", "contractType": "Test"},
+                                        {"symbol": "ETHUSDT", "contractType": "Test"}]},
+                      status=200)
+        exchanges = self.gel.get_all_binance_future_exchanges()
+        self.assertEqual([['BTCUSDT', 'Test'], ['ETHUSDT', 'Test']], exchanges)
+
+    @responses.activate
+    def test_get_future_exchange_funding_rate(self):
+        api_url = f'{self.BINANCE_FUTURE_API_URL}premiumIndex?symbol=BTCUSDT'
+        responses.add(responses.GET, api_url,
+                      json={"symbol": "BTCUSDT", "lastFundingRate": "0.0001"},
+                      status=200)
+        api_url = f'{self.BINANCE_FUTURE_API_URL}premiumIndex?symbol=ETHUSDT'
+        responses.add(responses.GET, api_url,
+                      json={"symbol": "ETHUSDT", "lastFundingRate": "-0.0002"},
+                      status=200)
+        rate = self.gel.get_future_exchange_funding_rate("BTCUSDT")
+        self.assertEqual(Decimal('0.0001'), rate)
+        rate = self.gel.get_future_exchange_funding_rate("ETHUSDT")
+        self.assertEqual(Decimal('-0.0002'), rate)
 
     @responses.activate
     def test_get_top_n_market_cap_coins(self):
@@ -67,7 +94,7 @@ class TestCoinList(unittest.TestCase):
 
     @responses.activate
     def test_get_top_market_cap_exchanges(self):
-        api_url = f'{self.BINANCE_API_URL}exchangeInfo?permissions=SPOT'
+        api_url = f'{self.BINANCE_SPOT_API_URL}exchangeInfo?permissions=SPOT'
         responses.add(responses.GET, api_url,
                       json={"symbols": [{"symbol": "BTCUSDT"}, {"symbol": "ETHBUSD"},
                                         {"symbol": "SOLETH"}, {"symbol": "ETHSOL"}]
@@ -87,19 +114,19 @@ class TestCoinList(unittest.TestCase):
         self.assertEqual(["TS"], cg_names)
 
     @responses.activate
-    def test_get_all_exchanges_in_usdt_busd_btc(self):
-        api_url = f'{self.BINANCE_API_URL}exchangeInfo?permissions=SPOT'
+    def test_get_spot_all_exchanges_in_usdt_busd_btc(self):
+        api_url = f'{self.BINANCE_SPOT_API_URL}exchangeInfo?permissions=SPOT'
         responses.add(responses.GET, api_url,
                       json={"symbols": [{"symbol": "BTCUSDT"}, {"symbol": "ETHBUSD"},
                                         {"symbol": "SOLETH"}, {"symbol": "ETHSOL"}]
                             },
                       status=200)
-        exchanges = self.gel.get_all_exchanges_in_usdt_busd_btc()
+        exchanges = self.gel.get_all_spot_exchanges_in_usdt_busd_btc()
         self.assertEqual({"BTCUSDT", "ETHBUSD"}, set(exchanges))
 
     @responses.activate
     def test_get_coins_with_weekly_volume_increase(self):
-        api_url = f'{self.BINANCE_API_URL}exchangeInfo?permissions=SPOT'
+        api_url = f'{self.BINANCE_SPOT_API_URL}exchangeInfo?permissions=SPOT'
         responses.add(responses.GET, api_url,
                       json={"symbols": [{"symbol": "BTCUSDT"}, {"symbol": "ETHBUSD"},
                                         {"symbol": "SOLETH"}, {"symbol": "ETHSOL"}]

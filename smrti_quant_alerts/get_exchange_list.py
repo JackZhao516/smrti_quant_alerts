@@ -2,6 +2,7 @@ import logging
 import time
 import math
 import requests
+from decimal import Decimal
 
 import numpy as np
 from pycoingecko import CoinGeckoAPI
@@ -13,7 +14,8 @@ from smrti_quant_alerts.settings import Config
 
 class GetExchangeList:
     COINGECKO_API_KEY = Config.TOKENS["COINGECKO_API_KEY"]
-    BINANCE_API_URL = "https://api.binance.com/api/v3/"
+    BINANCE_SPOT_API_URL = "https://api.binance.com/api/v3/"
+    BINANCE_FUTURES_API_URL = "https://fapi.binance.com/fapi/v1/"
 
     def __init__(self, tg_type="TEST", active_exchanges=None):
         self.cg = CoinGeckoAPI(api_key=self.COINGECKO_API_KEY)
@@ -32,25 +34,25 @@ class GetExchangeList:
         Update popular exchanges if last update was more than 1 hour ago
         """
         if (time.time() - self.active_exchanges_timestamp) >= 3600:
-            self.active_exchanges = self.get_all_binance_active_exchanges()
+            self.active_exchanges = self.get_all_binance_active_spot_exchanges()
             self.active_exchanges_set = set(self.active_exchanges)
             self.active_exchanges_timestamp = time.time()
 
-    @error_handling("binance", "get_all_binance_exchanges")
-    def get_all_binance_exchanges(self):
+    @error_handling("binance", "get_all_binance_spot_exchanges")
+    def get_all_binance_spot_exchanges(self):
         """
         Get all exchanges on binance
 
         :return: [exchanges]
         """
-        api_url = f'{self.BINANCE_API_URL}exchangeInfo?permissions=SPOT'
+        api_url = f'{self.BINANCE_SPOT_API_URL}exchangeInfo?permissions=SPOT'
 
         response = requests.get(api_url, timeout=2)
         response = response.json()
         return [exchange['symbol'] for exchange in response['symbols']]
 
-    @error_handling("binance", "get_all_binance_active_exchanges")
-    def get_all_binance_active_exchanges(self, time_on_binance=None):
+    @error_handling("binance", "get_all_binance_active_spot_exchanges")
+    def get_all_binance_active_spot_exchanges(self, time_on_binance=None):
         """
         BTC, ETH, USDT, BUSD exchanges older than <time_on_binance> days
 
@@ -59,7 +61,7 @@ class GetExchangeList:
         :return: [exchanges]
         """
         start = time.time()
-        exchanges = set(self.get_all_binance_exchanges())
+        exchanges = set(self.get_all_binance_spot_exchanges())
         res = []
 
         # choose BTC, ETH, USDT, BUSD exchanges
@@ -75,7 +77,7 @@ class GetExchangeList:
         active_exchanges_set = set(res)
 
         for exchange in res:
-            url = f"{self.BINANCE_API_URL}klines?symbol={exchange}&interval=1m&" \
+            url = f"{self.BINANCE_SPOT_API_URL}klines?symbol={exchange}&interval=1m&" \
                   f"startTime={(int(time.time()) - 70) * 1000}&limit=1000"
             response = requests.get(url, timeout=2).json()
             if type(response) == dict or len(response) == 0:
@@ -85,7 +87,7 @@ class GetExchangeList:
             for exchange in res:
                 time_delta = time_on_binance * 24 * 60 * 60 * 1000
                 time_now = int(time.time()) * 1000
-                url = f"{self.BINANCE_API_URL}klines?symbol={exchange}&interval=1m&" \
+                url = f"{self.BINANCE_SPOT_API_URL}klines?symbol={exchange}&interval=1m&" \
                       f"startTime={time_now - time_delta}&" \
                       f"endTime={time_now - time_delta + 70000}&limit=1000"
                 response = requests.get(url, timeout=2).json()
@@ -97,6 +99,33 @@ class GetExchangeList:
         logging.info(f"active_exchanges has {len(res)} exchanges")
         logging.info(f"active_exchanges took {time.time() - start} seconds")
         return res
+
+    @error_handling("binance", "get_all_binance_future_exchanges")
+    def get_all_binance_future_exchanges(self):
+        """
+        Get all future exchanges on binance
+
+        :return: [[exchange, contract_type],...]
+        """
+        api_url = f'{self.BINANCE_FUTURES_API_URL}exchangeInfo'
+
+        response = requests.get(api_url, timeout=2)
+        response = response.json()
+        return [[exchange["symbol"], exchange["contractType"]] for exchange in response["symbols"]]
+
+    @error_handling("binance", "get_future_exchange_funding_rate")
+    def get_future_exchange_funding_rate(self, exchange):
+        """
+        Get funding rate of a future exchange
+
+        :param exchange: future exchange
+        :return: funding rate
+        """
+        api_url = f'{self.BINANCE_FUTURES_API_URL}premiumIndex?symbol={exchange}'
+
+        response = requests.get(api_url, timeout=2)
+        response = response.json()
+        return Decimal(response["lastFundingRate"])
 
     @error_handling("coingecko", "get_top_n_market_cap_coins")
     def get_top_n_market_cap_coins(self, n=100):
@@ -218,7 +247,7 @@ class GetExchangeList:
 
         return res, coingeco_coins, coingeco_names
         
-    def get_all_exchanges_in_usdt_busd_btc(self):
+    def get_all_spot_exchanges_in_usdt_busd_btc(self):
         """
         Get all exchanges in either USDT, BUSD, or BTC format on binance
 
@@ -308,7 +337,7 @@ class GetExchangeList:
 
 if __name__ == '__main__':
     cg = GetExchangeList(tg_type='TEST')
-    alts_coins = cg.get_top_n_market_cap_coins(3000)[500:]
-    alts_coin_ids = [coin[0] for coin in alts_coins]
-    market_info = cg.get_coins_market_info(alts_coin_ids, ["market_cap", "price_change_24h"])
+    ex = cg.get_all_binance_future_exchanges()
+    print(len(ex))
+    print(cg.get_future_exchange_funding_rate(ex[0][0]))
 
