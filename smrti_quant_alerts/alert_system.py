@@ -3,14 +3,14 @@ import logging
 import threading
 from time import sleep
 
-from get_exchange_list import GetExchangeList
-from alerts.coingecko_market_cap_alert import CoingeckoMarketCapReport
-from alerts.binance_price_volume_alert import BinancePriceVolumeAlert
-from alerts.coingecko_alts_alert import CGAltsAlert
-from alerts.top_market_cap_spot_over_ma_alert import alert_spot_cross_ma
-from alerts.binance_bi_hourly_future_funding_rate import FutureFundingRate
-from telegram_api import TelegramBot
-from settings import Config
+from .get_exchange_list import GetExchangeList
+from smrti_quant_alerts.alerts.coingecko_market_cap_alert import CoingeckoMarketCapReport
+from smrti_quant_alerts.alerts.binance_price_volume_alert import BinancePriceVolumeAlert
+from smrti_quant_alerts.alerts.coingecko_alts_alert import CGAltsAlert
+from smrti_quant_alerts.alerts.top_market_cap_spot_over_ma_alert import alert_spot_cross_ma
+from smrti_quant_alerts.alerts.binance_bi_hourly_future_funding_rate import FutureFundingRate
+from .telegram_api import TelegramBot
+from .settings import Config
 
 MODE = "CG_SUM"
 # MODE = "TEST"
