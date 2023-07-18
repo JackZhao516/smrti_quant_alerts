@@ -11,6 +11,7 @@
       "PRICE_1H": "<Group/Channel ID>",
       "CG_MAR_CAP": "<Group/Channel ID>",
       "CG_SUM_RAW": "<Group/Channel ID>",
+      "FUNDING_RATE": "<Group/Channel ID>",
       "ALTS": "<Group/Channel ID>",
     }
   },

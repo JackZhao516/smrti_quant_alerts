@@ -8,6 +8,7 @@ from alerts.coingecko_market_cap_alert import CoingeckoMarketCapReport
 from alerts.binance_price_volume_alert import BinancePriceVolumeAlert
 from alerts.coingecko_alts_alert import CGAltsAlert
 from alerts.top_market_cap_spot_over_ma_alert import alert_spot_cross_ma
+from alerts.binance_bi_hourly_future_funding_rate import FutureFundingRate
 from telegram_api import TelegramBot
 from settings import Config
 
@@ -70,6 +71,14 @@ def alts_alert():
     CGAltsAlert()
 
 
+def funding_rate():
+    """
+    alert funding rate
+    """
+    future_funding_rate = FutureFundingRate(tg_type="FUNDING_RATE")
+    future_funding_rate.bi_hourly_alert_funding_rate_over_threshold()
+
+
 if __name__ == "__main__":
     Config()
     # sys.argv[1] is the mode
@@ -83,3 +92,5 @@ if __name__ == "__main__":
         alts_alert()
     elif sys.argv[1] == ("alert_100" or "alert_300" or "alert_500"):
         alert_100_300_500(sys.argv[1])
+    elif sys.argv[1] == "funding_rate":
+        funding_rate()
