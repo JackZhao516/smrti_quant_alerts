@@ -30,12 +30,12 @@ class FutureFundingRate(GetExchangeList):
                 exchange_list = self.get_all_binance_future_exchanges()
                 res = []
                 for exchange in exchange_list:
-                    symbol, contract_type = exchange[0], exchange[1]
+                    symbol = exchange[0]
                     funding_rate = self.get_future_exchange_funding_rate(symbol)
                     if funding_rate > 0 and funding_rate > self.rate_threshold or \
                             funding_rate < 0 and funding_rate < -self.rate_threshold:
                         funding_rate = f"{round(funding_rate * 100, 3)}%"
-                        res.append([symbol, contract_type, funding_rate])
+                        res.append([symbol, funding_rate])
                     time.sleep(1)
                 if res:
                     self.tg_bot.send_message(f"Bi-hourly Funding Rate Alert: \n{res}")
