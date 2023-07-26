@@ -8,7 +8,7 @@ from smrti_quant_alerts.alerts.coingecko_market_cap_alert import CoingeckoMarket
 from smrti_quant_alerts.alerts.binance_price_volume_alert import BinancePriceVolumeAlert
 from smrti_quant_alerts.alerts.coingecko_alts_alert import CGAltsAlert
 from smrti_quant_alerts.alerts.top_market_cap_spot_over_ma_alert import alert_spot_cross_ma
-from smrti_quant_alerts.alerts.binance_bi_hourly_future_funding_rate import FutureFundingRate
+from smrti_quant_alerts.alerts.binance_bi_hourly_future_funding_rate_alert import FutureFundingRate
 from .telegram_api import TelegramBot
 from .settings import Config
 

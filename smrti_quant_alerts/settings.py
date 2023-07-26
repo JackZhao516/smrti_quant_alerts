@@ -19,7 +19,7 @@ class Config:
         """
         validate token.json
         """
-        necessary_keys = ["TelegramBot", "BINANCE", "COINGECKO_API_KEY"]
+        necessary_keys = ["TelegramBot", "COINGECKO_API_KEY"]
         for key in necessary_keys:
             if key not in self.TOKENS:
                 logging.error(f'token.json does not contain "{key}"')

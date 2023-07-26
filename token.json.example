@@ -16,7 +16,6 @@
     }
   },
   "COINGECKO_API_KEY": "<API Token>",
-  "BINANCE": "<API Token>",
   "BITGET": {
     "KEY": "<API Token>",
     "SECRET": "<API Secret Key>",
