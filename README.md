@@ -6,7 +6,6 @@
 
 This repo includes several real-time alerts for crypto trading, built with Coingecko and Binance APIs. Alerts are sent to Telegram groups/channels.
 
- 
 
 ## Get Started and Documentation
 * pre-requisites: coingecko api token, telegram bot token, telegram group/channel ids. Fill in all the required tokens in ``token.json``.
