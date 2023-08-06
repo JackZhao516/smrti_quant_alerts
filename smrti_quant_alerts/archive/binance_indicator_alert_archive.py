@@ -12,8 +12,8 @@ import numpy as np
 from binance.lib.utils import config_logging
 from binance.websocket.spot.websocket_client import SpotWebsocketClient as Client
 
-from telegram_api import TelegramBot
-from utility import update_coins_exchanges_txt_300
+from smrti_quant_alerts.telegram_api import TelegramBot
+from smrti_quant_alerts.alerts.utility import update_coins_exchanges_txt
 
 
 class BinanceIndicatorAlert:
@@ -23,9 +23,10 @@ class BinanceIndicatorAlert:
     DATA_DOWNLOAD_ROOT_URL = "https://data.binance.vision/data/spot/daily/klines/"
     HTTP_URL = "https://api.binance.com/api/v3/klines?"
     MAX_ERROR = 5
-    STABLE_EXCHANGES = {"wbtcbtc", "busdusdt"}
+    STABLE_EXCHANGES = {"wbtcbtc", "busdusdt", "usdcbusd", "usdcusdt", "usdpusdt"}
     config_logging(logging, logging.INFO)
     csv_dir = os.path.join(os.getcwd(), "klines_csv")
+
     try:
         os.mkdir(csv_dir)
     except FileExistsError:
@@ -40,7 +41,7 @@ class BinanceIndicatorAlert:
         self.exchanges_set = set(exchanges)
         self.alert_type = alert_type
         self.execution_time = execution_time
-        self.window = 100 if self.alert_type == "alert_500" else 200
+        self.window = 200
 
         # all mappings use lower case of exchange name
         self.close = {}
@@ -60,12 +61,12 @@ class BinanceIndicatorAlert:
             }
         else:
             self.close = {exchange: {
-                "12": np.zeros(self.window),
+                "4": np.zeros(self.window),
                 } for exchange in exchanges
             }
 
-        # for calculating spot over h12 exchanges
-        self.spot_over_h12_300 = set()
+        # for calculating spot over h4 exchanges
+        self.spot_over_h4 = set()
 
         self.last_close_1m = {exchange: 0.0 for exchange in exchanges}
 
@@ -95,7 +96,12 @@ class BinanceIndicatorAlert:
 
                 try:
                     # download single day csv file
-                    response = requests.get(url, timeout=100)
+                    headers = {
+                        "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_8_3) "
+                                      "AppleWebKit/537.36 (KHTML, like Gecko) "
+                                      "Chrome/54.0.2866.71 Safari/537.36"}
+                    response = requests.get(url, timeout=10, headers=headers)
+
                     open(f"{exchange}.zip", "wb").write(response.content)
                     with zipfile.ZipFile(f"{exchange}.zip", "r") as zip_ref:
                         zip_ref.extractall(self.csv_dir)
@@ -125,6 +131,7 @@ class BinanceIndicatorAlert:
 
                 except Exception as e:
                     if error > self.MAX_ERROR:
+                        logging.warning(f"{exchange}: {e}")
                         return
                     error += 1
                     for count in range(24 // time_frame):
@@ -181,8 +188,6 @@ class BinanceIndicatorAlert:
                 self.close[exchange][time_frame] = np.roll(self.close[exchange][time_frame], -1)
                 self.close[exchange][time_frame][-1] = self.close[exchange][time_frame][-2]
 
-        # if log:
-        #     logging.warning(f"{exchange} ma_{time_frame}h:{self.close[exchange][time_frame]}")
         self.close_lock.release()
         return i
 
@@ -196,12 +201,15 @@ class BinanceIndicatorAlert:
         exchanges = [exchanges[i:i + incr] for i in range(0, len(exchanges), incr)]
 
         for exchange_list in exchanges:
+            print(exchange_list)
             t = threading.Thread(target=self.download_past_klines, args=(time_frame, exchange_list))
             threads.append(t)
             t.start()
             # sleep(1)
         for t in threads:
             t.join()
+
+        logging.warning(f"close len: {len(self.close)}")
 
     def run(self):
         """
@@ -214,7 +222,7 @@ class BinanceIndicatorAlert:
             self.download_past_klines_threads(4)
             self.download_past_klines_threads(24)
         else:
-            self.download_past_klines_threads(12)
+            self.download_past_klines_threads(4)
 
         id_count = 0
         client = Client()
@@ -254,14 +262,14 @@ class BinanceIndicatorAlert:
                 )
 
         if self.alert_type == "alert_300":
-            sleep(60*15)
+            sleep(60*5)
         else:
             sleep(self.execution_time)
         client.stop()
 
-        logging.warning(f"{self.spot_over_h12_300} done")
+        logging.warning(f"{self.spot_over_h4} done")
         if self.alert_type == "alert_300":
-            return update_coins_exchanges_txt_300(self.spot_over_h12_300, "exchanges")
+            return update_coins_exchanges_txt(self.spot_over_h4, "exchanges", "300")
 
     def update_ma_4h(self, msg):
         if "stream" not in msg or "data" not in msg or "k" not in msg["data"]:
@@ -295,14 +303,15 @@ class BinanceIndicatorAlert:
             # self.close_lock.acquire()
             if self.alert_type == "alert_300":
                 self.close_lock.acquire()
-                print(f"close: {close}, ma: {np.mean(self.close[exchange]['12'])}")
-                if close > np.mean(self.close[exchange]["12"]):
-                    logging.warning(f"{exchange} over h12"
-                                    f"close: {close}, ma: {np.mean(self.close[exchange]['12'])}")
-                    self.spot_over_h12_300.add(exchange.upper())
+                logging.warning(f"{exchange} :"
+                                f"close: {close}, ma: {np.mean(self.close[exchange]['4'])}")
+                if close > np.mean(self.close[exchange]["4"]) and np.mean(self.close[exchange]["4"]) != 0.0:
+                    logging.warning(f"{exchange} over h4"
+                                    f"close: {close}, ma: {np.mean(self.close[exchange]['4'])}")
+                    self.spot_over_h4.add(exchange.upper())
                 else:
-                    if exchange.upper() in self.spot_over_h12_300:
-                        self.spot_over_h12_300.remove(exchange.upper())
+                    if exchange.upper() in self.spot_over_h4:
+                        self.spot_over_h4.remove(exchange.upper())
                 self.close_lock.release()
                 return
 
@@ -329,7 +338,6 @@ class BinanceIndicatorAlert:
             # logging.warning(f"{exchange} 1m current {self.last_close_1m[exchange]}")
             self.close_lock.release()
 
-
     def alert_helper_1m(self, close, timeframe, exchange):
         timeframe = str(timeframe)
         current_ma = np.mean(self.close[exchange][timeframe])
@@ -337,20 +345,20 @@ class BinanceIndicatorAlert:
         mode = self.alert_type.split("_")[1]
 
         if close > current_ma > self.last_close_1m[exchange]:
-            self.tg_bot.safe_send_message(f"{mode}_{exchange.upper()} spot: {close}"
+            self.tg_bot.send_message(f"{mode}_{exchange.upper()} spot: {close}"
                                           f" crossover {timeframe_str} ma{self.window}: {current_ma}")
             logging.warning(f"{exchange}_{mode} ma {current_ma}, close {close}")
         elif close < current_ma < self.last_close_1m[exchange]:
-            self.tg_bot.safe_send_message(f"{mode}_{exchange.upper()} spot: {close}"
+            self.tg_bot.send_message(f"{mode}_{exchange.upper()} spot: {close}"
                                           f" crossunder {timeframe_str} ma{self.window}: {current_ma}")
             logging.warning(f"{exchange}_{mode} ma {current_ma}, close {close}")
 
 
 if __name__ == "__main__":
     logging.info("test")
-    from crawl_coingecko import CoinGecKo
-    cg = CoinGecKo()
-    ex, _, _ = cg.get_exchanges(num=300)
+    from smrti_quant_alerts.get_exchange_list import GetExchangeList
+    cg = GetExchangeList()
+    ex, _, _ = cg.get_top_market_cap_exchanges(num=300)
     print(f"---------------------------------------------------{len(ex)}")
     ex = ex[:40]
     alert = BinanceIndicatorAlert(ex, "alert_300", tg_type="TEST")

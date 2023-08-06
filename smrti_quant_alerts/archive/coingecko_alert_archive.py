@@ -1,16 +1,13 @@
 import time
-from datetime import datetime
 from time import sleep
 import threading
 import logging
 
-import pytz
 import numpy as np
 from binance.lib.utils import config_logging
 
-from crawl_coingecko import CoinGecKo
-from telegram_api import TelegramBot
-from utility import update_coins_exchanges_txt_300
+from smrti_quant_alerts.get_exchange_list import GetExchangeList
+from smrti_quant_alerts.telegram_api import TelegramBot
 
 STABLE_COINS = {"USDT", "USDC", "DAI", "BUSD", "USDP", "GUSD",
                 "TUSD", "FRAX", "CUSD", "USDD", "DEI", "USDK",
@@ -18,54 +15,11 @@ STABLE_COINS = {"USDT", "USDC", "DAI", "BUSD", "USDP", "GUSD",
                 "TRIBE", "LUSD", "EURS", "VUSDC", "USDX", "SUSD",
                 "VAI", "RSV", "CEUR", "USDS", "CUSDT", "DOLA", 
                 "HAY", "MIM", "EDGT", "ALUSD"}
-
-
-class CoinGecKo12H(CoinGecKo):
-    def __init__(self, coin_ids, coin_symbols, tg_type="CG_ALERT"):
-        super().__init__(tg_type)
-        self.coin_ids = coin_ids
-        self.coin_symbols = coin_symbols
-        self.spot_over_h12_300 = set()
-
-    def h12_sma_180(self, coin_id, coin_symbol):
-        try:
-            price = self.cg.get_coin_market_chart_by_id(id=coin_id, vs_currency='usd', days=90)
-            price = price['prices']
-            price = [i[1] for i in price]
-            res = 0
-            counter = 0
-            for i in range(0, len(price), 12):
-                if i == 2160:
-                    break
-                res += float(price[i])
-                counter += 1
-            sma = res / counter
-            price = self.cg.get_coin_market_chart_by_id(id=coin_id, vs_currency='usd', days=1)
-            price = float(price['prices'][-1][1])
-
-            logging.warning(f"{coin_symbol}: {price}, {sma}")
-            if price > sma:
-                self.spot_over_h12_300.add(coin_symbol)
-                return True
-
-        except Exception as e:
-            return False
-
-    def run(self):
-        for coin_id, coin_symbol in zip(self.coin_ids, self.coin_symbols):
-            coin_symbol = coin_symbol.upper()
-            if coin_symbol in STABLE_COINS:
-                continue
-            self.h12_sma_180(coin_id, coin_symbol)
-        logging.warning(f"spot_over_h12_300: {self.spot_over_h12_300}")
-
-        return update_coins_exchanges_txt_300(self.spot_over_h12_300, "coins")
-
-
-#########################################################################################
 running = True
 config_logging(logging, logging.INFO)
-class CoinGecKoAlert(CoinGecKo):
+
+
+class CoingeckoAlert(GetExchangeList):
     def __init__(self, coin_id, symbol, alert_type="alert_100", tg_type="CG_ALERT"):
         super().__init__("TEST")
         self.coin_id = coin_id
@@ -126,10 +80,6 @@ class CoinGecKoAlert(CoinGecKo):
         self.counter_12h = len(price) // 12
         self.ma_12h = np.sum(self.list_12h)/self.counter_12h
         self.spot_over_ma_12h = price[0][1] > self.ma_12h
-        # print(f"h12 init: {self.coin_id}, ma_12h: {self.ma_12h}, list_12h{self.list_12h}, spot_over_ma_12h: {self.spot_over_ma_12h}")
-        # except Exception as e:
-        #     sleep(60)
-        #     self.h12_init()
 
     def h4_init(self):
         # try:
@@ -226,20 +176,20 @@ class CoinGecKoAlert(CoinGecKo):
             # print(price, self.list_4h, self.counter_4h, self.ma_4h, np.sum(self.list_4h))
 
         if self.spot_over_ma_12h and price < self.ma_12h:
-            self.tg_bot.add_msg_to_queue(
+            self.tg_bot.send_message(
                  f"100_{self.symbol} spot: {str(price)} crossunder H12 ma180: {str(self.ma_12h)}")
             self.spot_over_ma_12h = False
         elif not self.spot_over_ma_12h and price > self.ma_12h:
-            self.tg_bot.add_msg_to_queue(
+            self.tg_bot.send_message(
                  f"100_{self.symbol} spot: {str(price)} crossover H12 ma180: {str(self.ma_12h)}")
             self.spot_over_ma_12h = True
 
         if self.spot_over_ma_4h and price < self.ma_4h:
-            self.tg_bot.add_msg_to_queue(
+            self.tg_bot.send_message(
                 f"100_{self.symbol} spot: {str(price)} crossunder H4 ma200: {str(self.ma_4h)}")
             self.spot_over_ma_4h = False
         elif not self.spot_over_ma_4h and price > self.ma_4h:
-            self.tg_bot.add_msg_to_queue(
+            self.tg_bot.send_message(
                 f"100_{self.symbol} spot: {str(price)} crossover H4 ma200: {str(self.ma_4h)}")
             self.spot_over_ma_4h = True
 
@@ -267,20 +217,20 @@ class CoinGecKoAlert(CoinGecKo):
             # print(price, self.list_4h, self.counter_4h, self.ma_4h, np.sum(self.list_4h))
 
         if self.spot_over_ma_1d and price < self.ma_1d:
-            self.tg_bot.add_msg_to_queue(
+            self.tg_bot.send_message(
                  f"500_{self.symbol} spot: {str(price)} crossunder D1 ma90: {str(self.ma_1d)}")
             self.spot_over_ma_1d = False
         elif not self.spot_over_ma_1d and price > self.ma_1d:
-            self.tg_bot.add_msg_to_queue(
+            self.tg_bot.send_message(
                  f"500_{self.symbol} spot: {str(price)} crossover D1 ma90: {str(self.ma_1d)}")
             self.spot_over_ma_1d = True
 
         if self.spot_over_ma_4h_500 and price < self.ma_4h_500:
-            self.tg_bot.add_msg_to_queue(
+            self.tg_bot.send_message(
                 f"500_{self.symbol} spot: {str(price)} crossunder H4 ma100: {str(self.ma_4h_500)}")
             self.spot_over_ma_4h_500 = False
         elif not self.spot_over_ma_4h_500 and price > self.ma_4h_500:
-            self.tg_bot.add_msg_to_queue(
+            self.tg_bot.send_message(
                 f"500_{self.symbol} spot: {str(price)} crossover H4 ma100: {str(self.ma_4h_500)}")
             self.spot_over_ma_4h_500 = True
         # print(f"{self.symbol} spot: {str(price)} D1: {str(self.ma_1d)} H4 ma100: {str(self.ma_4h_500)}")
@@ -326,7 +276,7 @@ def alert_coins(coin_ids, coin_symbols, alert_type="alert_100", tg_type="CG_ALER
         if coin_symbol in STABLE_COINS:
             continue
         coin_ids_without_stable.append(coin_id)
-        coins[coin_id] = CoinGecKoAlert(coin_id, coin_symbol, alert_type, tg_type)
+        coins[coin_id] = CoingeckoAlert(coin_id, coin_symbol, alert_type, tg_type)
         coins[coin_id].alert_spot_init()
 
     # update coins
@@ -372,73 +322,14 @@ def close_all_threads(thread):
     thread.join()
     running = True
 
-#########################################################################################
-
-
-class CoinGecKoMarketCapReport(CoinGecKo):
-    def __init__(self, top_n=200, tg_type="CG_MAR_CAP"):
-        super().__init__("TEST")
-        self.tg_bot = TelegramBot(tg_type)
-        self.top_n = top_n
-        self.top_n_list = None
-        self.run()
-
-    def get_top_n_market_cap(self):
-        if self.top_n == 200:
-            ids = self.cg.get_coins_markets(vs_currency='usd', order='market_cap_desc', per_page=200, page=1,
-                                            sparkline=False)
-        else:
-            ids = self.cg.get_coins_markets(vs_currency='usd', order='market_cap_desc', per_page=250, page=1,
-                                            sparkline=False)
-            ids += self.cg.get_coins_markets(vs_currency='usd', order='market_cap_desc', per_page=250, page=2,
-                                             sparkline=False)
-        ids = [id['symbol'].upper() for id in ids]
-        logging.info(f"Top {self.top_n} Market Cap List: {ids}")
-        return ids
-
-    def run(self):
-        self.top_n_list = self.get_top_n_market_cap()
-        while True:
-            tz = pytz.timezone('Asia/Shanghai')
-            shanghai_now = datetime.now(tz).strftime('%H:%M')
-            if shanghai_now == "11:59":
-                cur_set = set(self.top_n_list)
-                new_list = self.get_top_n_market_cap()
-                new_set = set(new_list)
-                deleted_list = []
-                added_list = []
-                if cur_set != new_set:
-                    deleted_list = list(cur_set - new_set)
-                    added = new_set - cur_set
-                    for i, a in enumerate(new_list):
-                        if a in added:
-                            added_list.append(a)
-                    self.top_n_list = new_list
-                self.tg_bot.send_message(f"Top {self.top_n} Market Cap Report: \n"
-                                         f"Deleted: {deleted_list}\n"
-                                         f"Added: {added_list}\n"
-                                         f"(Added in market cap desc order)")
-                sleep(60 * 60 * 24 - 60)
-
-
 if __name__ == '__main__':
-    # test = CoinGecKo12H(["bitcoin"], ["BTC"], "TEST")
-    # res = test.run()
-    test = CoinGecKoMarketCapReport()
-    test.run()
+    from smrti_quant_alerts.get_exchange_list import GetExchangeList
+    cg = GetExchangeList("TEST")
+    exchanges, coin_ids, coin_symbols = cg.get_top_market_cap_exchanges(num=100)
+    print(coin_ids, coin_symbols)
+    t = alert_coins(coin_ids, coin_symbols, "alert_100", "TEST")
+    sleep(1800)
+    print("here")
+    close_all_threads(t)
+    print("done")
 
-    # from crawl_coingecko import CoinGecKo
-    # cg = CoinGecKo("TEST")
-    # exchanges, coin_ids, coin_symbols = cg.get_exchanges(num=100)
-    # print(coin_ids, coin_symbols)
-    # t = alert_coins(coin_ids, coin_symbols, "alert_100", "TEST")
-    # sleep(1800)
-    # print("here")
-    # close_all_threads(t)
-    # print("done")
-    # from pycoingecko import CoinGeckoAPI
-    # cg = CoinGeckoAPI(api_key="CG-wAukVxNxrR322gkZYEgZWtV1")
-    # price = cg.get_price(ids="bitcoin", vs_currencies='usd', include_last_updated_at=True,
-    #                      precision="full")
-    # price = np.float64(price["bitcoin"]["usd"])
-    # print(price)

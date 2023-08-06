@@ -1,0 +1,24 @@
+{
+  "TelegramBot": {
+    "TOKEN": "<TelegramBot ID>",
+    "TELEGRAM_IDS": {
+      "CG_ALERT": "<Group/Channel ID>",
+      "CG_SUM": "<Group/Channel ID>",
+      "TEST": "<Group/Channel ID>",
+      "VOLUME_15M": "<Group/Channel ID>",
+      "VOLUME_1H": "<Group/Channel ID>",
+      "PRICE_15M": "<Group/Channel ID>",
+      "PRICE_1H": "<Group/Channel ID>",
+      "CG_MAR_CAP": "<Group/Channel ID>",
+      "CG_SUM_RAW": "<Group/Channel ID>",
+      "FUNDING_RATE": "<Group/Channel ID>",
+      "ALTS": "<Group/Channel ID>",
+    }
+  },
+  "COINGECKO_API_KEY": "<API Token>",
+  "BITGET": {
+    "KEY": "<API Token>",
+    "SECRET": "<API Secret Key>",
+    "PASSPHRASE": "<API Password>"
+  }
+}
