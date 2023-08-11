@@ -41,6 +41,7 @@ class CoingeckoAlert4H(GetExchangeList):
             price = float(price['prices'][-1][1])
 
             logging.warning(f"{coin_symbol}: {price}, {sma}")
+            print(f"{coin_symbol}: {price}, {sma}")
             if price > sma:
                 self.spot_over_h4.add(coin_symbol)
                 return True
@@ -175,3 +176,8 @@ def alert_spot_cross_ma(exclude_coins, exclude_newly_deleted_coins,
     return set(coins).union(exclude_coins), \
         set(newly_deleted_coins).union(exclude_newly_deleted_coins), \
         set(newly_added_coins).union(exclude_newly_added_coin)
+
+
+if __name__ == "__main__":
+    test = CoingeckoAlert4H([], [], [])
+    print(test.h4_sma_200("fx-coin", "FX"))
