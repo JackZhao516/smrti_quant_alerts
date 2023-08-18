@@ -36,6 +36,7 @@ class CoingeckoAlert4H(GetExchangeList):
                     break
                 res += float(price[len(price) - 1 - i])
                 counter += 1
+
             sma = res / counter
             price = self.cg.get_coin_market_chart_by_id(id=coin_id, vs_currency='usd', days=1)
             price = float(price['prices'][-1][1])
@@ -45,6 +46,8 @@ class CoingeckoAlert4H(GetExchangeList):
             if price > sma:
                 self.spot_over_h4.add(coin_symbol)
                 return True
+            else:
+                return False
 
         except Exception as e:
             return False
