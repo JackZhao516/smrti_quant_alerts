@@ -113,6 +113,16 @@ class GetExchangeList:
         response = response.json()
         return [[exchange["symbol"], exchange["contractType"]] for exchange in response["symbols"]]
 
+    @error_handling("coingecko", "get_all_coingecko_coins")
+    def get_all_coingecko_coins(self):
+        """
+        Get all coins on coingecko
+
+        :return: [[coin_id, coin_symbol_upper], ...]
+        """
+        res = self.cg.get_coins_list()
+        return [[coin["id"], coin["symbol"].upper()] for coin in res]
+
     @error_handling("binance", "get_future_exchange_funding_rate")
     def get_future_exchange_funding_rate(self, exchange):
         """
@@ -184,6 +194,48 @@ class GetExchangeList:
                 market_info.append(cur_info)
 
         return market_info
+
+    @error_handling("coingecko", "get_coins_with_24h_volume_larger_than_threshold")
+    def get_coins_with_24h_volume_larger_than_threshold(self, threshold=3000000):
+        """
+        Get all coins with 24h volume larger than threshold (in USD)
+        coin/usdt coin/eth coin/busd coin/btc exchanges on binance:
+            [exchanges_on_binance]
+        if not on binance, get coin_id, and coin_name from coingeco:
+            [coin_ids_on_coingeco], [coin_names_on_coingeco]
+        :param threshold: threshold of 24h volume in USD
+
+        :return: [exchanges_on_binance], [coin_ids_on_coingeco], [coin_symbols_on_coingeco]
+        """
+        self._update_popular_exchanges()
+        coins = self.get_all_coingecko_coins()
+
+        # pagination by 250
+        pages = math.ceil(len(coins) / 250)
+        coin_ids_on_coingeco = []
+        coin_symbols_on_coingeco = []
+        binance_exchanges = []
+        postfix = ['USDT', 'BUSD', 'BTC', 'ETH']
+
+        for page in range(pages):
+            cur_full_info = self.cg.get_coins_markets(
+                vs_currency='usd', ids=[coin[0] for coin in coins[page * 250:(page + 1) * 250]],
+                per_page=250, page=1)
+
+            for info in cur_full_info:
+                coin_id, symbol = info['id'], info['symbol'].upper()
+                if info["total_volume"] and int(info['total_volume']) >= threshold:
+                    binance_coin = False
+                    for pf in postfix:
+                        exchange = symbol + pf
+                        if exchange in self.active_exchanges_set:
+                            binance_exchanges.append(exchange)
+                            binance_coin = True
+                    if not binance_coin:
+                        coin_ids_on_coingeco.append(coin_id)
+                        coin_symbols_on_coingeco.append(symbol)
+
+        return binance_exchanges, coin_ids_on_coingeco, coin_symbols_on_coingeco
 
     @error_handling("coingecko", "get_coin_market_info")
     def get_coin_market_info(self, coin_id, market_attribute_name_list, days, interval="daily"):
@@ -337,7 +389,9 @@ class GetExchangeList:
 
 if __name__ == '__main__':
     cg = GetExchangeList(tg_type='TEST')
-    ex = cg.get_all_binance_future_exchanges()
-    print(len(ex))
-    print(cg.get_future_exchange_funding_rate(ex[0][0]))
+    ex, ids, symbols = cg.get_coins_with_24h_volume_larger_than_threshold()
+    print(len(ex), len(ids), len(symbols))
+    print(ex)
+    print(symbols)
+
 

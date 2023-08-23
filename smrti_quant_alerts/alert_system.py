@@ -53,15 +53,16 @@ def routinely_sequential_alert_100_300_500():
         sleep(24 * 60 * 60)
 
 
-def alert_100_300_500(alert_type):
+def alert_spot_over_ma(alert_type):
     """
     alert 100/300/500 coins
 
     :param alert_type: alert type
     """
     while True:
-        alert_spot_cross_ma([], [], [], alert_type, tg_mode=MODE)
-        sleep(2 * 24 * 60 * 60)
+        tg_mode = "ALERT_VOLUME_THRESHOLD" if alert_type == "alert_volume_threshold" else MODE
+        alert_spot_cross_ma([], [], [], alert_type, tg_mode=tg_mode)
+        sleep(24 * 60 * 60)
 
 
 def alts_alert():
@@ -90,7 +91,7 @@ if __name__ == "__main__":
         routinely_sequential_alert_100_300_500()
     elif sys.argv[1] == "alts":
         alts_alert()
-    elif sys.argv[1] == ("alert_100" or "alert_300" or "alert_500"):
-        alert_100_300_500(sys.argv[1])
+    elif sys.argv[1] == ("alert_100" or "alert_300" or "alert_500" or "alert_volume_threshold"):
+        alert_spot_over_ma(sys.argv[1])
     elif sys.argv[1] == "funding_rate":
         funding_rate()

@@ -142,8 +142,10 @@ def alert_spot_cross_ma(exclude_coins, exclude_newly_deleted_coins,
         exchanges, coin_ids, coin_symbols = cg.get_top_market_cap_exchanges(num=100)
     elif alert_type == "alert_500":
         exchanges, coin_ids, coin_symbols = cg.get_coins_with_weekly_volume_increase(tg_alert=True)
-    else:
+    elif alert_type == "alert_300":
         exchanges, coin_ids, coin_symbols = cg.get_top_market_cap_exchanges(num=300)
+    else:
+        exchanges, coin_ids, coin_symbols = cg.get_coins_with_24h_volume_larger_than_threshold(threshold=3000000)
 
     logging.info("start coingecko alert")
     tg_type = "TEST"
@@ -165,15 +167,23 @@ def alert_spot_cross_ma(exclude_coins, exclude_newly_deleted_coins,
     newly_added_coins = [coin for coin in newly_added_coins if coin not in exclude_newly_added_coin]
 
     # send alert and return
-    tg_bot.send_message(f"{alert_type}: market cap top {count}")
-    if alert_type == "alert_500":
-        tg_bot.send_message("and weekly volume increase >= 30% "
-                            "for alt/busd, alt/usdt pairs\n")
-    tg_bot.send_message(f"Top {count} coins/coin exchanges spot over H4 MA200:\n{coins}\n"
-                        f"Top {count} coins/coin exchanges exchanges spot"
-                        f" over H4 MA200 newly added:\n{newly_added_coins}\n"
-                        f"Top {count} coins/coin exchanges exchanges spot"
-                        f" over H4 MA200 newly deleted:\n{newly_deleted_coins}\n")
+    if alert_type in ["alert_100", "alert_300", "alert_500"]:
+        tg_bot.send_message(f"{alert_type}: market cap top {count}")
+        if alert_type == "alert_500":
+            tg_bot.send_message("and weekly volume increase >= 30% "
+                                "for alt/busd, alt/usdt pairs\n")
+        tg_bot.send_message(f"Top {count} coins/coin exchanges spot over H4 MA200:\n{coins}\n"
+                            f"Top {count} coins/coin exchanges exchanges spot"
+                            f" over H4 MA200 newly added:\n{newly_added_coins}\n"
+                            f"Top {count} coins/coin exchanges exchanges spot"
+                            f" over H4 MA200 newly deleted:\n{newly_deleted_coins}\n")
+    else:
+        tg_bot.send_message("For coins/exchanges with 24H volume larger than 3000000 USD")
+        tg_bot.send_message(f"coins/coin exchanges spot over H4 MA200:\n{coins}\n"
+                            f"coins/coin exchanges exchanges spot"
+                            f" over H4 MA200 newly added:\n{newly_added_coins}\n"
+                            f"coins/coin exchanges exchanges spot"
+                            f" over H4 MA200 newly deleted:\n{newly_deleted_coins}\n")
 
     logging.warning(f"{alert_type} finished")
     return set(coins).union(exclude_coins), \
