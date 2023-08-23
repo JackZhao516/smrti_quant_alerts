@@ -91,7 +91,7 @@ if __name__ == "__main__":
         routinely_sequential_alert_100_300_500()
     elif sys.argv[1] == "alts":
         alts_alert()
-    elif sys.argv[1] == ("alert_100" or "alert_300" or "alert_500" or "alert_volume_threshold"):
+    elif sys.argv[1] in ("alert_100", "alert_300", "alert_500", "alert_volume_threshold"):
         alert_spot_over_ma(sys.argv[1])
     elif sys.argv[1] == "funding_rate":
         funding_rate()
