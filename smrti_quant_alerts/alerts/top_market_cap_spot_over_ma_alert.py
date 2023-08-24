@@ -8,7 +8,8 @@ from .utility import update_coins_exchanges_txt
 from smrti_quant_alerts.get_exchange_list import GetExchangeList
 from smrti_quant_alerts.telegram_api import TelegramBot
 
-STABLE_COINS = {"USDT", "USDC", "DAI", "BUSD", "USDP", "GUSD",
+STABLE_COINS = {"USD", "USDT", "USDC", "USDBC", "DAI", "BUSD",
+                "USDP", "GUSD", "USDC.E", "WSTUSDT", "AXLUSDC",
                 "TUSD", "FRAX", "CUSD", "USDD", "DEI", "USDK",
                 "MIMATIC", "OUSD", "PAX", "FEI", "USTC", "USDN",
                 "TRIBE", "LUSD", "EURS", "VUSDC", "USDX", "SUSD",
