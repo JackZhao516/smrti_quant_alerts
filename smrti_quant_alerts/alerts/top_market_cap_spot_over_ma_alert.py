@@ -2,6 +2,7 @@ import logging
 import time
 
 import requests
+import numpy as np
 from binance.lib.utils import config_logging
 
 from .utility import update_coins_exchanges_txt
@@ -29,6 +30,11 @@ class CoingeckoAlert4H(GetExchangeList):
         try:
             price = self.cg.get_coin_market_chart_by_id(id=coin_id, vs_currency='usd', days=35)
             price = price['prices']
+            current_price = float(price[-1][1])
+
+            a = time.time()
+
+            price = np.array(price)
             price = [i[1] for i in price]
             res = 0
             counter = 0
@@ -39,12 +45,9 @@ class CoingeckoAlert4H(GetExchangeList):
                 counter += 1
 
             sma = res / counter
-            price = self.cg.get_coin_market_chart_by_id(id=coin_id, vs_currency='usd', days=1)
-            price = float(price['prices'][-1][1])
-
-            logging.warning(f"{coin_symbol}: {price}, {sma}")
-            print(f"{coin_symbol}: {price}, {sma}")
-            if price > sma:
+            print(f"time: {time.time() - a}")
+            logging.warning(f"{coin_symbol}: {current_price}, {sma}")
+            if current_price > sma:
                 self.spot_over_h4.add(coin_symbol)
                 return True
             else:
