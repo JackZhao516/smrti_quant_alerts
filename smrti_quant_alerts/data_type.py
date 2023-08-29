@@ -5,7 +5,7 @@ class BinanceExchange:
         self.exchange = f"{self.base_symbol}{self.quote_symbol}"
 
     def __repr__(self):
-        return self.exchange
+        return f'BinanceExchange("{self.exchange}")'
 
     def __str__(self):
         return self.exchange
@@ -25,7 +25,7 @@ class CoingeckoCoin:
         self.coin_symbol = coin_symbol.upper()
 
     def __repr__(self):
-        return self.coin_symbol
+        return f'CoingeckoCoin("{self.coin_symbol}")'
 
     def __str__(self):
         return self.coin_symbol
