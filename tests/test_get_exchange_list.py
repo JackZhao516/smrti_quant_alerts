@@ -22,14 +22,14 @@ class TestCoinList(unittest.TestCase):
         self.assertEqual(["BTCUSDT", "ETHUSDT"], exchanges)
 
     @responses.activate
-    def test_get_all_binance_active_spot_exchanges(self):
+    def test_get_popular_quote_binance_spot_exchanges(self):
         api_url = f'{self.BINANCE_SPOT_API_URL}exchangeInfo?permissions=SPOT'
         responses.add(responses.GET, api_url,
                       json={"symbols": [{"symbol": "BTCUSDT"}, {"symbol": "ETHBUSD"},
                                         {"symbol": "SOLETH"}, {"symbol": "ETHSOL"}]
                             },
                       status=200)
-        active_exchanges = set(self.gel.get_all_binance_active_spot_exchanges())
+        active_exchanges = set(self.gel.get_popular_quote_binance_spot_exchanges())
         self.assertEqual({"BTCUSDT", "ETHBUSD", "SOLETH"}, active_exchanges)
 
     @responses.activate

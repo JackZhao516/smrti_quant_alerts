@@ -10,6 +10,7 @@ from pycoingecko import CoinGeckoAPI
 from smrti_quant_alerts.telegram_api import TelegramBot
 from smrti_quant_alerts.error import error_handling
 from smrti_quant_alerts.settings import Config
+from smrti_quant_alerts.data_type import BinanceExchange, CoingeckoCoin
 
 
 class GetExchangeList:
@@ -17,25 +18,27 @@ class GetExchangeList:
     BINANCE_SPOT_API_URL = "https://api.binance.com/api/v3/"
     BINANCE_FUTURES_API_URL = "https://fapi.binance.com/fapi/v1/"
 
-    def __init__(self, tg_type="TEST", active_exchanges=None):
+    def __init__(self, tg_type="TEST", active_binance_spot_exchanges=None):
         self.cg = CoinGeckoAPI(api_key=self.COINGECKO_API_KEY)
         self.tg_bot = TelegramBot(alert_type=tg_type)
-        self.active_exchanges = []
+
+        # data
+        self.active_binance_spot_exchanges = []
         self.active_exchanges_timestamp = 0
-        if active_exchanges is not None:
-            self.active_exchanges = active_exchanges
+        if active_binance_spot_exchanges is not None:
+            self.active_binance_spot_exchanges = active_binance_spot_exchanges
             self.active_exchanges_timestamp = time.time()
 
-        self.active_exchanges_set = set(self.active_exchanges)
-        # self.active_exchanges = self.get_all_binance_exchanges()
+        self.active_binance_spot_exchanges_set = set(self.active_binance_spot_exchanges)
+        # self.active_binance_spot_exchanges = self.get_all_binance_exchanges()
 
-    def _update_popular_exchanges(self):
+    def _update_active_binance_spot_exchanges(self):
         """
         Update popular exchanges if last update was more than 1 hour ago
         """
         if (time.time() - self.active_exchanges_timestamp) >= 3600:
-            self.active_exchanges = self.get_all_binance_active_spot_exchanges()
-            self.active_exchanges_set = set(self.active_exchanges)
+            self.active_binance_spot_exchanges = self.get_all_binance_spot_exchanges()
+            self.active_binance_spot_exchanges_set = set(self.active_binance_spot_exchanges)
             self.active_exchanges_timestamp = time.time()
 
     @error_handling("binance", "get_all_binance_spot_exchanges")
@@ -43,61 +46,34 @@ class GetExchangeList:
         """
         Get all exchanges on binance
 
-        :return: [exchanges]
+        :return: [BinanceExchange]
         """
         api_url = f'{self.BINANCE_SPOT_API_URL}exchangeInfo?permissions=SPOT'
 
         response = requests.get(api_url, timeout=2)
         response = response.json()
-        return [exchange['symbol'] for exchange in response['symbols']]
 
-    @error_handling("binance", "get_all_binance_active_spot_exchanges")
-    def get_all_binance_active_spot_exchanges(self, time_on_binance=None):
+        res = []
+        for exchange in response['symbols']:
+            if exchange['status'] == 'TRADING':
+                res.append(BinanceExchange(exchange['baseAsset'], exchange['quoteAsset']))
+        return res
+
+    @error_handling("binance", "get_popular_quote_binance_spot_exchanges")
+    def get_popular_quote_binance_spot_exchanges(self):
         """
-        BTC, ETH, USDT, BUSD exchanges older than <time_on_binance> days
+        BTC, ETH, USDT, BUSD spot binance exchanges
 
-        :param time_on_binance: days on binance
-
-        :return: [exchanges]
+        :return: [BinanceExchange]
         """
-        start = time.time()
-        exchanges = set(self.get_all_binance_spot_exchanges())
+        self._update_active_binance_spot_exchanges()
         res = []
 
         # choose BTC, ETH, USDT, BUSD exchanges
-        for exchange in exchanges:
-            if exchange[-3:] == "BTC" or exchange[-3:] == "ETH" or \
-                    exchange[-4:] == "USDT" or exchange[-4:] == "BUSD":
+        for exchange in self.active_binance_spot_exchanges:
+            if exchange.quote_symbol in {"BTC", "ETH", "USDT", "BUSD"}:
                 res.append(exchange)
 
-        if not time_on_binance:
-            logging.info(f"active_exchanges has {len(res)} exchanges")
-            return res
-
-        active_exchanges_set = set(res)
-
-        for exchange in res:
-            url = f"{self.BINANCE_SPOT_API_URL}klines?symbol={exchange}&interval=1m&" \
-                  f"startTime={(int(time.time()) - 70) * 1000}&limit=1000"
-            response = requests.get(url, timeout=2).json()
-            if type(response) == dict or len(response) == 0:
-                active_exchanges_set.remove(exchange)
-
-        if time_on_binance:
-            for exchange in res:
-                time_delta = time_on_binance * 24 * 60 * 60 * 1000
-                time_now = int(time.time()) * 1000
-                url = f"{self.BINANCE_SPOT_API_URL}klines?symbol={exchange}&interval=1m&" \
-                      f"startTime={time_now - time_delta}&" \
-                      f"endTime={time_now - time_delta + 70000}&limit=1000"
-                response = requests.get(url, timeout=2).json()
-                if type(response) == dict or len(response) == 0:
-                    active_exchanges_set.remove(exchange)
-
-        res = sorted(list(active_exchanges_set))
-
-        logging.info(f"active_exchanges has {len(res)} exchanges")
-        logging.info(f"active_exchanges took {time.time() - start} seconds")
         return res
 
     @error_handling("binance", "get_all_binance_future_exchanges")
@@ -207,7 +183,7 @@ class GetExchangeList:
 
         :return: [exchanges_on_binance], [coin_ids_on_coingeco], [coin_symbols_on_coingeco]
         """
-        self._update_popular_exchanges()
+        self._update_active_binance_spot_exchanges()
         coins = self.get_all_coingecko_coins()
 
         # pagination by 250
@@ -228,7 +204,7 @@ class GetExchangeList:
                     binance_coin = False
                     for pf in postfix:
                         exchange = symbol + pf
-                        if exchange in self.active_exchanges_set:
+                        if exchange in self.active_binance_spot_exchanges_set:
                             binance_exchanges.append(exchange)
                             binance_coin = True
                     if not binance_coin:
@@ -268,7 +244,7 @@ class GetExchangeList:
 
         :return: [exchanges_on_binance], [coin_ids_on_coingeco], [coin_names_on_coingeco]
         """
-        self._update_popular_exchanges()
+        self._update_active_binance_spot_exchanges()
 
         res = []
         coingeco_coins = []
@@ -277,20 +253,20 @@ class GetExchangeList:
         market_list = self.get_top_n_market_cap_coins(n=num)
         for i, coin in enumerate(market_list):
             coin_id, symbol = coin
-            if f"{symbol}USDT" not in self.active_exchanges_set and \
-                    f"{symbol}BTC" not in self.active_exchanges_set and \
-                    f"{symbol}ETH" not in self.active_exchanges_set and \
-                    f"{symbol}BUSD" not in self.active_exchanges_set:
+            if f"{symbol}USDT" not in self.active_binance_spot_exchanges_set and \
+                    f"{symbol}BTC" not in self.active_binance_spot_exchanges_set and \
+                    f"{symbol}ETH" not in self.active_binance_spot_exchanges_set and \
+                    f"{symbol}BUSD" not in self.active_binance_spot_exchanges_set:
                 coingeco_coins.append(coin_id)
                 coingeco_names.append(symbol)
             else:
-                if f"{symbol}USDT" in self.active_exchanges_set:
+                if f"{symbol}USDT" in self.active_binance_spot_exchanges_set:
                     res.append(f"{symbol}USDT")
-                elif f"{symbol}BUSD" in self.active_exchanges_set:
+                elif f"{symbol}BUSD" in self.active_binance_spot_exchanges_set:
                     res.append(f"{symbol}BUSD")
-                if f"{symbol}BTC" in self.active_exchanges_set:
+                if f"{symbol}BTC" in self.active_binance_spot_exchanges_set:
                     res.append(f"{symbol}BTC")
-                if f"{symbol}ETH" in self.active_exchanges_set:
+                if f"{symbol}ETH" in self.active_binance_spot_exchanges_set:
                     res.append(f"{symbol}ETH")
 
         if tg_alert:
@@ -305,18 +281,18 @@ class GetExchangeList:
 
         :return: [exchanges]
         """
-        self._update_popular_exchanges()
+        self._update_active_binance_spot_exchanges()
         res = []
         coins = set()
-        for i in self.active_exchanges:
+        for i in self.active_binance_spot_exchanges:
             if i[-4:] == "USDT":
                 res.append(i)
                 coins.add(i[:-4])
-        for i in self.active_exchanges:
+        for i in self.active_binance_spot_exchanges:
             if i[-4:] == "BUSD" and i[:-4] not in coins:
                 res.append(i)
                 coins.add(i[:-4])
-        for i in self.active_exchanges:
+        for i in self.active_binance_spot_exchanges:
             if i[-3:] == "BTC" and i[:-3] not in coins:
                 res.append(i)
         res = list(set(res))
@@ -340,7 +316,7 @@ class GetExchangeList:
 
         :return: [exchanges_on_binance], [coin_ids_on_coingeco], [coin_names_on_coingeco]
         """
-        self._update_popular_exchanges()
+        self._update_active_binance_spot_exchanges()
         market_list = self.get_top_n_market_cap_coins(num)
 
         res = []
@@ -349,9 +325,9 @@ class GetExchangeList:
         for i, coin in enumerate(market_list):
             coin_id, symbol = coin
             # add alt/btc, alt/eth exchanges
-            if f"{symbol}BTC" in self.active_exchanges:
+            if f"{symbol}BTC" in self.active_binance_spot_exchanges:
                 exchange.append(f"{symbol}BTC")
-            if f"{symbol}ETH" in self.active_exchanges:
+            if f"{symbol}ETH" in self.active_binance_spot_exchanges:
                 exchange.append(f"{symbol}ETH")
 
             # get volume increase ratio
@@ -368,16 +344,16 @@ class GetExchangeList:
         res = sorted(res, key=lambda x: x[0], reverse=True)
 
         for volume_increase, symbol, coin_id in res:
-            if f"{symbol}USDT" not in self.active_exchanges and \
-                    f"{symbol}BTC" not in self.active_exchanges and \
-                    f"{symbol}ETH" not in self.active_exchanges and \
-                    f"{symbol}BUSD" not in self.active_exchanges:
+            if f"{symbol}USDT" not in self.active_binance_spot_exchanges and \
+                    f"{symbol}BTC" not in self.active_binance_spot_exchanges and \
+                    f"{symbol}ETH" not in self.active_binance_spot_exchanges and \
+                    f"{symbol}BUSD" not in self.active_binance_spot_exchanges:
                 coingeco_coins.append(coin_id)
                 coingeco_names.append(symbol)
             else:
-                if f"{symbol}USDT" in self.active_exchanges:
+                if f"{symbol}USDT" in self.active_binance_spot_exchanges:
                     exchange.append(f"{symbol}USDT")
-                elif f"{symbol}BUSD" in self.active_exchanges:
+                elif f"{symbol}BUSD" in self.active_binance_spot_exchanges:
                     exchange.append(f"{symbol}BUSD")
 
         if tg_alert:
@@ -389,9 +365,6 @@ class GetExchangeList:
 
 if __name__ == '__main__':
     cg = GetExchangeList(tg_type='TEST')
-    ex, ids, symbols = cg.get_coins_with_24h_volume_larger_than_threshold()
-    print(len(ex), len(ids), len(symbols))
-    print(ex)
-    print(symbols)
+    print(cg.get_popular_quote_binance_spot_exchanges())
 
 

@@ -1,54 +1,50 @@
 import logging
 import time
+import statistics
+from decimal import Decimal, getcontext
 
 import requests
-import numpy as np
 from binance.lib.utils import config_logging
 
 from .utility import update_coins_exchanges_txt
 from smrti_quant_alerts.get_exchange_list import GetExchangeList
 from smrti_quant_alerts.telegram_api import TelegramBot
 
-STABLE_COINS = {"USD", "USDT", "USDC", "USDBC", "DAI", "BUSD",
-                "USDP", "GUSD", "USDC.E", "WSTUSDT", "AXLUSDC",
-                "TUSD", "FRAX", "CUSD", "USDD", "DEI", "USDK",
-                "MIMATIC", "OUSD", "PAX", "FEI", "USTC", "USDN",
-                "TRIBE", "LUSD", "EURS", "VUSDC", "USDX", "SUSD",
-                "VAI", "RSV", "CEUR", "USDS", "CUSDT", "DOLA",
-                "HAY", "MIM", "EDGT", "ALUSD"}
+
+class SpotOverMA(GetExchangeList):
+    pass
+
 
 
 class CoingeckoAlert4H(GetExchangeList):
-    def __init__(self, coin_ids, coin_symbols, active_exchanges=None, tg_type="CG_SUM", alert_type="300"):
-        super().__init__(tg_type, active_exchanges=active_exchanges)
+    STABLE_COINS = {"USD", "USDT", "USDC", "USDBC", "DAI", "BUSD",
+                    "USDP", "GUSD", "USDC.E", "WSTUSDT", "AXLUSDC",
+                    "TUSD", "FRAX", "CUSD", "USDD", "DEI", "USDK",
+                    "MIMATIC", "OUSD", "PAX", "FEI", "USTC", "USDN",
+                    "TRIBE", "LUSD", "EURS", "VUSDC", "USDX", "SUSD",
+                    "VAI", "RSV", "CEUR", "USDS", "CUSDT", "DOLA",
+                    "HAY", "MIM", "EDGT", "ALUSD"}
+
+    def __init__(self, coin_ids, coin_symbols, active_binance_spot_exchanges=None, tg_type="CG_SUM", alert_type="300"):
+        super().__init__(tg_type, active_binance_spot_exchanges=active_binance_spot_exchanges)
         self.coin_ids = coin_ids
         self.coin_symbols = coin_symbols
-        self.spot_over_h4 = set()
+        self.spot_over_ma = set()
         self.alert_type = alert_type
 
     def h4_sma_200(self, coin_id, coin_symbol):
         try:
+
             price = self.cg.get_coin_market_chart_by_id(id=coin_id, vs_currency='usd', days=35)
             price = price['prices']
-            current_price = float(price[-1][1])
+            current_price = Decimal(price[-1][1])
 
-            a = time.time()
+            price = [i[1] for i in price][:800]
+            sma = statistics.mean(price[::4])
 
-            price = np.array(price)
-            price = [i[1] for i in price]
-            res = 0
-            counter = 0
-            for i in range(0, len(price), 4):
-                if i == 800:
-                    break
-                res += float(price[len(price) - 1 - i])
-                counter += 1
-
-            sma = res / counter
-            print(f"time: {time.time() - a}")
-            logging.warning(f"{coin_symbol}: {current_price}, {sma}")
+            logging.info(f"{coin_symbol}: {current_price}, {sma}")
             if current_price > sma:
-                self.spot_over_h4.add(coin_symbol)
+                self.spot_over_ma.add(coin_symbol)
                 return True
             else:
                 return False
@@ -59,12 +55,12 @@ class CoingeckoAlert4H(GetExchangeList):
     def run(self):
         for coin_id, coin_symbol in zip(self.coin_ids, self.coin_symbols):
             coin_symbol = coin_symbol.upper()
-            if coin_symbol in STABLE_COINS:
+            if coin_symbol in self.STABLE_COINS:
                 continue
             self.h4_sma_200(coin_id, coin_symbol)
-        logging.warning(f"spot_over_h12_{self.alert_type}: {self.spot_over_h4}")
+        logging.warning(f"spot_over_ma_{self.alert_type}: {self.spot_over_ma}")
 
-        return update_coins_exchanges_txt(self.spot_over_h4, "coins", self.alert_type)
+        return update_coins_exchanges_txt(self.spot_over_ma, "coins", self.alert_type)
 
 
 class BinanceIndicatorAlert4H:
@@ -153,7 +149,7 @@ def alert_spot_cross_ma(exclude_coins, exclude_newly_deleted_coins,
 
     logging.info("start coingecko alert")
     tg_type = "TEST"
-    coingecko_res = CoingeckoAlert4H(coin_ids, coin_symbols, cg.active_exchanges,
+    coingecko_res = CoingeckoAlert4H(coin_ids, coin_symbols, cg.active_binance_spot_exchanges,
                                      tg_type=tg_type, alert_type=count)
     coins, newly_deleted_coins, newly_added_coins = coingecko_res.run()
     logging.info(f"start binance indicator alert")

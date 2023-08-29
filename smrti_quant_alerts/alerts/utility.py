@@ -8,7 +8,7 @@ def update_coins_exchanges_txt(spot_over_h4, txt_type="coins", mode="300"):
     :param spot_over_h4: list of coins or exchanges
     :param txt_type: "coins" or "exchanges"
     :param mode: "100" | "300" | "500"
-    :return: spot_over_h4, newly_deleted, newly_added
+    :return: spot_over_ma, newly_deleted, newly_added
     """
     if os.path.exists(f"{mode}_{txt_type}.txt"):
         with open(f"{mode}_{txt_type}.txt", "r") as f:
