@@ -37,18 +37,20 @@ class GetExchangeList:
         Update popular exchanges if last update was more than 1 hour ago
         """
         if (time.time() - self.active_exchanges_timestamp) >= 3600:
-            self.active_binance_spot_exchanges = self.get_all_binance_spot_exchanges()
+            self.active_binance_spot_exchanges = self.get_all_binance_exchanges()
             self.active_binance_spot_exchanges_set = set(self.active_binance_spot_exchanges)
             self.active_exchanges_timestamp = time.time()
 
-    @error_handling("binance", "get_all_binance_spot_exchanges")
-    def get_all_binance_spot_exchanges(self):
+    @error_handling("binance", "get_all_binance_exchanges")
+    def get_all_binance_exchanges(self, exchange_type="SPOT"):
         """
-        Get all exchanges on binance
+        Get all exchanges on binance, default is SPOT
 
+        :param exchange_type: SPOT or FUTURE
         :return: [BinanceExchange]
         """
-        api_url = f'{self.BINANCE_SPOT_API_URL}exchangeInfo?permissions=SPOT'
+        api_url = f'{self.BINANCE_SPOT_API_URL}exchangeInfo?permissions=SPOT' \
+            if exchange_type == "SPOT" else f'{self.BINANCE_FUTURES_API_URL}exchangeInfo'
 
         response = requests.get(api_url, timeout=2)
         response = response.json()
@@ -76,19 +78,6 @@ class GetExchangeList:
 
         return res
 
-    @error_handling("binance", "get_all_binance_future_exchanges")
-    def get_all_binance_future_exchanges(self):
-        """
-        Get all future exchanges on binance
-
-        :return: [[exchange, contract_type],...]
-        """
-        api_url = f'{self.BINANCE_FUTURES_API_URL}exchangeInfo'
-
-        response = requests.get(api_url, timeout=2)
-        response = response.json()
-        return [[exchange["symbol"], exchange["contractType"]] for exchange in response["symbols"]]
-
     @error_handling("coingecko", "get_all_coingecko_coins")
     def get_all_coingecko_coins(self):
         """
@@ -97,7 +86,7 @@ class GetExchangeList:
         :return: [[coin_id, coin_symbol_upper], ...]
         """
         res = self.cg.get_coins_list()
-        return [[coin["id"], coin["symbol"].upper()] for coin in res]
+        return [CoingeckoCoin(coin["id"], coin["symbol"]) for coin in res]
 
     @error_handling("binance", "get_future_exchange_funding_rate")
     def get_future_exchange_funding_rate(self, exchange):
@@ -365,6 +354,9 @@ class GetExchangeList:
 
 if __name__ == '__main__':
     cg = GetExchangeList(tg_type='TEST')
-    print(cg.get_popular_quote_binance_spot_exchanges())
+    futures = cg.get_all_binance_exchanges("FUTURE")
+    future = futures[0]
+    print(futures)
+    print(cg.get_future_exchange_funding_rate(future))
 
 

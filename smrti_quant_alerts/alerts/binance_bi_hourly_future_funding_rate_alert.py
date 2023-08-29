@@ -27,7 +27,7 @@ class FutureFundingRate(GetExchangeList):
             shanghai_now = datetime.now(tz).strftime('%H:%M')
             if shanghai_now in {"00:00", "02:00", "04:00", "06:00", "08:00", "10:00",
                                 "12:00", "14:00", "16:00", "18:00", "20:00", "22:00"}:
-                exchange_list = self.get_all_binance_future_exchanges()
+                exchange_list = self.get_all_binance_exchanges("FUTURE")
                 res = []
                 for exchange in exchange_list:
                     symbol = exchange[0]

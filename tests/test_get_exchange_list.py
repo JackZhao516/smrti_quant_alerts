@@ -4,6 +4,7 @@ from decimal import Decimal
 
 from smrti_quant_alerts.get_exchange_list import GetExchangeList
 from smrti_quant_alerts.settings import Config
+from smrti_quant_alerts.data_type import BinanceExchange, CoingeckoCoin
 
 
 class TestCoinList(unittest.TestCase):
@@ -13,13 +14,14 @@ class TestCoinList(unittest.TestCase):
     gel = GetExchangeList("TEST")
 
     @responses.activate
-    def test_get_all_binance_spot_exchanges(self):
+    def test_get_all_binance_exchanges(self):
         api_url = f'{self.BINANCE_SPOT_API_URL}exchangeInfo?permissions=SPOT'
         responses.add(responses.GET, api_url,
-                      json={"symbols": [{"symbol": "BTCUSDT"}, {"symbol": "ETHUSDT"}]},
+                      json={"symbols": [{"baseAsset": "BTC", "quoteAsset": "USDT", "status": "TRADING"},
+                                        {"baseAsset": "ETH", "quoteAsset": "USDT", "status": "TRADING"}]},
                       status=200)
-        exchanges = self.gel.get_all_binance_spot_exchanges()
-        self.assertEqual(["BTCUSDT", "ETHUSDT"], exchanges)
+        exchanges = self.gel.get_all_binance_exchanges()
+        self.assertEqual([BinanceExchange("BTC", "USDT"), BinanceExchange("ETH", "USDT")], exchanges)
 
     @responses.activate
     def test_get_popular_quote_binance_spot_exchanges(self):
@@ -31,16 +33,6 @@ class TestCoinList(unittest.TestCase):
                       status=200)
         active_exchanges = set(self.gel.get_popular_quote_binance_spot_exchanges())
         self.assertEqual({"BTCUSDT", "ETHBUSD", "SOLETH"}, active_exchanges)
-
-    @responses.activate
-    def test_get_all_binance_future_exchanges(self):
-        api_url = f'{self.BINANCE_FUTURE_API_URL}exchangeInfo'
-        responses.add(responses.GET, api_url,
-                      json={"symbols": [{"symbol": "BTCUSDT", "contractType": "Test"},
-                                        {"symbol": "ETHUSDT", "contractType": "Test"}]},
-                      status=200)
-        exchanges = self.gel.get_all_binance_future_exchanges()
-        self.assertEqual([['BTCUSDT', 'Test'], ['ETHUSDT', 'Test']], exchanges)
 
     @responses.activate
     def test_get_future_exchange_funding_rate(self):
