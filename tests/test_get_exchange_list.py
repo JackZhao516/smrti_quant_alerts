@@ -9,8 +9,8 @@ from smrti_quant_alerts.data_type import BinanceExchange, CoingeckoCoin
 
 class TestCoinList(unittest.TestCase):
     COINGECKO_API_KEY = Config.TOKENS["COINGECKO_API_KEY"]
-    BINANCE_SPOT_API_URL = "https://api.binance.com/api/v3/"
-    BINANCE_FUTURE_API_URL = "https://fapi.binance.com/fapi/v1/"
+    BINANCE_SPOT_API_URL = Config.API_ENDPOINTS["BINANCE_SPOT_API_URL"]
+    BINANCE_FUTURES_API_URL = Config.API_ENDPOINTS["BINANCE_FUTURES_API_URL"]
     gel = GetExchangeList("TEST")
 
     @responses.activate
@@ -27,26 +27,30 @@ class TestCoinList(unittest.TestCase):
     def test_get_popular_quote_binance_spot_exchanges(self):
         api_url = f'{self.BINANCE_SPOT_API_URL}exchangeInfo?permissions=SPOT'
         responses.add(responses.GET, api_url,
-                      json={"symbols": [{"symbol": "BTCUSDT"}, {"symbol": "ETHBUSD"},
-                                        {"symbol": "SOLETH"}, {"symbol": "ETHSOL"}]
-                            },
+                      json={"symbols": [{"baseAsset": "BTC", "quoteAsset": "USDT", "status": "TRADING"},
+                                        {"baseAsset": "ETH", "quoteAsset": "BUSD", "status": "TRADING"},
+                                        {"baseAsset": "SOL", "quoteAsset": "ETH", "status": "TRADING"},
+                                        {"baseAsset": "ETH", "quoteAsset": "SOL", "status": "TRADING"}]},
                       status=200)
-        active_exchanges = set(self.gel.get_popular_quote_binance_spot_exchanges())
-        self.assertEqual({"BTCUSDT", "ETHBUSD", "SOLETH"}, active_exchanges)
+        active_exchanges = self.gel.get_popular_quote_binance_spot_exchanges()
+        self.assertEqual([BinanceExchange("BTC", "USDT"), BinanceExchange("ETH", "BUSD"),
+                          BinanceExchange("SOL", "ETH")], active_exchanges)
 
     @responses.activate
     def test_get_future_exchange_funding_rate(self):
-        api_url = f'{self.BINANCE_FUTURE_API_URL}premiumIndex?symbol=BTCUSDT'
+        api_url = f'{self.BINANCE_FUTURES_API_URL}premiumIndex?symbol=BTCUSDT'
         responses.add(responses.GET, api_url,
-                      json={"symbol": "BTCUSDT", "lastFundingRate": "0.0001"},
+                      json={"baseAsset": "BTC", "quoteAsset": "USDT", "status": "TRADING",
+                            "lastFundingRate": "0.0001"},
                       status=200)
-        api_url = f'{self.BINANCE_FUTURE_API_URL}premiumIndex?symbol=ETHUSDT'
+        api_url = f'{self.BINANCE_FUTURES_API_URL}premiumIndex?symbol=ETHUSDT'
         responses.add(responses.GET, api_url,
-                      json={"symbol": "ETHUSDT", "lastFundingRate": "-0.0002"},
+                      json={"baseAsset": "ETH", "quoteAsset": "USDT", "status": "TRADING",
+                            "lastFundingRate": "-0.0002"},
                       status=200)
-        rate = self.gel.get_future_exchange_funding_rate("BTCUSDT")
+        rate = self.gel.get_future_exchange_funding_rate(BinanceExchange("BTC", "USDT"))
         self.assertEqual(Decimal('0.0001'), rate)
-        rate = self.gel.get_future_exchange_funding_rate("ETHUSDT")
+        rate = self.gel.get_future_exchange_funding_rate(BinanceExchange("ETH", "USDT"))
         self.assertEqual(Decimal('-0.0002'), rate)
 
     @responses.activate
@@ -58,7 +62,7 @@ class TestCoinList(unittest.TestCase):
                       json=[{"id": "bitcoin", "symbol": "btc"}, {"id": "ethereum", "symbol": "eth"}],
                       status=200, match_querystring=True)
         coins = self.gel.get_top_n_market_cap_coins(2)
-        self.assertEqual([('bitcoin', 'BTC'), ('ethereum', 'ETH')], coins)
+        self.assertEqual([CoingeckoCoin('bitcoin', 'BTC'), CoingeckoCoin('ethereum', 'ETH')], coins)
 
     @responses.activate
     def test_get_coins_market_info(self):
@@ -70,9 +74,10 @@ class TestCoinList(unittest.TestCase):
                       json=[{"id": "bitcoin", "symbol": "btc", "market_cap": 200},
                             {"id": "ethereum", "symbol": "eth", "market_cap": 100}],
                       status=200, match_querystring=True)
-        coins = self.gel.get_coins_market_info(["bitcoin", "ethereum"], ["market_cap"])
-        self.assertEqual([{"id": "bitcoin", "symbol": "BTC", "market_cap": 200},
-                          {"id": "ethereum", "symbol": "ETH", "market_cap": 100}], coins)
+        coins = self.gel.get_coins_market_info([CoingeckoCoin("bitcoin", "BTC"),
+                                                CoingeckoCoin("ethereum", "ETH")], ["market_cap"])
+        self.assertEqual([{"coingecko_coin": CoingeckoCoin("bitcoin", "BTC"), "market_cap": 200},
+                          {"coingecko_coin": CoingeckoCoin("ethereum", "ETH"), "market_cap": 100}], coins)
 
     @responses.activate
     def test_get_coin_market_info(self):
@@ -81,8 +86,12 @@ class TestCoinList(unittest.TestCase):
         responses.add(responses.GET, api_url,
                       json={"id": "bitcoin", "symbol": "btc", "market_cap": 200},
                       status=200, match_querystring=True)
-        coins = self.gel.get_coin_market_info("bitcoin", ["market_cap"], 1, "daily")
+        coins = self.gel.get_coin_market_info(CoingeckoCoin("bitcoin", "BTC"), ["market_cap"], 1, "daily")
         self.assertEqual({"market_cap": 200}, coins)
+
+    @responses.activate
+    def test_get_coins_with_24h_volume_larger_than_threshold(self):
+        pass
 
     @responses.activate
     def test_get_top_market_cap_exchanges(self):

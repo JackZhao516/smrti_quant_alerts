@@ -10,6 +10,10 @@ class Config:
         exit(1)
     TOKENS = json.load(open(f"{current_dir}token.json"))
     SETTINGS = json.load(open(f"{current_dir}settings.json"))
+    API_ENDPOINTS = {
+        "BINANCE_SPOT_API_URL": "https://api.binance.com/api/v3/",
+        "BINANCE_FUTURES_API_URL": "https://fapi.binance.com/fapi/v1/"
+    }
 
     def __init__(self):
         self.validate_tokens()

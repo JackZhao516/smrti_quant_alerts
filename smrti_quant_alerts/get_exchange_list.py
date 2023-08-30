@@ -15,8 +15,8 @@ from smrti_quant_alerts.data_type import BinanceExchange, CoingeckoCoin
 
 class GetExchangeList:
     COINGECKO_API_KEY = Config.TOKENS["COINGECKO_API_KEY"]
-    BINANCE_SPOT_API_URL = "https://api.binance.com/api/v3/"
-    BINANCE_FUTURES_API_URL = "https://fapi.binance.com/fapi/v1/"
+    BINANCE_SPOT_API_URL = Config.API_ENDPOINTS["BINANCE_SPOT_API_URL"]
+    BINANCE_FUTURES_API_URL = Config.API_ENDPOINTS["BINANCE_FUTURES_API_URL"]
 
     def __init__(self, tg_type="TEST", active_binance_spot_exchanges=None):
         self.cg = CoinGeckoAPI(api_key=self.COINGECKO_API_KEY)
@@ -83,7 +83,7 @@ class GetExchangeList:
         """
         Get all coins on coingecko
 
-        :return: [[coin_id, coin_symbol_upper], ...]
+        :return: [CoingeckoCoin, ...]
         """
         res = self.cg.get_coins_list()
         return [CoingeckoCoin(coin["id"], coin["symbol"]) for coin in res]
@@ -109,7 +109,7 @@ class GetExchangeList:
 
         :param n: number of coins to get
 
-        :return: [(coin_id, coin_symbol_upper), ...]
+        :return: [CoingeckoCoin, ...]
         """
         # coingecko only allows 250 coins per page
         pages = math.ceil(n / 250)
@@ -120,104 +120,100 @@ class GetExchangeList:
                 vs_currency='usd', order='market_cap_desc', per_page=250,
                 page=page, sparkline=False)
         market_list = market_list[:n]
-        market_list = [(market['id'], market['symbol'].upper()) for market in market_list]
 
-        # remove duplicate coins and maintain the order
         seen = set()
         res = []
-        for coin in market_list:
-            if coin not in seen:
-                res.append(coin)
-                seen.add(coin)
+        for market in market_list:
+            if market['id'] not in seen:
+                res.append(CoingeckoCoin(market['id'], market['symbol']))
+                seen.add(market['id'])
 
         return res
 
     @error_handling("coingecko", "get_coins_market_info")
-    def get_coins_market_info(self, coin_ids, market_attribute_name_list):
+    def get_coins_market_info(self, coingecko_coins, market_attribute_name_list):
         """
         get coin market info from coingecko
 
-        :param coin_ids: [coin_id, ...]
+        :param coingecko_coins: [CoingeckoCoin, ...]
         :param market_attribute_name_list: [market_attribute_name, ...]
-        :param order: order of the results
 
-        :return: [{"id": <id>, "symbol": <symbol>, <market_attribute_name>: value, ...}]
+        :return: [{"coingecko_coin": CoingeckoCoin, <market_attribute_name>: value, ...}]
         """
-        pages = math.ceil(len(coin_ids) / 250)
+        pages = math.ceil(len(coingecko_coins) / 250)
         market_info = []
         for page in range(pages):
             cur_full_info = self.cg.get_coins_markets(
-                vs_currency='usd', ids=coin_ids[page * 250:(page + 1) * 250],
+                vs_currency='usd', ids=[coin.coin_id for coin in coingecko_coins[page * 250:(page + 1) * 250]],
                 per_page=250, page=1, sparkline=False,
                 price_change_percentage='24h', locale='en')
 
             for info in cur_full_info:
-                cur_info = {"id": info['id'], "symbol": info['symbol'].upper()}
+                cur_info = {"coingecko_coin": CoingeckoCoin(info['id'], info['symbol'])}
                 for market_attribute_name in market_attribute_name_list:
-                    cur_info[market_attribute_name] = info[market_attribute_name]
+                    cur_info[market_attribute_name] = info.get(market_attribute_name, None)
 
                 market_info.append(cur_info)
 
         return market_info
+
+    @error_handling("coingecko", "get_coin_market_info")
+    def get_coin_market_info(self, coingecko_coin, market_attribute_name_list, days, interval="daily"):
+        """
+        get coin market info from coingecko
+
+        :param coingecko_coin: CoingeckoCoin
+        :param market_attribute_name_list: [market_attribute_name, ...]
+        :param days: number of days to get
+        :param interval: interval of the data
+
+        :return: [{<market_attribute_name>: value, ...}]
+        """
+        coin_info = self.cg.get_coin_market_chart_by_id(
+            id=coingecko_coin.coin_id, vs_currency='usd', days=days, interval=interval)
+
+        return {market_attribute_name: coin_info.get(market_attribute_name, None)
+                for market_attribute_name in market_attribute_name_list}
 
     @error_handling("coingecko", "get_coins_with_24h_volume_larger_than_threshold")
     def get_coins_with_24h_volume_larger_than_threshold(self, threshold=3000000):
         """
         Get all coins with 24h volume larger than threshold (in USD)
         coin/usdt coin/eth coin/busd coin/btc exchanges on binance:
-            [exchanges_on_binance]
+            [BinanceExchange, ...]
         if not on binance, get coin_id, and coin_name from coingeco:
-            [coin_ids_on_coingeco], [coin_names_on_coingeco]
+            [CoingeckoCoin, ...]
         :param threshold: threshold of 24h volume in USD
 
-        :return: [exchanges_on_binance], [coin_ids_on_coingeco], [coin_symbols_on_coingeco]
+        :return: [BinanceExchange, ...], [CoingeckoCoin, ...]
         """
         self._update_active_binance_spot_exchanges()
         coins = self.get_all_coingecko_coins()
 
         # pagination by 250
         pages = math.ceil(len(coins) / 250)
-        coin_ids_on_coingeco = []
-        coin_symbols_on_coingeco = []
+        coingecko_coins = []
         binance_exchanges = []
-        postfix = ['USDT', 'BUSD', 'BTC', 'ETH']
+        quotes = ['USDT', 'BUSD', 'BTC', 'ETH']
 
         for page in range(pages):
             cur_full_info = self.cg.get_coins_markets(
-                vs_currency='usd', ids=[coin[0] for coin in coins[page * 250:(page + 1) * 250]],
+                vs_currency='usd', ids=[coin.coin_id for coin in coins[page * 250:(page + 1) * 250]],
                 per_page=250, page=1)
 
             for info in cur_full_info:
                 coin_id, symbol = info['id'], info['symbol'].upper()
                 if info["total_volume"] and int(info['total_volume']) >= threshold:
                     binance_coin = False
-                    for pf in postfix:
-                        exchange = symbol + pf
+                    for quote in quotes:
+                        exchange = symbol + quote
                         if exchange in self.active_binance_spot_exchanges_set:
-                            binance_exchanges.append(exchange)
+                            binance_exchanges.append(BinanceExchange(symbol, quote))
                             binance_coin = True
                     if not binance_coin:
-                        coin_ids_on_coingeco.append(coin_id)
-                        coin_symbols_on_coingeco.append(symbol)
+                        coingecko_coins.append(CoingeckoCoin(coin_id, symbol))
 
-        return binance_exchanges, coin_ids_on_coingeco, coin_symbols_on_coingeco
-
-    @error_handling("coingecko", "get_coin_market_info")
-    def get_coin_market_info(self, coin_id, market_attribute_name_list, days, interval="daily"):
-        """
-        get coin market info from coingecko
-
-        :param coin_id: coin_id
-        :param market_attribute_name_list: [market_attribute_name, ...]
-        :param days: number of days to get
-        :param interval: interval of the data
-
-        :return: [{"id": <id>, "symbol": <symbol>, <market_attribute_name>: value, ...}]
-        """
-        coin_info = self.cg.get_coin_market_chart_by_id(
-            id=coin_id, vs_currency='usd', days=days, interval=interval)
-
-        return {name: coin_info[name] for name in market_attribute_name_list}
+        return binance_exchanges, coingecko_coins
 
     def get_top_market_cap_exchanges(self, num=300, tg_alert=False):
         """
