@@ -282,7 +282,7 @@ class GetExchangeList:
         logging.info(f"Got {len(binance_exchanges)} coins in USDT, BUSD, or BTC format")
         return list(binance_exchanges)
 
-    # @error_handling("coingecko", "get_coins_with_weekly_volume_increase")
+    @error_handling("coingecko", "get_coins_with_weekly_volume_increase")
     def get_coins_with_weekly_volume_increase(self, volume_threshold=1.3, num=500, tg_alert=False):
         """
         Get top <num> market cap coins with weekly volume increase larger than volume_threshold
