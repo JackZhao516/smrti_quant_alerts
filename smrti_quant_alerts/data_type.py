@@ -5,7 +5,7 @@ class BinanceExchange:
         self.exchange = f"{self.base_symbol}{self.quote_symbol}"
 
     def __repr__(self):
-        return f'BinanceExchange("{self.exchange}")'
+        return self.exchange
 
     def __str__(self):
         return self.exchange
@@ -13,6 +13,8 @@ class BinanceExchange:
     def __eq__(self, other):
         if isinstance(other, BinanceExchange):
             return self.exchange == other.exchange
+        elif isinstance(other, str):
+            return self.exchange == other.upper()
         return False
 
     def __hash__(self):
@@ -25,7 +27,7 @@ class CoingeckoCoin:
         self.coin_symbol = coin_symbol.upper()
 
     def __repr__(self):
-        return f'CoingeckoCoin("{self.coin_symbol}")'
+        return self.coin_symbol
 
     def __str__(self):
         return self.coin_symbol

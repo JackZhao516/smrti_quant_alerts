@@ -18,8 +18,10 @@ class TestCoinList(unittest.TestCase):
         api_url = f'{self.BINANCE_SPOT_API_URL}exchangeInfo?permissions=SPOT'
         responses.add(responses.GET, api_url,
                       json={"symbols": [{"baseAsset": "BTC", "quoteAsset": "USDT", "status": "TRADING"},
-                                        {"baseAsset": "ETH", "quoteAsset": "USDT", "status": "TRADING"}]},
+                                        {"baseAsset": "ETH", "quoteAsset": "USDT", "status": "TRADING"},
+                                        {"baseAsset": "SOL", "quoteAsset": "ETH", "status": "NOT_TRADING"}]},
                       status=200)
+        self.gel._reset_timestamp()
         exchanges = self.gel.get_all_binance_exchanges()
         self.assertEqual([BinanceExchange("BTC", "USDT"), BinanceExchange("ETH", "USDT")], exchanges)
 
@@ -32,9 +34,23 @@ class TestCoinList(unittest.TestCase):
                                         {"baseAsset": "SOL", "quoteAsset": "ETH", "status": "TRADING"},
                                         {"baseAsset": "ETH", "quoteAsset": "SOL", "status": "TRADING"}]},
                       status=200)
+        self.gel._reset_timestamp()
         active_exchanges = self.gel.get_popular_quote_binance_spot_exchanges()
         self.assertEqual([BinanceExchange("BTC", "USDT"), BinanceExchange("ETH", "BUSD"),
                           BinanceExchange("SOL", "ETH")], active_exchanges)
+
+    @responses.activate
+    def test_get_all_coingecko_coins(self):
+        api_url = f'https://pro-api.coingecko.com/api/v3/coins/list?' \
+                  f'x_cg_pro_api_key={self.COINGECKO_API_KEY}'
+        responses.add(responses.GET, api_url,
+                      json=[{"id": "bitcoin", "symbol": "btc", "name": "Bitcoin"},
+                            {"id": "ethereum", "symbol": "eth", "name": "Ethereum"}],
+                      status=200)
+        self.gel._reset_timestamp()
+        coins = self.gel.get_all_coingecko_coins()
+        self.assertEqual([CoingeckoCoin("bitcoin", "btc"), CoingeckoCoin("ethereum", "eth")], coins)
+
 
     @responses.activate
     def test_get_future_exchange_funding_rate(self):
@@ -48,6 +64,7 @@ class TestCoinList(unittest.TestCase):
                       json={"baseAsset": "ETH", "quoteAsset": "USDT", "status": "TRADING",
                             "lastFundingRate": "-0.0002"},
                       status=200)
+        self.gel._reset_timestamp()
         rate = self.gel.get_future_exchange_funding_rate(BinanceExchange("BTC", "USDT"))
         self.assertEqual(Decimal('0.0001'), rate)
         rate = self.gel.get_future_exchange_funding_rate(BinanceExchange("ETH", "USDT"))
@@ -61,6 +78,7 @@ class TestCoinList(unittest.TestCase):
         responses.add(responses.GET, api_url,
                       json=[{"id": "bitcoin", "symbol": "btc"}, {"id": "ethereum", "symbol": "eth"}],
                       status=200, match_querystring=True)
+        self.gel._reset_timestamp()
         coins = self.gel.get_top_n_market_cap_coins(2)
         self.assertEqual([CoingeckoCoin('bitcoin', 'BTC'), CoingeckoCoin('ethereum', 'ETH')], coins)
 
@@ -74,6 +92,7 @@ class TestCoinList(unittest.TestCase):
                       json=[{"id": "bitcoin", "symbol": "btc", "market_cap": 200},
                             {"id": "ethereum", "symbol": "eth", "market_cap": 100}],
                       status=200, match_querystring=True)
+        self.gel._reset_timestamp()
         coins = self.gel.get_coins_market_info([CoingeckoCoin("bitcoin", "BTC"),
                                                 CoingeckoCoin("ethereum", "ETH")], ["market_cap"])
         self.assertEqual([{"coingecko_coin": CoingeckoCoin("bitcoin", "BTC"), "market_cap": 200},
@@ -86,19 +105,48 @@ class TestCoinList(unittest.TestCase):
         responses.add(responses.GET, api_url,
                       json={"id": "bitcoin", "symbol": "btc", "market_cap": 200},
                       status=200, match_querystring=True)
+        self.gel._reset_timestamp()
         coins = self.gel.get_coin_market_info(CoingeckoCoin("bitcoin", "BTC"), ["market_cap"], 1, "daily")
         self.assertEqual({"market_cap": 200}, coins)
 
     @responses.activate
     def test_get_coins_with_24h_volume_larger_than_threshold(self):
-        pass
+        api_url = f'{self.BINANCE_SPOT_API_URL}exchangeInfo?permissions=SPOT'
+        responses.add(responses.GET, api_url,
+                      json={"symbols": [{"baseAsset": "BTC", "quoteAsset": "USDT", "status": "TRADING"}]},
+                      status=200)
+
+        api_url = f'https://pro-api.coingecko.com/api/v3/coins/list?' \
+                  f'x_cg_pro_api_key={self.COINGECKO_API_KEY}'
+        responses.add(responses.GET, api_url,
+                      json=[{"id": "bitcoin", "symbol": "btc", "name": "Bitcoin"},
+                            {"id": "ethereum", "symbol": "eth", "name": "Ethereum"},
+                            {"id": "okcoin", "symbol": "okc", "name": "OKCoin"}],
+                      status=200)
+
+        api_url = "https://pro-api.coingecko.com/api/v3/coins/markets?" \
+                  f"x_cg_pro_api_key={self.COINGECKO_API_KEY}&vs_currency=usd&" \
+                  "per_page=250&page=1&" \
+                  "ids=bitcoin,ethereum,okcoin"
+        responses.add(responses.GET, api_url,
+                      json=[{"id": "bitcoin", "symbol": "btc", "total_volume": 20000000},
+                            {"id": "ethereum", "symbol": "eth", "total_volume": 10000000},
+                            {"id": "okcoin", "symbol": "okc", "total_volume": 1000}],
+                      status=200, match_querystring=True)
+        self.gel._reset_timestamp()
+        exchanges, coins = self.gel.get_coins_with_24h_volume_larger_than_threshold(1000000)
+        self.assertEqual([BinanceExchange("BTC", "USDT")], exchanges)
+        self.assertEqual([CoingeckoCoin("ethereum", "ETH")], coins)
+
 
     @responses.activate
     def test_get_top_market_cap_exchanges(self):
         api_url = f'{self.BINANCE_SPOT_API_URL}exchangeInfo?permissions=SPOT'
         responses.add(responses.GET, api_url,
-                      json={"symbols": [{"symbol": "BTCUSDT"}, {"symbol": "ETHBUSD"},
-                                        {"symbol": "SOLETH"}, {"symbol": "ETHSOL"}]
+                      json={"symbols": [{"baseAsset": "BTC", "quoteAsset": "USDT", "status": "TRADING"},
+                                        {"baseAsset": "ETH", "quoteAsset": "BUSD", "status": "TRADING"},
+                                        {"baseAsset": "SOL", "quoteAsset": "ETH", "status": "TRADING"},
+                                        {"baseAsset": "ETH", "quoteAsset": "SOL", "status": "TRADING"}]
                             },
                       status=200)
         api_url = "https://pro-api.coingecko.com/api/v3/coins/markets?" \
@@ -108,29 +156,34 @@ class TestCoinList(unittest.TestCase):
                       json=[{"id": "bitcoin", "symbol": "btc"}, {"id": "ethereum", "symbol": "eth"},
                             {"id": "testcoin", "symbol": "ts"}],
                       status=200, match_querystring=True)
-        exchanges, cg_ids, cg_names = self.gel.get_top_market_cap_exchanges(3)
+        self.gel._reset_timestamp()
+        exchanges, cg_coins = self.gel.get_top_market_cap_exchanges(3)
 
-        self.assertEqual(["BTCUSDT", "ETHBUSD"], exchanges)
-        self.assertEqual(["testcoin"], cg_ids)
-        self.assertEqual(["TS"], cg_names)
+        self.assertEqual([BinanceExchange("BTC", "USDT"), BinanceExchange("ETH", "BUSD")], exchanges)
+        self.assertEqual([CoingeckoCoin("testcoin", "ts")], cg_coins)
 
     @responses.activate
     def test_get_spot_all_exchanges_in_usdt_busd_btc(self):
         api_url = f'{self.BINANCE_SPOT_API_URL}exchangeInfo?permissions=SPOT'
         responses.add(responses.GET, api_url,
-                      json={"symbols": [{"symbol": "BTCUSDT"}, {"symbol": "ETHBUSD"},
-                                        {"symbol": "SOLETH"}, {"symbol": "ETHSOL"}]
+                      json={"symbols": [{"baseAsset": "BTC", "quoteAsset": "USDT", "status": "TRADING"},
+                                        {"baseAsset": "ETH", "quoteAsset": "BUSD", "status": "TRADING"},
+                                        {"baseAsset": "SOL", "quoteAsset": "ETH", "status": "TRADING"},
+                                        {"baseAsset": "ETH", "quoteAsset": "SOL", "status": "TRADING"}]
                             },
                       status=200)
+        self.gel._reset_timestamp()
         exchanges = self.gel.get_all_spot_exchanges_in_usdt_busd_btc()
-        self.assertEqual({"BTCUSDT", "ETHBUSD"}, set(exchanges))
+        self.assertEqual({BinanceExchange("BTC", "USDT"), BinanceExchange("ETH", "BUSD")}, set(exchanges))
 
     @responses.activate
     def test_get_coins_with_weekly_volume_increase(self):
         api_url = f'{self.BINANCE_SPOT_API_URL}exchangeInfo?permissions=SPOT'
         responses.add(responses.GET, api_url,
-                      json={"symbols": [{"symbol": "BTCUSDT"}, {"symbol": "ETHBUSD"},
-                                        {"symbol": "SOLETH"}, {"symbol": "ETHSOL"}]
+                      json={"symbols": [{"baseAsset": "BTC", "quoteAsset": "TTT", "status": "TRADING"},
+                                        {"baseAsset": "ETH", "quoteAsset": "BUSD", "status": "TRADING"},
+                                        {"baseAsset": "SOL", "quoteAsset": "ETH", "status": "TRADING"},
+                                        {"baseAsset": "ETH", "quoteAsset": "SOL", "status": "TRADING"}]
                             },
                       status=200)
         api_url = "https://pro-api.coingecko.com/api/v3/coins/markets?" \
@@ -146,8 +199,8 @@ class TestCoinList(unittest.TestCase):
         responses.add(responses.GET, api_url,
                       json={"id": "bitcoin", "symbol": "btc",
                             "total_volumes": [[1, 100], [2, 100], [3, 100], [1, 100], [2, 100],
-                                              [3, 100], [1, 100], [1, 100], [2, 100], [3, 100],
-                                              [1, 100], [2, 100], [3, 100], [1, 100]]},
+                                              [3, 100], [1, 100], [1, 1000], [2, 1000], [3, 1000],
+                                              [1, 1000], [2, 1000], [3, 1000], [1, 1000]]},
                       status=200, match_querystring=True)
         api_url = f"https://pro-api.coingecko.com/api/v3/coins/ethereum/market_chart?" \
                   f"vs_currency=usd&days=13&interval=daily&x_cg_pro_api_key={self.COINGECKO_API_KEY}"
@@ -165,5 +218,7 @@ class TestCoinList(unittest.TestCase):
                                               [3, 100], [1, 100], [1, 100], [2, 100], [3, 100],
                                               [1, 100], [2, 100], [3, 100], [1, 100]]},
                       status=200, match_querystring=True)
-        res, _, _ = self.gel.get_coins_with_weekly_volume_increase(1.3, 3, False)
-        self.assertEqual(["SOLETH", "ETHBUSD"], res)
+        self.gel._reset_timestamp()
+        binance_exchanges, coingecko_coins = self.gel.get_coins_with_weekly_volume_increase(1.3, 3, False)
+        self.assertEqual([BinanceExchange("SOL", "ETH"), BinanceExchange("ETH", "BUSD")], binance_exchanges)
+        self.assertEqual([CoingeckoCoin("bitcoin", "btc")], coingecko_coins)
