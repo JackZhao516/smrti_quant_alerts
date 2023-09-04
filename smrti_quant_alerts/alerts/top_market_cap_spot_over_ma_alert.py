@@ -139,7 +139,6 @@ class BinanceSpotOverMA(SpotOverMA):
             prices = self.get_exchange_history_hourly_close_price(binance_exchange, days_delta)
             prices = prices[:self.time_frame * self.window]
             ma = statistics.mean(prices[::self.time_frame])
-
             if current_price > ma:
                 self.spot_over_ma[binance_exchange] = 1
                 return True
@@ -171,8 +170,6 @@ def alert_spot_cross_ma(time_frame, window, exclude_coins=None, alert_type="aler
     # get coin list
     if alert_type == "alert_100":
         binance_exchanges, coingecko_coins = cg.get_top_market_cap_exchanges(num=100)
-        print(binance_exchanges, coingecko_coins)
-        print(len(binance_exchanges), len(coingecko_coins))
     elif alert_type == "alert_500":
         binance_exchanges, coingecko_coins = cg.get_coins_with_weekly_volume_increase(tg_alert=True)
     elif alert_type == "alert_300":
