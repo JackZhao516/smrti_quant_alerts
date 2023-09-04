@@ -17,6 +17,34 @@ class BinanceExchange:
             return self.exchange == other.upper()
         return False
 
+    def __lt__(self, other):
+        if isinstance(other, BinanceExchange):
+            return self.exchange < other.exchange
+        elif isinstance(other, str):
+            return self.exchange < other.upper()
+        return False
+
+    def __gt__(self, other):
+        if isinstance(other, BinanceExchange):
+            return self.exchange > other.exchange
+        elif isinstance(other, str):
+            return self.exchange > other.upper()
+        return False
+
+    def __le__(self, other):
+        if isinstance(other, BinanceExchange):
+            return self.exchange <= other.exchange
+        elif isinstance(other, str):
+            return self.exchange <= other.upper()
+        return False
+
+    def __ge__(self, other):
+        if isinstance(other, BinanceExchange):
+            return self.exchange >= other.exchange
+        elif isinstance(other, str):
+            return self.exchange >= other.upper()
+        return False
+
     def __hash__(self):
         return hash(self.exchange)
 
@@ -35,6 +63,36 @@ class CoingeckoCoin:
     def __eq__(self, other):
         if isinstance(other, CoingeckoCoin):
             return self.coin_symbol == other.coin_symbol
+        elif isinstance(other, str):
+            return self.coin_symbol == other.upper()
+        return False
+
+    def __lt__(self, other):
+        if isinstance(other, CoingeckoCoin):
+            return self.coin_symbol < other.coin_symbol
+        elif isinstance(other, str):
+            return self.coin_symbol < other.upper()
+        return False
+
+    def __gt__(self, other):
+        if isinstance(other, CoingeckoCoin):
+            return self.coin_symbol > other.coin_symbol
+        elif isinstance(other, str):
+            return self.coin_symbol > other.upper()
+        return False
+
+    def __le__(self, other):
+        if isinstance(other, CoingeckoCoin):
+            return self.coin_symbol <= other.coin_symbol
+        elif isinstance(other, str):
+            return self.coin_symbol <= other.upper()
+        return False
+
+    def __ge__(self, other):
+        if isinstance(other, CoingeckoCoin):
+            return self.coin_symbol >= other.coin_symbol
+        elif isinstance(other, str):
+            return self.coin_symbol >= other.upper()
         return False
 
     def __hash__(self):

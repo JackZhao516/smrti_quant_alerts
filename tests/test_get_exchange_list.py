@@ -1,5 +1,7 @@
 import responses
 import unittest
+import time
+from unittest import mock
 from decimal import Decimal
 
 from smrti_quant_alerts.get_exchange_list import GetExchangeList
@@ -51,7 +53,6 @@ class TestCoinList(unittest.TestCase):
         coins = self.gel.get_all_coingecko_coins()
         self.assertEqual([CoingeckoCoin("bitcoin", "btc"), CoingeckoCoin("ethereum", "eth")], coins)
 
-
     @responses.activate
     def test_get_future_exchange_funding_rate(self):
         api_url = f'{self.BINANCE_FUTURES_API_URL}premiumIndex?symbol=BTCUSDT'
@@ -95,8 +96,8 @@ class TestCoinList(unittest.TestCase):
         self.gel._reset_timestamp()
         coins = self.gel.get_coins_market_info([CoingeckoCoin("bitcoin", "BTC"),
                                                 CoingeckoCoin("ethereum", "ETH")], ["market_cap"])
-        self.assertEqual([{"coingecko_coin": CoingeckoCoin("bitcoin", "BTC"), "market_cap": 200},
-                          {"coingecko_coin": CoingeckoCoin("ethereum", "ETH"), "market_cap": 100}], coins)
+        self.assertEqual([{"binance_exchange": CoingeckoCoin("bitcoin", "BTC"), "market_cap": 200},
+                          {"binance_exchange": CoingeckoCoin("ethereum", "ETH"), "market_cap": 100}], coins)
 
     @responses.activate
     def test_get_coin_market_info(self):
@@ -108,6 +109,51 @@ class TestCoinList(unittest.TestCase):
         self.gel._reset_timestamp()
         coins = self.gel.get_coin_market_info(CoingeckoCoin("bitcoin", "BTC"), ["market_cap"], 1, "daily")
         self.assertEqual({"market_cap": 200}, coins)
+
+    @responses.activate
+    def test_get_coin_history_hourly_close_price(self):
+        api_url = f"https://pro-api.coingecko.com/api/v3/coins/bitcoin/market_chart?" \
+                  f"vs_currency=usd&days=3&precision=full&x_cg_pro_api_key={self.COINGECKO_API_KEY}"
+        responses.add(responses.GET, api_url,
+                      json={"prices": [[1, 100], [2, 200], [3, 300], [4, 400]]},
+                      status=200, match_querystring=True)
+        self.gel._reset_timestamp()
+        coins = self.gel.get_coin_history_hourly_close_price(CoingeckoCoin("bitcoin", "BTC"), 3)
+        self.assertEqual([400, 300, 200, 100], coins)
+
+    @responses.activate
+    def test_get_coin_current_price(self):
+        api_url = f"https://pro-api.coingecko.com/api/v3/simple/price?" \
+                  f"ids=bitcoin&vs_currencies=usd&precision=full&" \
+                  f"x_cg_pro_api_key={self.COINGECKO_API_KEY}"
+        responses.add(responses.GET, api_url,
+                      json={"bitcoin": {"usd": 100}},
+                      status=200, match_querystring=True)
+        self.gel._reset_timestamp()
+        price = self.gel.get_coin_current_price(CoingeckoCoin("bitcoin", "BTC"))
+        self.assertEqual(100, price)
+
+    @responses.activate
+    def test_get_exchange_history_hourly_close_price(self):
+        with mock.patch.object(time, "time", return_value=86400):
+            api_url = f"{self.BINANCE_SPOT_API_URL}klines?symbol=BTCUSDT&interval=1h&limit=1000&startTime=0"
+            responses.add(responses.GET, api_url,
+                          json=[[1, 100, 100, 100, 100], [2, 200, 200, 200, 200],
+                                [3, 300, 200, 300, 300], [4, 400, 400, 400, 400]],
+                          status=200, match_querystring=True)
+            self.gel._reset_timestamp()
+            prices = self.gel.get_exchange_history_hourly_close_price(BinanceExchange("BTC", "USDT"), 1)
+            self.assertEqual([400, 300, 200, 100], prices)
+
+    @responses.activate
+    def test_get_exchange_current_price(self):
+        api_url = f"{self.BINANCE_SPOT_API_URL}ticker/price?symbol=BTCUSDT"
+        responses.add(responses.GET, api_url,
+                      json={"symbol": "BTCUSDT", "price": "100"},
+                      status=200, match_querystring=True)
+        self.gel._reset_timestamp()
+        price = self.gel.get_exchange_current_price(BinanceExchange("BTC", "USDT"))
+        self.assertEqual(100, price)
 
     @responses.activate
     def test_get_coins_with_24h_volume_larger_than_threshold(self):

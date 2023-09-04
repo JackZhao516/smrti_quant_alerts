@@ -17,7 +17,7 @@ MODE = "CG_SUM"
 tg_bot = TelegramBot(MODE)
 cg = GetExchangeList("CG_SUM_RAW")
 
-logging.disable(logging.INFO)
+logging.disable(logging.DEBUG)
 
 
 def report_market_cap():
@@ -60,8 +60,8 @@ def alert_spot_over_ma(alert_type):
     :param alert_type: alert type
     """
     while True:
-        tg_mode = "ALERT_VOLUME_THRESHOLD" if alert_type == "alert_volume_threshold" else MODE
-        alert_spot_cross_ma([], [], [], alert_type, tg_mode=tg_mode)
+        tg_mode = "MEME" if alert_type == "meme_alert" else MODE
+        alert_spot_cross_ma(1, 200, alert_type=alert_type, tg_mode=tg_mode)
         sleep(24 * 60 * 60)
 
 
@@ -91,7 +91,7 @@ if __name__ == "__main__":
         routinely_sequential_alert_100_300_500()
     elif sys.argv[1] == "alts":
         alts_alert()
-    elif sys.argv[1] in ("alert_100", "alert_300", "alert_500", "alert_volume_threshold"):
+    elif sys.argv[1] in ("alert_100", "alert_300", "alert_500", "meme_alert"):
         alert_spot_over_ma(sys.argv[1])
     elif sys.argv[1] == "funding_rate":
         funding_rate()

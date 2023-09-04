@@ -12,7 +12,7 @@
       "CG_MAR_CAP": "<Group/Channel ID>",
       "CG_SUM_RAW": "<Group/Channel ID>",
       "FUNDING_RATE": "<Group/Channel ID>",
-      "ALERT_VOLUME_THRESHOLD": "<Group/Channel ID>",
+      "MEME": "<Group/Channel ID>",
       "ALTS": "<Group/Channel ID>",
     }
   },

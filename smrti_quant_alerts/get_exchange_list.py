@@ -18,19 +18,14 @@ class GetExchangeList:
     BINANCE_SPOT_API_URL = Config.API_ENDPOINTS["BINANCE_SPOT_API_URL"]
     BINANCE_FUTURES_API_URL = Config.API_ENDPOINTS["BINANCE_FUTURES_API_URL"]
 
-    def __init__(self, tg_type="TEST", active_binance_spot_exchanges=None):
+    # global data
+    active_binance_spot_exchanges = []
+    active_exchanges_timestamp = 0
+    active_binance_spot_exchanges_set = set()
+
+    def __init__(self, tg_type="TEST"):
         self.cg = CoinGeckoAPI(api_key=self.COINGECKO_API_KEY)
         self.tg_bot = TelegramBot(alert_type=tg_type)
-
-        # data
-        self.active_binance_spot_exchanges = []
-        self.active_exchanges_timestamp = 0
-        if active_binance_spot_exchanges is not None:
-            self.active_binance_spot_exchanges = active_binance_spot_exchanges
-            self.active_exchanges_timestamp = time.time()
-
-        self.active_binance_spot_exchanges_set = set(self.active_binance_spot_exchanges)
-        # self.active_binance_spot_exchanges = self.get_all_binance_exchanges()
 
     def _update_active_binance_spot_exchanges(self):
         """
@@ -180,6 +175,71 @@ class GetExchangeList:
 
         return {market_attribute_name: coin_info.get(market_attribute_name, None)
                 for market_attribute_name in market_attribute_name_list}
+
+    @error_handling("coingecko", "get_coin_history_hourly_close_price")
+    def get_coin_history_hourly_close_price(self, coingecko_coin, days=10):
+        """
+        Get coin past close price for the history <days> days
+
+        :param coingecko_coin: CoingeckoCoin
+        :param days: number of days to get
+
+        :return: [close_price, ...] in the order from newest to oldest
+        """
+        respond = self.cg.get_coin_market_chart_by_id(id=coingecko_coin.coin_id,
+                                                      vs_currency='usd', days=days,
+                                                      precision="full")
+        prices = respond['prices']
+        prices = [Decimal(i[1]) for i in prices][::-1]
+
+        return prices
+
+    @error_handling("coingecko", "get_coin_current_price")
+    def get_coin_current_price(self, coingecko_coin):
+        """
+        Get coin current close price
+
+        :param coingecko_coin: CoingeckoCoin
+
+        :return: close_price
+        """
+        respond = self.cg.get_price(ids=coingecko_coin.coin_id, vs_currencies='usd', precision='full')
+        return Decimal(respond[coingecko_coin.coin_id]['usd'])
+
+    @error_handling("binance", "get_exchange_current_price")
+    def get_exchange_current_price(self, binance_exchange):
+        """
+        Get exchange current close price
+
+        :param binance_exchange: BinanceExchange
+
+        :return: close_price
+        """
+        api_url = f'{self.BINANCE_SPOT_API_URL}ticker/price?symbol={binance_exchange.exchange}'
+        response = requests.get(api_url, timeout=2)
+        response = response.json()
+        if isinstance(response, dict):
+            return Decimal(response['price'])
+        else:
+            return Decimal(response[0]['price'])
+
+    @error_handling("binance", "get_exchange_history_hourly_close_price")
+    def get_exchange_history_hourly_close_price(self, exchange, days=10):
+        """
+        Get exchange past close price for the history <days> days
+
+        :param exchange: BinanceExchange
+        :param days: number of days to get
+
+        :return: [close_price, ...] in the order from newest to oldest
+        """
+        start_time = (int(time.time()) - days * 24 * 60 * 60) * 1000
+        api_url = f'{self.BINANCE_SPOT_API_URL}klines?symbol={exchange.exchange}' \
+                  f'&interval=1h&startTime={start_time}&limit=1000'
+        response = requests.get(api_url, timeout=2)
+        response = response.json()
+        prices = [Decimal(i[4]) for i in response][::-1]
+        return prices
 
     @error_handling("coingecko", "get_coins_with_24h_volume_larger_than_threshold")
     def get_coins_with_24h_volume_larger_than_threshold(self, threshold=3000000):
@@ -348,4 +408,4 @@ class GetExchangeList:
 
 if __name__ == '__main__':
     cg = GetExchangeList(tg_type='TEST')
-    futures = cg.get_all_binance_exchanges("FUTURE")
+    print(len(cg.get_exchange_history_hourly_close_price(BinanceExchange("BTC", "USDT"), 2)))
