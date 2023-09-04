@@ -8,7 +8,7 @@ This repo includes several real-time alerts for crypto trading, built with Coing
 
 
 ## Get Started and Documentation
-* pre-requisites: coingecko api token, telegram bot token, telegram group/channel ids. Fill in all the required tokens in ``token.json``.
+* pre-requisites: coingecko pro api token, telegram bot token, telegram group/channel ids. Fill in all the required tokens in ``token.json``.
 * Run on server in areas where Binance and Coingecko apis are not banned.
 ## Install
     pip install -r requirements.txt
@@ -19,7 +19,7 @@ This repo includes several real-time alerts for crypto trading, built with Coing
 
 > 2. Run ``./start.sh <alert_type>``
 > Available alert types: ``market_cap``, ``price_volume``, ``sequential``, 
-> ``alts``, ``alert_100``, ``alert_300``, ``alert_500``, ``funding_rate``
+> ``alts``, ``alert_100``, ``alert_300``, ``alert_500``, ``funding_rate``, ``meme_alert``
 
 ## Structure
 > 1. python scripts to run those alerts are in ``alert_system.py``
@@ -30,14 +30,16 @@ This repo includes several real-time alerts for crypto trading, built with Coing
 
 > 4. ``error.py`` defines error handling functions and ``telegram_bot.py`` defines telegram bot functions
 
+> 5. coins: ``CoingeckoCoin``. exchanges: ``BinanceExchange``. Both are defined in ``data_type.py``
 ## Alert Type Description
 * ``market_cap``: ``alerts/coingecko_market_cap_alert.py``: a daily report of newly deleted and newly added
 top 100/200/300/400/500 market cap coins. 
 * ``price_volume``: ``alerts/binance_price_volume_alert.py``: real-time alerts for coins with large price and volume changes in 15min/1h timeframe.
 * ``alts``: ``alerts/coingecko_alts_alert.py``: daily report of top 500-3000 market cap alts coin with 24H price and volume change both larger than 50%.
-* ``alert_100, alert_300, alert_500``: ``alerts/top_market_cap_spot_over_ma_alert.py``: daily report of top 100/300/500 market cap coins/exchanges with spot price over 4H MA200.
+* ``alert_100, alert_300, alert_500``: ``alerts/spot_over_ma_alert.py``: daily report of top 100/300/500 market cap coins/exchanges with spot price over 4H SMA200.
 * ``sequential``: sequentially execute ``alert_100, alert_300, alert_500``.
 * ``funding_rate``: ``alerts/binance_bi_hourly_future_funding_rate_alert.py``: bi-hourly alerts for future exchanges with funding rate larger than +-0.2%.
+* ``meme_alert``: ``alerts/spot_over_ma_alert.py``: daily report of all coins/exchanges on coingecko/binance with spot price over 1H SMA200
 
 ### More on ``price_volume`` alert
 * Tracking all spot exchanges on Binance, and automatically add new exchanges to the alert list.
@@ -52,6 +54,13 @@ top 100/200/300/400/500 market cap coins.
 * ``volume_alert_1h``: alert for coins over amount threshold ``1h_volume_usd`` in USD:
   * if second bar is 10X first bar
 * Every sub alert has a daily counter and monthly counter, which will be reset to 0 at 00:00 UTC everyday and every month.
+
+### More on ``alert_100/300/500, sequential, meme_alert`` alert
+* In the telegram group/channel, the alert contain 3 parts: 
+  * Coins/exchanges with spot price over SMA
+  * Coins/exchanges newly added this time compared to last time
+  * Coins/exchanges newly deleted this time compared to last time
+  * Counts of each captured coin/exchange for how many times it has been sequentially captured
 
 ## Donate / Sponsor
 I develop and maintain these alerts on my own in my spare time. 

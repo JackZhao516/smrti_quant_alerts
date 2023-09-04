@@ -40,6 +40,7 @@ class Config:
                         '"CG_MAR_CAP": market_cap\n'
                         '"ALTS": alts\n'
                         '"FUNDING_RATE": funding_rate\n'
+                        '"MEME": meme_alert\n'
                         'Remember to fill in the Telegram channel/group ID for each alert type')
         logging.info("token.json validated")
 

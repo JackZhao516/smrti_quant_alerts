@@ -1,16 +1,19 @@
 import sys
 import logging
 import threading
+import datetime
 from time import sleep
 
-from .get_exchange_list import GetExchangeList
+import pytz
+
+from smrti_quant_alerts.get_exchange_list import GetExchangeList
 from smrti_quant_alerts.alerts.coingecko_market_cap_alert import CoingeckoMarketCapReport
 from smrti_quant_alerts.alerts.binance_price_volume_alert import BinancePriceVolumeAlert
 from smrti_quant_alerts.alerts.coingecko_alts_alert import CGAltsAlert
-from smrti_quant_alerts.alerts.top_market_cap_spot_over_ma_alert import alert_spot_cross_ma
+from smrti_quant_alerts.alerts.spot_over_ma_alert import alert_spot_cross_ma
 from smrti_quant_alerts.alerts.binance_bi_hourly_future_funding_rate_alert import FutureFundingRate
-from .telegram_api import TelegramBot
-from .settings import Config
+from smrti_quant_alerts.telegram_api import TelegramBot
+from smrti_quant_alerts.settings import Config
 
 MODE = "CG_SUM"
 # MODE = "TEST"
@@ -45,12 +48,14 @@ def routinely_sequential_alert_100_300_500():
     """
     logging.info("routinely_sequential_alert_100_300_500 start")
     while True:
-        exclude_coins, exclude_newly_deleted_coins, exclude_newly_added_coin = set(), set(), set()
-        for alert_type in ["alert_100", "alert_300", "alert_500"]:
-            exclude_coins, exclude_newly_deleted_coins, exclude_newly_added_coin = \
-                alert_spot_cross_ma(exclude_coins, exclude_newly_deleted_coins,
-                                    exclude_newly_added_coin, alert_type, tg_mode=MODE)
-        sleep(24 * 60 * 60)
+        tz = pytz.timezone('Asia/Shanghai')
+        if datetime.datetime.now(tz).strftime('%H:%M') == "9:00":
+            exclude_coins = set()
+            for alert_type in ["alert_100", "alert_300", "alert_500"]:
+                exclude_coins = alert_spot_cross_ma(4, 200, exclude_coins,
+                                                    alert_type=alert_type, tg_mode=MODE)
+            sleep(60 * 60 * 23)
+        sleep(60)
 
 
 def alert_spot_over_ma(alert_type):
@@ -60,9 +65,12 @@ def alert_spot_over_ma(alert_type):
     :param alert_type: alert type
     """
     while True:
-        tg_mode = "MEME" if alert_type == "meme_alert" else MODE
-        alert_spot_cross_ma(1, 200, alert_type=alert_type, tg_mode=tg_mode)
-        sleep(24 * 60 * 60)
+        tz = pytz.timezone('Asia/Shanghai')
+        if datetime.datetime.now(tz).strftime('%H:%M') == "9:30":
+            tg_mode = "MEME" if alert_type == "meme_alert" else MODE
+            alert_spot_cross_ma(1, 200, alert_type=alert_type, tg_mode=tg_mode)
+            sleep(60 * 60 * 23 + 60 * 30)
+        sleep(60)
 
 
 def alts_alert():

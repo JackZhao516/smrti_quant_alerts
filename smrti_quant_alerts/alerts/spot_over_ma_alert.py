@@ -4,10 +4,10 @@ import statistics
 import csv
 import os
 from multiprocessing.pool import ThreadPool
-from itertools import repeat
 
 from smrti_quant_alerts.get_exchange_list import GetExchangeList
 from smrti_quant_alerts.telegram_api import TelegramBot
+from smrti_quant_alerts.data_type import BinanceExchange
 
 
 class SpotOverMA(GetExchangeList):
@@ -19,7 +19,7 @@ class SpotOverMA(GetExchangeList):
                     "VAI", "RSV", "CEUR", "USDS", "CUSDT", "DOLA",
                     "HAY", "MIM", "EDGT", "ALUSD", "WBTCBTC",
                     "BUSDUSDT", "USDCBUSD", "USDCUSDT", "USDPUSDT",
-                    "FRXETH"}
+                    "FRXETH", "WBTCETH"}
     if not os.path.exists("run_time_data"):
         os.mkdir("run_time_data")
 
@@ -29,11 +29,21 @@ class SpotOverMA(GetExchangeList):
         self.trading_symbols = trading_symbols
         self.symbol_type = ""
         self.exclude_coins = exclude_coins
+        self._expand_exclude_coins()
 
         self.alert_type = alert_type
         self.time_frame = time_frame
         self.window = window
         self.spot_over_ma = {}
+
+    def _expand_exclude_coins(self):
+        """
+        expand exclude coins to include all quotes for each base
+        """
+        for coin in self.exclude_coins.copy():
+            if isinstance(coin, BinanceExchange):
+                for quote in ["USDT", "BUSD", "BTC", "ETH"]:
+                    self.exclude_coins.add(BinanceExchange(coin.base_symbol, quote))
 
     def _coin_spot_over_ma(self, trading_symbol):
         """
@@ -145,6 +155,20 @@ class BinanceSpotOverMA(SpotOverMA):
             return False
         except Exception as e:
             return False
+
+    def _coins_spot_over_ma(self):
+        """
+        get all spot over ma binance exchanges, keep each base with only one quote
+
+        """
+        super()._coins_spot_over_ma()
+        bases = set()
+        for binance_exchange in self.spot_over_ma.copy().keys():
+            base = binance_exchange.base_symbol
+            if base in bases:
+                del self.spot_over_ma[binance_exchange]
+            else:
+                bases.add(base)
 
 
 def alert_spot_cross_ma(time_frame, window, exclude_coins=None, alert_type="alert_300", tg_mode="CG_SUM"):
