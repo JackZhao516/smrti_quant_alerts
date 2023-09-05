@@ -35,11 +35,11 @@ This repo includes several real-time alerts for crypto trading, built with Coing
 * ``market_cap``: ``alerts/coingecko_market_cap_alert.py``: a daily report of newly deleted and newly added
 top 100/200/300/400/500 market cap coins. 
 * ``price_volume``: ``alerts/binance_price_volume_alert.py``: real-time alerts for coins with large price and volume changes in 15min/1h timeframe.
-* ``alts``: ``alerts/coingecko_alts_alert.py``: daily report of top 500-3000 market cap alts coin with 24H price and volume change both larger than 50%.
+* ``alts``: ``alerts/coingecko_alts_alert.py``: daily report of top 500-3000 market cap alts coin with 24H price and volume increase both larger than 50%.
 * ``alert_100, alert_300, alert_500``: ``alerts/spot_over_ma_alert.py``: daily report of top 100/300/500 market cap coins/exchanges with spot price over 4H SMA200.
 * ``sequential``: sequentially execute ``alert_100, alert_300, alert_500``.
 * ``funding_rate``: ``alerts/binance_bi_hourly_future_funding_rate_alert.py``: bi-hourly alerts for future exchanges with funding rate larger than +-0.2%.
-* ``meme_alert``: ``alerts/spot_over_ma_alert.py``: daily report of all coins/exchanges on coingecko/binance with spot price over 1H SMA200
+* ``meme_alert``: ``alerts/spot_over_ma_alert.py``: daily report of all coins/exchanges on coingecko/binance with daily volume over 3 million USD and with spot price over 1H SMA200
 
 ### More on ``price_volume`` alert
 * Tracking all spot exchanges on Binance, and automatically add new exchanges to the alert list.

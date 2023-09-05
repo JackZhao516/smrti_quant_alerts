@@ -3,7 +3,7 @@ This script is used to send a weekly report of newly deleted and newly added
 top n market cap coins
 """
 
-from time import sleep
+from time import sleep, time
 from datetime import datetime
 
 import pytz
@@ -24,33 +24,35 @@ class CoingeckoMarketCapReport(GetExchangeList):
 
     def run(self):
         for n in self.top_n:
-            market_list = self.get_top_n_market_cap_coins(n=n)
-            self.top_n_list[n] = [coin[1] for coin in market_list]
+            self.top_n_list[n] = self.get_top_n_market_cap_coins(n=n)
         while True:
             # alerts every day 00:00 in Shanghai Time
             # can easily change time and frequency here
             # if you want to change the frequency, remember to change the sleep time
             tz = pytz.timezone('Asia/Shanghai')
-            shanghai_now = datetime.now(tz).strftime('%H:%M')
-            if shanghai_now == "00:00":
-                for n in self.top_n:
-                    cur_set = set(self.top_n_list[n])
-                    new_list = [coin[1] for coin in self.get_top_n_market_cap_coins(n=n)]
-                    new_set = set(new_list)
-                    deleted_list, added_list = [], []
+            if datetime.now(tz).strftime('%H:%M') == "00:00":
+                start = time()
+                try:
+                    for n in self.top_n:
+                        cur_set = set(self.top_n_list[n])
+                        new_list = self.get_top_n_market_cap_coins(n=n)
+                        new_set = set(new_list)
+                        deleted_list, added_list = [], []
 
-                    if cur_set != new_set:
-                        deleted_list = list(cur_set - new_set)
-                        added = new_set - cur_set
-                        for i, a in enumerate(new_list):
-                            if a in added:
-                                added_list.append(a)
-                        self.top_n_list[n] = new_list
-                    self.tg_bot.send_message(f"Top {n} Market Cap Report: \n"
-                                             f"Deleted: {deleted_list}\n"
-                                             f"Added: {added_list}\n"
-                                             f"(Added in market cap desc order)")
-                sleep(60 * 60 * 24 - 70)
+                        if cur_set != new_set:
+                            deleted_list = list(cur_set - new_set)
+                            added = new_set - cur_set
+                            for i, a in enumerate(new_list):
+                                if a in added:
+                                    added_list.append(a)
+                            self.top_n_list[n] = new_list
+                        self.tg_bot.send_message(f"Top {n} Market Cap Report: \n"
+                                                 f"Deleted: {deleted_list}\n"
+                                                 f"Added: {added_list}\n"
+                                                 f"(Added in market cap desc order)")
+                except Exception:
+                    continue
+                sleep(60 * 60 * 24 - 3 * (time() - start))
             sleep(60)
 
 

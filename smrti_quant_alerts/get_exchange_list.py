@@ -168,7 +168,7 @@ class GetExchangeList:
         :param days: number of days to get
         :param interval: interval of the data
 
-        :return: [{<market_attribute_name>: value, ...}]
+        :return: {<market_attribute_name>: value, ...}
         """
         coin_info = self.cg.get_coin_market_chart_by_id(
             id=coingecko_coin.coin_id, vs_currency='usd', days=days, interval=interval)

@@ -49,7 +49,7 @@ def routinely_sequential_alert_100_300_500():
     logging.info("routinely_sequential_alert_100_300_500 start")
     while True:
         tz = pytz.timezone('Asia/Shanghai')
-        if datetime.datetime.now(tz).strftime('%H:%M') == "9:00":
+        if datetime.datetime.now(tz).strftime('%H:%M') == "09:00":
             exclude_coins = set()
             for alert_type in ["alert_100", "alert_300", "alert_500"]:
                 exclude_coins = alert_spot_cross_ma(4, 200, exclude_coins,
@@ -66,7 +66,7 @@ def alert_spot_over_ma(alert_type):
     """
     while True:
         tz = pytz.timezone('Asia/Shanghai')
-        if datetime.datetime.now(tz).strftime('%H:%M') == "9:30":
+        if datetime.datetime.now(tz).strftime('%H:%M') == "09:30":
             tg_mode = "MEME" if alert_type == "meme_alert" else MODE
             alert_spot_cross_ma(1, 200, alert_type=alert_type, tg_mode=tg_mode)
             sleep(60 * 60 * 23 + 60 * 30)
