@@ -1,5 +1,4 @@
 import logging
-import time
 import statistics
 import csv
 import os
@@ -8,6 +7,7 @@ from multiprocessing.pool import ThreadPool
 from smrti_quant_alerts.get_exchange_list import GetExchangeList
 from smrti_quant_alerts.telegram_api import TelegramBot
 from smrti_quant_alerts.data_type import BinanceExchange
+from smrti_quant_alerts.alerts.utility import run_task_at_daily_time
 
 
 class SpotOverMA(GetExchangeList):
@@ -19,7 +19,7 @@ class SpotOverMA(GetExchangeList):
                     "VAI", "RSV", "CEUR", "USDS", "CUSDT", "DOLA",
                     "HAY", "MIM", "EDGT", "ALUSD", "WBTCBTC",
                     "BUSDUSDT", "USDCBUSD", "USDCUSDT", "USDPUSDT",
-                    "FRXETH", "WBTCETH"}
+                    "FRXETH", "WBTCETH", "CETH", "CDAI", "CUSDC"}
     if not os.path.exists("run_time_data"):
         os.mkdir("run_time_data")
 
@@ -233,12 +233,22 @@ def alert_spot_cross_ma(time_frame, window, exclude_coins=None, alert_type="aler
                             f"coins/coin exchanges exchanges spot"
                             f" over {ma_type} newly deleted:\n{newly_deleted_coins}\n")
 
-    logging.warning(f"{alert_type} finished")
     coins = [coin[0] for coin in coins]
     return exclude_coins.union(set(coins + newly_added_coins + newly_deleted_coins))
 
 
 if __name__ == "__main__":
-    start_time = time.time()
-    alert_spot_cross_ma(1, 200, alert_type="meme_alert", tg_mode="TEST")
-    print(f"--- {(time.time() - start_time) / 60} minutes ---")
+    alert_type = "meme_alert"
+    tg_mode = "TEST"
+    # kwargs = {"time_frame": 4, "window": 200, "alert_type": alert_type, "tg_mode": tg_mode}
+    # run_task_at_daily_time(alert_spot_cross_ma, "06:11", kwargs=kwargs, duration=60 * 60 * 24)
+
+    def sequential_task():
+        exclude_coins = set()
+        for alert_type in ["alert_100", "alert_300", "alert_500"]:
+            exclude_coins = alert_spot_cross_ma(4, 200, exclude_coins,
+                                                alert_type=alert_type, tg_mode=tg_mode)
+
+
+    logging.info("routinely_sequential_alert_100_300_500 start")
+    run_task_at_daily_time(sequential_task, "06:18", duration=60 * 60 * 24)

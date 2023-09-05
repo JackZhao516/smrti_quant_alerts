@@ -8,6 +8,7 @@ from smrti_quant_alerts.get_exchange_list import GetExchangeList
 from smrti_quant_alerts.settings import Config
 from smrti_quant_alerts.data_type import BinanceExchange, CoingeckoCoin
 
+# TODO: test alert_spot_over_ma
 
 class TestSpotOverMA(unittest.TestCase):
     pass

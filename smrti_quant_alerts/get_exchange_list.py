@@ -53,7 +53,7 @@ class GetExchangeList:
         api_url = f'{self.BINANCE_SPOT_API_URL}exchangeInfo?permissions=SPOT' \
             if exchange_type == "SPOT" else f'{self.BINANCE_FUTURES_API_URL}exchangeInfo'
 
-        response = requests.get(api_url, timeout=2)
+        response = requests.get(api_url, timeout=5)
         response = response.json()
 
         binance_exchanges = []
@@ -99,9 +99,11 @@ class GetExchangeList:
         """
         api_url = f'{self.BINANCE_FUTURES_API_URL}premiumIndex?symbol={exchange}'
 
-        response = requests.get(api_url, timeout=2)
+        response = requests.get(api_url, timeout=5)
         response = response.json()
-        return Decimal(response["lastFundingRate"])
+        if isinstance(response, dict) and "lastFundingRate" in response and response["lastFundingRate"]:
+            return Decimal(response["lastFundingRate"])
+        return 0
 
     @error_handling("coingecko", "get_top_n_market_cap_coins")
     def get_top_n_market_cap_coins(self, n=100):
@@ -216,7 +218,7 @@ class GetExchangeList:
         :return: close_price
         """
         api_url = f'{self.BINANCE_SPOT_API_URL}ticker/price?symbol={binance_exchange.exchange}'
-        response = requests.get(api_url, timeout=2)
+        response = requests.get(api_url, timeout=5)
         response = response.json()
         if isinstance(response, dict):
             return Decimal(response['price'])
@@ -236,7 +238,7 @@ class GetExchangeList:
         start_time = (int(time.time()) - days * 24 * 60 * 60) * 1000
         api_url = f'{self.BINANCE_SPOT_API_URL}klines?symbol={exchange.exchange}' \
                   f'&interval=1h&startTime={start_time}&limit=1000'
-        response = requests.get(api_url, timeout=2)
+        response = requests.get(api_url, timeout=5)
         response = response.json()
         prices = [Decimal(i[4]) for i in response][::-1]
         return prices
