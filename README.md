@@ -15,7 +15,7 @@ This repo includes several real-time alerts for crypto trading, built with Coing
     python setup.py develop
 ## Usage
 
-> 1. Change your API KEY and your SECRET KEY in ``token.json``
+> 1. Change your API KEY and your Telegram Group ids in ``token.json``
 
 > 2. Run ``./start.sh <alert_type>``
 > Available alert types: ``market_cap``, ``price_volume``, ``sequential``, 
