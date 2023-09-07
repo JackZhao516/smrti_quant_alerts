@@ -16,10 +16,5 @@
       "ALTS": "<Group/Channel ID>",
     }
   },
-  "COINGECKO_API_KEY": "<API Token>",
-  "BITGET": {
-    "KEY": "<API Token>",
-    "SECRET": "<API Secret Key>",
-    "PASSPHRASE": "<API Password>"
-  }
+  "COINGECKO_API_KEY": "<API Token>"
 }
