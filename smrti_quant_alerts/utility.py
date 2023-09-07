@@ -2,6 +2,8 @@ import pytz
 from datetime import datetime
 from time import sleep, time
 
+tz = pytz.timezone('Asia/Shanghai')
+
 
 def run_task_at_daily_time(task, run_time, kwargs=None, duration=60 * 60 * 24):
     """
@@ -15,7 +17,6 @@ def run_task_at_daily_time(task, run_time, kwargs=None, duration=60 * 60 * 24):
     if not kwargs:
         kwargs = {}
     while True:
-        tz = pytz.timezone('Asia/Shanghai')
         if datetime.now(tz).strftime('%H:%M') in run_time:
             start = time()
             task(**kwargs)

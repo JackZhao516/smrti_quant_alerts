@@ -31,6 +31,9 @@ This repo includes several real-time alerts for crypto trading, built with Coing
 > 4. ``error.py`` defines error handling functions and ``telegram_bot.py`` defines telegram bot functions
 
 > 5. coins: ``CoingeckoCoin``. exchanges: ``BinanceExchange``. Both are defined in ``data_type.py``
+
+> 6. alerts are set to run daily/bi-hourly/hourly/quarter-hourly, run times are defined in the ``alert_system.py``, the timezone is defined in ``utility.py``
+
 ## Alert Type Description
 * ``market_cap``: ``alerts/coingecko_market_cap_alert.py``: a daily report of newly deleted and newly added
 top 100/200/300/400/500 market cap coins. 

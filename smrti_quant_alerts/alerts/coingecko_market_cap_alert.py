@@ -5,7 +5,7 @@ top n market cap coins
 from collections import defaultdict
 
 from smrti_quant_alerts.get_exchange_list import GetExchangeList
-from smrti_quant_alerts.alerts.utility import run_task_at_daily_time
+from smrti_quant_alerts.utility import run_task_at_daily_time
 
 
 class CoingeckoMarketCapAlert(GetExchangeList):

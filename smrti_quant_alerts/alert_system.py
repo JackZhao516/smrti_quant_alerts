@@ -8,7 +8,7 @@ from smrti_quant_alerts.alerts.coingecko_alts_alert import CGAltsAlert
 from smrti_quant_alerts.alerts.spot_over_ma_alert import alert_spot_cross_ma
 from smrti_quant_alerts.alerts.binance_bi_hourly_future_funding_rate_alert import FutureFundingRate
 from smrti_quant_alerts.settings import Config
-from smrti_quant_alerts.alerts.utility import run_task_at_daily_time
+from smrti_quant_alerts.utility import run_task_at_daily_time
 
 logging.disable(logging.DEBUG)
 

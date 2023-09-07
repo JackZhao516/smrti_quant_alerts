@@ -3,7 +3,7 @@ Alert daily for top 500-3000 market cap coins.
 """
 
 from smrti_quant_alerts.get_exchange_list import GetExchangeList
-from smrti_quant_alerts.alerts.utility import run_task_at_daily_time
+from smrti_quant_alerts.utility import run_task_at_daily_time
 
 
 class CGAltsAlert(GetExchangeList):
@@ -57,4 +57,4 @@ class CGAltsAlert(GetExchangeList):
 
 if __name__ == "__main__":
     alts_alert = CGAltsAlert(tg_type="TEST")
-    run_task_at_daily_time(alts_alert.run, "09:47", duration=60 * 60 * 24)
+    run_task_at_daily_time(alts_alert.run, "10:37", duration=60 * 60 * 24)

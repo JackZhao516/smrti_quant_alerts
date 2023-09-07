@@ -3,8 +3,7 @@ from decimal import Decimal
 from multiprocessing.pool import ThreadPool
 
 from smrti_quant_alerts.get_exchange_list import GetExchangeList
-from smrti_quant_alerts.telegram_api import TelegramBot
-from smrti_quant_alerts.alerts.utility import run_task_at_daily_time
+from smrti_quant_alerts.utility import run_task_at_daily_time
 
 
 class FutureFundingRate(GetExchangeList):
