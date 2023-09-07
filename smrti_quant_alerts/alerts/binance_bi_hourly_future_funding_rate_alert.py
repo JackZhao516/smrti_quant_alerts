@@ -9,38 +9,38 @@ from smrti_quant_alerts.alerts.utility import run_task_at_daily_time
 
 class FutureFundingRate(GetExchangeList):
     def __init__(self, rate_threshold=Decimal(0.002), tg_type="FUNDING_RATE"):
-        super().__init__("TEST")
-        self.tg_bot = TelegramBot(tg_type)
-        self.rate_threshold = rate_threshold
-        self.exchange_list = None
-        self.pass_threshold_exchanges = []
+        super().__init__(tg_type=tg_type)
+
+        self._rate_threshold = rate_threshold
+        self._exchange_list = None
+        self._pass_threshold_exchanges = []
 
     def _exchange_funding_rate_over_threshold(self, exchange):
         """
         Check whether the exchange funding rate pass threshold
         """
         funding_rate = self.get_future_exchange_funding_rate(exchange)
-        if funding_rate and (funding_rate > 0 and funding_rate > self.rate_threshold or
-                             funding_rate < 0 and funding_rate < -self.rate_threshold):
+        if funding_rate and (funding_rate > 0 and funding_rate > self._rate_threshold or
+                             funding_rate < 0 and funding_rate < -self._rate_threshold):
             funding_rate = f"{round(funding_rate * 100, 3)}%"
-            self.pass_threshold_exchanges.append([exchange, funding_rate])
+            self._pass_threshold_exchanges.append([exchange, funding_rate])
         sleep(0.5)
 
     def run(self):
         """
         This function is used to send bi-hourly alerts of funding rate over threshold
         """
-        self.exchange_list = self.get_all_binance_exchanges("FUTURE")
-        if not self.exchange_list:
+        self._exchange_list = self.get_all_binance_exchanges("FUTURE")
+        if not self._exchange_list:
             return
         pool = ThreadPool(8)
-        pool.map(self._exchange_funding_rate_over_threshold, self.exchange_list)
+        pool.map(self._exchange_funding_rate_over_threshold, self._exchange_list)
         pool.close()
 
-        if self.pass_threshold_exchanges:
-            self.tg_bot.send_message(f"Bi-hourly Funding Rate Alert: \n"
-                                     f"{self.pass_threshold_exchanges}")
-            self.pass_threshold_exchanges = []
+        if self._pass_threshold_exchanges:
+            self._tg_bot.send_message(f"Bi-hourly Funding Rate Alert: \n"
+                                      f"{self._pass_threshold_exchanges}")
+            self._pass_threshold_exchanges = []
 
 
 if __name__ == '__main__':

@@ -34,7 +34,7 @@ def price_volume():
     BinancePriceVolumeAlert().klines_alert()
 
 
-def routinely_sequential_alert_100_300_500():
+def sequential_alert_100_300_500():
     """
     sequentially alert 100, 300, 500 coins
     """
@@ -105,7 +105,7 @@ if __name__ == "__main__":
     elif sys.argv[1] == "price_volume":
         price_volume()
     elif sys.argv[1] == "sequential":
-        routinely_sequential_alert_100_300_500()
+        sequential_alert_100_300_500()
     elif sys.argv[1] == "alts":
         alts_alert()
     elif sys.argv[1] in ("alert_100", "alert_300", "alert_500", "meme_alert"):

@@ -27,24 +27,24 @@ class SpotOverMABase(GetExchangeList):
     def __init__(self, exclude_coins, trading_symbols, time_frame=1,
                  window=200, alert_type="alert_300"):
         super().__init__()
-        self.trading_symbols = trading_symbols
-        self.symbol_type = ""
-        self.exclude_coins = exclude_coins
+        self._trading_symbols = trading_symbols
+        self._symbol_type = ""
+        self._exclude_coins = exclude_coins
         self._expand_exclude_coins()
 
         self.alert_type = alert_type
         self.time_frame = time_frame
         self.window = window
-        self.spot_over_ma = {}
+        self._spot_over_ma = {}
 
     def _expand_exclude_coins(self):
         """
         expand exclude coins to include all quotes for each base
         """
-        for coin in self.exclude_coins.copy():
+        for coin in self._exclude_coins.copy():
             if isinstance(coin, BinanceExchange):
                 for quote in ["USDT", "BUSD", "BTC", "ETH"]:
-                    self.exclude_coins.add(BinanceExchange(coin.base_symbol, quote))
+                    self._exclude_coins.add(BinanceExchange(coin.base_symbol, quote))
 
     def _coin_spot_over_ma(self, trading_symbol):
         """
@@ -57,42 +57,42 @@ class SpotOverMABase(GetExchangeList):
         get all spot over ma coins
 
         """
-        logging.info(len(self.trading_symbols))
+        logging.info(len(self._trading_symbols))
         pool = ThreadPool(8)
-        pool.map(self._coin_spot_over_ma, self.trading_symbols)
+        pool.map(self._coin_spot_over_ma, self._trading_symbols)
         pool.close()
 
-        logging.info(f"spot_over_ma_{self.alert_type}: {self.spot_over_ma}")
+        logging.info(f"spot_over_ma_{self.alert_type}: {self._spot_over_ma}")
 
     def _compare_last_time(self):
         """
-        compare last time spot_over_ma with current spot_over_ma
-        spot_over_ma stored with the format of <trading_symbol> <count> in
-        <self.alert_type>_<self.symbol_type>.txt
+        compare last time _spot_over_ma with current _spot_over_ma
+        _spot_over_ma stored with the format of <trading_symbol> <count> in
+        <self.alert_type>_<self._symbol_type>.txt
 
-        :return: spot_over_ma with counts, newly_deleted, newly_added
+        :return: _spot_over_ma with counts, newly_deleted, newly_added
         """
         newly_deleted = []
         newly_added = []
-        if os.path.exists(f"run_time_data/{self.alert_type}_{self.symbol_type}.csv"):
+        if os.path.exists(f"run_time_data/{self.alert_type}_{self._symbol_type}.csv"):
             last_time_spot_over_ma = {}
-            with open(f"run_time_data/{self.alert_type}_{self.symbol_type}.csv", "r") as f:
+            with open(f"run_time_data/{self.alert_type}_{self._symbol_type}.csv", "r") as f:
                 reader = csv.reader(f)
                 for row in reader:
                     if row:
                         last_time_spot_over_ma[row[0]] = int(row[1])
 
             newly_deleted = [coin for coin in last_time_spot_over_ma
-                             if coin not in self.spot_over_ma and coin not in self.exclude_coins]
-            for coin in self.spot_over_ma:
-                if coin not in last_time_spot_over_ma and coin not in self.exclude_coins:
+                             if coin not in self._spot_over_ma and coin not in self._exclude_coins]
+            for coin in self._spot_over_ma:
+                if coin not in last_time_spot_over_ma and coin not in self._exclude_coins:
                     newly_added.append(coin)
                 else:
-                    self.spot_over_ma[coin] = last_time_spot_over_ma[coin] + 1
+                    self._spot_over_ma[coin] = last_time_spot_over_ma[coin] + 1
 
-        with open(f"run_time_data/{self.alert_type}_{self.symbol_type}.csv", "w") as f:
+        with open(f"run_time_data/{self.alert_type}_{self._symbol_type}.csv", "w") as f:
             writer = csv.writer(f)
-            for key, value in self.spot_over_ma.items():
+            for key, value in self._spot_over_ma.items():
                 writer.writerow([key, value])
         return newly_deleted, newly_added,
 
@@ -100,11 +100,11 @@ class SpotOverMABase(GetExchangeList):
         """
         run the alert
 
-        :return: spot_over_ma, newly_deleted, newly_added
+        :return: _spot_over_ma, newly_deleted, newly_added
         """
         self._coins_spot_over_ma()
         newly_deleted, newly_added = self._compare_last_time()
-        spot_over_ma = list(sorted(self.spot_over_ma.items(), key=lambda x: (-x[1], x[0])))
+        spot_over_ma = list(sorted(self._spot_over_ma.items(), key=lambda x: (-x[1], x[0])))
         return spot_over_ma, newly_deleted, newly_added
 
 
@@ -118,7 +118,7 @@ class CoingeckoSpotOverMA(SpotOverMABase):
         return True if spot price is over ma
         """
         try:
-            if coingecko_coin in self.STABLE_COINS or coingecko_coin in self.exclude_coins:
+            if coingecko_coin in self.STABLE_COINS or coingecko_coin in self._exclude_coins:
                 return False
             days_delta = self.time_frame * self.window // 24 + 1
             current_price = self.get_coin_current_price(coingecko_coin)
@@ -126,7 +126,7 @@ class CoingeckoSpotOverMA(SpotOverMABase):
             prices = prices[:self.time_frame * self.window]
             ma = statistics.mean(prices[::self.time_frame])
             if current_price > ma:
-                self.spot_over_ma[coingecko_coin] = 1
+                self._spot_over_ma[coingecko_coin] = 1
                 return True
             return False
         except Exception as e:
@@ -143,7 +143,7 @@ class BinanceSpotOverMA(SpotOverMABase):
         return True if spot price is over ma
         """
         try:
-            if binance_exchange in self.STABLE_COINS or binance_exchange in self.exclude_coins:
+            if binance_exchange in self.STABLE_COINS or binance_exchange in self._exclude_coins:
                 return False
             days_delta = self.time_frame * self.window // 24 + 1
             current_price = self.get_exchange_current_price(binance_exchange)
@@ -151,7 +151,7 @@ class BinanceSpotOverMA(SpotOverMABase):
             prices = prices[:self.time_frame * self.window]
             ma = statistics.mean(prices[::self.time_frame])
             if current_price > ma:
-                self.spot_over_ma[binance_exchange] = 1
+                self._spot_over_ma[binance_exchange] = 1
                 return True
             return False
         except Exception as e:
@@ -165,14 +165,14 @@ class BinanceSpotOverMA(SpotOverMABase):
         """
         super()._coins_spot_over_ma()
         bases = defaultdict(set)
-        for binance_exchange in self.spot_over_ma.keys():
+        for binance_exchange in self._spot_over_ma.keys():
             base = binance_exchange.base_symbol
             bases[base].add(binance_exchange.quote_symbol)
-        self.spot_over_ma = {}
+        self._spot_over_ma = {}
         for base, quotes in bases.items():
             for quote in ["USDT", "BUSD", "BTC", "ETH"]:
                 if quote in quotes:
-                    self.spot_over_ma[BinanceExchange(base, quote)] = 1
+                    self._spot_over_ma[BinanceExchange(base, quote)] = 1
                     break
 
 
@@ -187,7 +187,7 @@ def alert_spot_cross_ma(time_frame, window, exclude_coins=None, alert_type="aler
     :param alert_type: alert type
     :param tg_mode: telegram mode
 
-    :return: exclude_coins
+    :return: _exclude_coins
     """
 
     if exclude_coins is None:

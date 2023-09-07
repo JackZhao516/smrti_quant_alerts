@@ -2,32 +2,31 @@
 This script is used to send a weekly report of newly deleted and newly added
 top n market cap coins
 """
+from collections import defaultdict
 
 from smrti_quant_alerts.get_exchange_list import GetExchangeList
-from smrti_quant_alerts.telegram_api import TelegramBot
 from smrti_quant_alerts.alerts.utility import run_task_at_daily_time
 
 
 class CoingeckoMarketCapAlert(GetExchangeList):
     def __init__(self, top_n=200, tg_type="CG_MAR_CAP"):
-        super().__init__("TEST")
-        self.tg_bot = TelegramBot(tg_type)
-        if type(top_n) != list:
+        super().__init__(tg_type)
+        if isinstance(top_n, int):
             top_n = [top_n]
-        self.top_n = top_n
-        self.top_n_list = dict()
-        for n in self.top_n:
+        self._top_n = top_n
+        self._top_n_list = defaultdict(list)
+        for n in self._top_n:
             try:
-                self.top_n_list[n] = self.get_top_n_market_cap_coins(n=n)
+                self._top_n_list[n] = self.get_top_n_market_cap_coins(n=n)
             except:
-                self.top_n_list[n] = []
+                continue
 
     def run(self):
         """
         This function is used to send daily report of newly deleted and newly added
         """
-        for n in self.top_n:
-            cur_set = set(self.top_n_list[n])
+        for n in self._top_n:
+            cur_set = set(self._top_n_list[n])
             new_list = self.get_top_n_market_cap_coins(n=n)
             if not new_list:
                 continue
@@ -40,11 +39,11 @@ class CoingeckoMarketCapAlert(GetExchangeList):
                 for i, a in enumerate(new_list):
                     if a in added:
                         added_list.append(a)
-                self.top_n_list[n] = new_list
-            self.tg_bot.send_message(f"Top {n} Market Cap Report: \n"
-                                     f"Deleted: {deleted_list}\n"
-                                     f"Added: {added_list}\n"
-                                     f"(Added in market cap desc order)")
+                self._top_n_list[n] = new_list
+            self._tg_bot.send_message(f"Top {n} Market Cap Report: \n"
+                                      f"Deleted: {deleted_list}\n"
+                                      f"Added: {added_list}\n"
+                                      f"(Added in market cap desc order)")
 
 
 if __name__ == '__main__':

@@ -61,7 +61,7 @@ class CoingeckoAlert(GetExchangeList):
 
     def h12_init(self):
         # try:
-        price = self.cg.get_coin_market_chart_by_id(id=self.coin_id, vs_currency='usd', days=90)
+        price = self._cg.get_coin_market_chart_by_id(id=self.coin_id, vs_currency='usd', days=90)
         price = price['prices']
         if len(price) < 2150:
             self.less_90_days = True
@@ -83,7 +83,7 @@ class CoingeckoAlert(GetExchangeList):
 
     def h4_init(self):
         # try:
-        price = self.cg.get_coin_market_chart_by_id(id=self.coin_id, vs_currency='usd', days=34)
+        price = self._cg.get_coin_market_chart_by_id(id=self.coin_id, vs_currency='usd', days=34)
         price = price['prices']
         if len(price) < 790:
             self.less_34_days = True
@@ -108,7 +108,7 @@ class CoingeckoAlert(GetExchangeList):
 
     def h4_500_init(self):
         # try:
-        price = self.cg.get_coin_market_chart_by_id(id=self.coin_id, vs_currency='usd', days=17)
+        price = self._cg.get_coin_market_chart_by_id(id=self.coin_id, vs_currency='usd', days=17)
         price = price['prices']
         if len(price) < 395:
             self.less_17_days = True
@@ -133,7 +133,7 @@ class CoingeckoAlert(GetExchangeList):
 
     def d1_init(self):
         # try:
-        price = self.cg.get_coin_market_chart_by_id(id=self.coin_id, vs_currency='usd', days=90)
+        price = self._cg.get_coin_market_chart_by_id(id=self.coin_id, vs_currency='usd', days=90)
         price = price['prices']
         if len(price) < 2150:
             self.less_90_days = True
@@ -157,7 +157,7 @@ class CoingeckoAlert(GetExchangeList):
         #     self.h4_init()
 
     def minute_update_100(self, price, update_ma_12=False, update_ma_4=False):
-        # price = self.cg.get_price(ids=self.coin_id, vs_currencies='usd', include_last_updated_at=True,
+        # price = self._cg.get_price(ids=self.coin_id, vs_currencies='usd', include_last_updated_at=True,
         #                           precision="full")
         # price = np.float64(price[self.coin_id]["usd"])
         if update_ma_12:
@@ -194,11 +194,11 @@ class CoingeckoAlert(GetExchangeList):
             self.spot_over_ma_4h = True
 
         # logging.info(f"100_{self.symbol} spot: {str(price)} ma180: {str(self.ma_12h)} ma200: {str(self.ma_4h)}")
-        # self.tg_bot.safe_send_message(f"{self.symbol} spot: {str(price)} H12 ma180: {str(self.ma_12h)} H4 ma200: {str(self.ma_4h)}, _____{time.time()}")
+        # self._tg_bot.safe_send_message(f"{self.symbol} spot: {str(price)} H12 ma180: {str(self.ma_12h)} H4 ma200: {str(self.ma_4h)}, _____{time.time()}")
         # add_msg_to_queue(f"{self.symbol} spot: {str(price)} H4 ma200: {str(self.ma_4h)}, _____{time.time()}")
 
     def minute_update_500(self, price, update_ma_1d=False, update_ma_4=False):
-        # price = self.cg.get_price(ids=self.coin_id, vs_currencies='usd', include_last_updated_at=True,
+        # price = self._cg.get_price(ids=self.coin_id, vs_currencies='usd', include_last_updated_at=True,
                                   # precision="full")
         # price = np.float64(price[self.coin_id]["usd"])
         if update_ma_1d:
@@ -288,7 +288,7 @@ def alert_coins(coin_ids, coin_symbols, alert_type="alert_100", tg_type="CG_ALER
 
 def loop_alert_helper(coins, coin_ids):
     coins_threads = {}
-    cg = coins[coin_ids[0]].cg
+    cg = coins[coin_ids[0]]._cg
     r = None
     if len(coin_ids) > 250:
         coin_ids, r = coin_ids[:250], coin_ids[250:]
@@ -313,7 +313,7 @@ def loop_alert_helper(coins, coin_ids):
             t.join()
 
     for coin_item in coins.values():
-        coin_item.tg_bot.stop()
+        coin_item._tg_bot.stop()
 
 
 def close_all_threads(thread):

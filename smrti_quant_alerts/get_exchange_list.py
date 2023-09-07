@@ -24,8 +24,8 @@ class GetExchangeList:
     active_binance_spot_exchanges_set = set()
 
     def __init__(self, tg_type="TEST"):
-        self.cg = CoinGeckoAPI(api_key=self.COINGECKO_API_KEY)
-        self.tg_bot = TelegramBot(alert_type=tg_type)
+        self._cg = CoinGeckoAPI(api_key=self.COINGECKO_API_KEY)
+        self._tg_bot = TelegramBot(alert_type=tg_type)
 
     def _update_active_binance_spot_exchanges(self):
         """
@@ -86,7 +86,7 @@ class GetExchangeList:
 
         :return: [CoingeckoCoin, ...]
         """
-        coingecko_coins = self.cg.get_coins_list()
+        coingecko_coins = self._cg.get_coins_list()
         return [CoingeckoCoin(coin["id"], coin["symbol"]) for coin in coingecko_coins]
 
     @error_handling("binance", "get_future_exchange_funding_rate")
@@ -119,7 +119,7 @@ class GetExchangeList:
 
         market_list = []
         for page in range(1, pages + 1):
-            market_list += self.cg.get_coins_markets(
+            market_list += self._cg.get_coins_markets(
                 vs_currency='usd', order='market_cap_desc', per_page=250,
                 page=page, sparkline=False)
         market_list = market_list[:n]
@@ -146,7 +146,7 @@ class GetExchangeList:
         pages = math.ceil(len(coingecko_coins) / 250)
         market_info = []
         for page in range(pages):
-            cur_full_info = self.cg.get_coins_markets(
+            cur_full_info = self._cg.get_coins_markets(
                 vs_currency='usd', ids=[coin.coin_id for coin in coingecko_coins[page * 250:(page + 1) * 250]],
                 per_page=250, page=1, sparkline=False,
                 price_change_percentage='24h', locale='en')
@@ -172,7 +172,7 @@ class GetExchangeList:
 
         :return: {<market_attribute_name>: value, ...}
         """
-        coin_info = self.cg.get_coin_market_chart_by_id(
+        coin_info = self._cg.get_coin_market_chart_by_id(
             id=coingecko_coin.coin_id, vs_currency='usd', days=days, interval=interval)
 
         return {market_attribute_name: coin_info.get(market_attribute_name, None)
@@ -188,9 +188,9 @@ class GetExchangeList:
 
         :return: [close_price, ...] in the order from newest to oldest
         """
-        respond = self.cg.get_coin_market_chart_by_id(id=coingecko_coin.coin_id,
-                                                      vs_currency='usd', days=days,
-                                                      precision="full")
+        respond = self._cg.get_coin_market_chart_by_id(id=coingecko_coin.coin_id,
+                                                       vs_currency='usd', days=days,
+                                                       precision="full")
         prices = respond['prices']
         prices = [Decimal(i[1]) for i in prices][::-1]
 
@@ -205,7 +205,7 @@ class GetExchangeList:
 
         :return: close_price
         """
-        respond = self.cg.get_price(ids=coingecko_coin.coin_id, vs_currencies='usd', precision='full')
+        respond = self._cg.get_price(ids=coingecko_coin.coin_id, vs_currencies='usd', precision='full')
         return Decimal(respond[coingecko_coin.coin_id]['usd'])
 
     @error_handling("binance", "get_exchange_current_price")
@@ -265,7 +265,7 @@ class GetExchangeList:
         
         quotes = ['USDT', 'BUSD', 'BTC', 'ETH']
         for page in range(pages):
-            cur_full_info = self.cg.get_coins_markets(
+            cur_full_info = self._cg.get_coins_markets(
                 vs_currency='usd', ids=[coin.coin_id for coin in coins[page * 250:(page + 1) * 250]],
                 per_page=250, page=1)
 
@@ -321,7 +321,7 @@ class GetExchangeList:
                     binance_exchanges.append(BinanceExchange(symbol, "ETH"))
 
         if tg_alert:
-            self.tg_bot.send_message(f"Top {num} coins that are not on Binance:\n {coingeco_coins}\n"
+            self._tg_bot.send_message(f"Top {num} coins that are not on Binance:\n {coingeco_coins}\n"
                                      f"Top {num} coin exchanges that are on Binance:\n {binance_exchanges}")
         return binance_exchanges, coingeco_coins
         
@@ -402,7 +402,7 @@ class GetExchangeList:
             for i in range(0, len(coin_volume_increase_detail)):
                 coin_volume_increase_detail[i][0] = \
                     f"volume increase: {100 * round(coin_volume_increase_detail[i][0] - 1, 4)}%"
-            self.tg_bot.send_message(f"Top 500 coins that has weekly "
+            self._tg_bot.send_message(f"Top 500 coins that has weekly "
                                      f"volume increase > 30%:\n {coin_volume_increase_detail}")
 
         return binance_exchanges, coingeco_coins

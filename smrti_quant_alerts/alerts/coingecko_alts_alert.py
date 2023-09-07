@@ -3,18 +3,15 @@ Alert daily for top 500-3000 market cap coins.
 """
 
 from smrti_quant_alerts.get_exchange_list import GetExchangeList
-from smrti_quant_alerts.telegram_api import TelegramBot
 from smrti_quant_alerts.alerts.utility import run_task_at_daily_time
 
 
-class CGAltsAlert:
+class CGAltsAlert(GetExchangeList):
     def __init__(self, tg_type="ALTS"):
-        self.cel = GetExchangeList("TEST")
-        self.tg_bot = TelegramBot(tg_type)
+        super().__init__(tg_type)
 
         # alts coins are from market cap 500 - 3000
-        self.alts_coins = []
-        self.running = True
+        self._alts_coins = []
 
     def run(self):
         """
@@ -24,11 +21,11 @@ class CGAltsAlert:
                    Market Cap >= 1M
         """
         # alts coins are from market cap 500 - 3000
-        self.alts_coins = self.cel.get_top_n_market_cap_coins(3000)[500:]
-        market_info = self.cel.get_coins_market_info(
-            self.alts_coins, ["market_cap", "price_change_percentage_24h"])
+        self._alts_coins = self.get_top_n_market_cap_coins(3000)[500:]
+        market_info = self.get_coins_market_info(
+            self._alts_coins, ["market_cap", "price_change_percentage_24h"])
 
-        if not self.alts_coins or not market_info:
+        if not self._alts_coins or not market_info:
             return
         # first filter: price change >= 50% in 24 hours and market cap >= 1M
         market_info_filtered = []
@@ -41,7 +38,7 @@ class CGAltsAlert:
         # second filter: volume change >= 50% in 24 hours, volume >= 10k in USD
         res = []
         for i, coin in enumerate(market_info_filtered):
-            data = self.cel.get_coin_market_info(coin, ["total_volumes"], days=1)
+            data = self.get_coin_market_info(coin, ["total_volumes"], days=1)
             if not data or len(data["total_volumes"]) < 2:
                 continue
             volume_double = data["total_volumes"][-2][-1] == 0.0 or \
@@ -51,11 +48,11 @@ class CGAltsAlert:
             if volume_double and volume_over_10k:
                 res.append(coin)
 
-        self.tg_bot.send_message(f"Alts coins bi-hourly alerts "
-                                 f"(price increase by 50%, "
-                                 f"volume increase by 50% and >= 10k, "
-                                 f"market cap >= 100k), "
-                                 f"in market cap desc order: {res}")
+        self._tg_bot.send_message(f"Alts coins bi-hourly alerts "
+                                  f"(price increase by 50%, "
+                                  f"volume increase by 50% and >= 10k, "
+                                  f"market cap >= 100k), "
+                                  f"in market cap desc order: {res}")
 
 
 if __name__ == "__main__":
