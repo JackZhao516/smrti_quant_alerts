@@ -74,9 +74,10 @@ def alts_alert():
     """
     logging.info("alts_alert start")
 
-    daily_time = "08:00"
+    daily_time = {"00:00", "02:00", "04:00", "06:00", "08:00", "10:00",
+                  "12:00", "14:00", "16:00", "18:00", "20:00", "22:00"}
     cg_alts_alert = CGAltsAlert(tg_type="ALTS")
-    run_task_at_daily_time(cg_alts_alert.run, daily_time, duration=60 * 60 * 24)
+    run_task_at_daily_time(cg_alts_alert.run, daily_time, duration=60 * 60 * 2)
 
     logging.info("alts_alert finished")
 

@@ -51,7 +51,7 @@ class CGAltsAlert:
             if volume_double and volume_over_10k:
                 res.append(coin)
 
-        self.tg_bot.send_message(f"Alts coins daily alerts "
+        self.tg_bot.send_message(f"Alts coins bi-hourly alerts "
                                  f"(price increase by 50%, "
                                  f"volume increase by 50% and >= 10k, "
                                  f"market cap >= 100k), "
@@ -60,4 +60,4 @@ class CGAltsAlert:
 
 if __name__ == "__main__":
     alts_alert = CGAltsAlert(tg_type="TEST")
-    run_task_at_daily_time(alts_alert.run, "05:57", duration=60 * 60 * 24)
+    run_task_at_daily_time(alts_alert.run, "09:47", duration=60 * 60 * 24)
