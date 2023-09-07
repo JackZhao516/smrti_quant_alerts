@@ -2,6 +2,7 @@ import logging
 import statistics
 import csv
 import os
+from collections import defaultdict
 from multiprocessing.pool import ThreadPool
 
 from smrti_quant_alerts.get_exchange_list import GetExchangeList
@@ -10,7 +11,7 @@ from smrti_quant_alerts.data_type import BinanceExchange
 from smrti_quant_alerts.alerts.utility import run_task_at_daily_time
 
 
-class SpotOverMA(GetExchangeList):
+class SpotOverMABase(GetExchangeList):
     STABLE_COINS = {"USD", "USDT", "USDC", "USDBC", "DAI", "BUSD",
                     "USDP", "GUSD", "USDC.E", "WSTUSDT", "AXLUSDC",
                     "TUSD", "FRAX", "CUSD", "USDD", "DEI", "USDK",
@@ -107,7 +108,7 @@ class SpotOverMA(GetExchangeList):
         return spot_over_ma, newly_deleted, newly_added
 
 
-class CoingeckoSpotOverMA(SpotOverMA):
+class CoingeckoSpotOverMA(SpotOverMABase):
     def __init__(self, exclude_coins, coingecko_coins, time_frame=1, window=200, alert_type="alert_300"):
         super().__init__(exclude_coins, coingecko_coins, time_frame, window, alert_type)
         self.symbol_type = "CoingeckoCoin"
@@ -132,7 +133,7 @@ class CoingeckoSpotOverMA(SpotOverMA):
             return False
 
 
-class BinanceSpotOverMA(SpotOverMA):
+class BinanceSpotOverMA(SpotOverMABase):
     def __init__(self, exclude_coins, binance_exchanges, time_frame=1, window=200, alert_type="alert_300"):
         super().__init__(exclude_coins, binance_exchanges, time_frame, window, alert_type)
         self.symbol_type = "BinanceExchange"
@@ -159,16 +160,20 @@ class BinanceSpotOverMA(SpotOverMA):
     def _coins_spot_over_ma(self):
         """
         get all spot over ma binance exchanges, keep each base with only one quote
-
+        if multiple quotes are available, keep the one in the availability order of
+        USDT, BUSD, BTC, ETH
         """
         super()._coins_spot_over_ma()
-        bases = set()
-        for binance_exchange in self.spot_over_ma.copy().keys():
+        bases = defaultdict(set)
+        for binance_exchange in self.spot_over_ma.keys():
             base = binance_exchange.base_symbol
-            if base in bases:
-                del self.spot_over_ma[binance_exchange]
-            else:
-                bases.add(base)
+            bases[base].add(binance_exchange.quote_symbol)
+        self.spot_over_ma = {}
+        for base, quotes in bases.items():
+            for quote in ["USDT", "BUSD", "BTC", "ETH"]:
+                if quote in quotes:
+                    self.spot_over_ma[BinanceExchange(base, quote)] = 1
+                    break
 
 
 def alert_spot_cross_ma(time_frame, window, exclude_coins=None, alert_type="alert_300", tg_mode="CG_SUM"):
@@ -240,15 +245,5 @@ def alert_spot_cross_ma(time_frame, window, exclude_coins=None, alert_type="aler
 if __name__ == "__main__":
     alert_type = "meme_alert"
     tg_mode = "TEST"
-    # kwargs = {"time_frame": 4, "window": 200, "alert_type": alert_type, "tg_mode": tg_mode}
-    # run_task_at_daily_time(alert_spot_cross_ma, "06:11", kwargs=kwargs, duration=60 * 60 * 24)
-
-    def sequential_task():
-        exclude_coins = set()
-        for alert_type in ["alert_100", "alert_300", "alert_500"]:
-            exclude_coins = alert_spot_cross_ma(4, 200, exclude_coins,
-                                                alert_type=alert_type, tg_mode=tg_mode)
-
-
-    logging.info("routinely_sequential_alert_100_300_500 start")
-    run_task_at_daily_time(sequential_task, "06:18", duration=60 * 60 * 24)
+    kwargs = {"time_frame": 4, "window": 200, "alert_type": alert_type, "tg_mode": tg_mode}
+    run_task_at_daily_time(alert_spot_cross_ma, "06:11", kwargs=kwargs, duration=60 * 60 * 24)

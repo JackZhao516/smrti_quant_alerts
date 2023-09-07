@@ -42,7 +42,7 @@ class TelegramBot:
         if blue_text:
             message = message.replace("[", "(")
             message = message.replace("]", ")")
-            message = f"[{message}](http://www.google.com/)"
+            message = f"[{message}](https://www.google.com/)"
         api_url = f'https://api.telegram.org/bot{self.TOKEN}/' \
                   f'sendMessage?chat_id={self.telegram_chat_id}&text={message}'
         if blue_text:
@@ -95,8 +95,5 @@ class TelegramBot:
 
 if __name__ == "__main__":
     tg_bot = TelegramBot("TEST", daemon=False)
-    a = ""
-    l = [1, 2, 4, 5, 6, 7, 8, 9, 10]
-    for i in range(1):
-        a += f"test test test test test {l}"
+    a = "test"
     tg_bot.send_message(a, blue_text=True)
