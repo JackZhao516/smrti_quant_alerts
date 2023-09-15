@@ -20,7 +20,8 @@ class SpotOverMABase(GetExchangeList):
                     "VAI", "RSV", "CEUR", "USDS", "CUSDT", "DOLA",
                     "HAY", "MIM", "EDGT", "ALUSD", "WBTCBTC",
                     "BUSDUSDT", "USDCBUSD", "USDCUSDT", "USDPUSDT",
-                    "FRXETH", "WBTCETH", "CETH", "CDAI", "CUSDC"}
+                    "FRXETH", "WBTCETH", "CETH", "CDAI", "CUSDC",
+                    "AUSDC", "AETH"}
     if not os.path.exists("run_time_data"):
         os.mkdir("run_time_data")
 
@@ -57,7 +58,6 @@ class SpotOverMABase(GetExchangeList):
         get all spot over ma coins
 
         """
-        logging.info(len(self._trading_symbols))
         pool = ThreadPool(8)
         pool.map(self._coin_spot_over_ma, self._trading_symbols)
         pool.close()

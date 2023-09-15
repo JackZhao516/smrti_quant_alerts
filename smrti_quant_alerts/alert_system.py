@@ -5,7 +5,7 @@ from decimal import Decimal
 from smrti_quant_alerts.alerts.coingecko_market_cap_alert import CoingeckoMarketCapAlert
 from smrti_quant_alerts.alerts.binance_price_volume_alert import BinancePriceVolumeAlert
 from smrti_quant_alerts.alerts.coingecko_alts_alert import CGAltsAlert
-from smrti_quant_alerts.alerts.spot_over_ma_alert import alert_spot_cross_ma
+from smrti_quant_alerts.alerts.coingecko_binance_spot_over_ma_alert import alert_spot_cross_ma
 from smrti_quant_alerts.alerts.binance_bi_hourly_future_funding_rate_alert import FutureFundingRate
 from smrti_quant_alerts.settings import Config
 from smrti_quant_alerts.utility import run_task_at_daily_time
