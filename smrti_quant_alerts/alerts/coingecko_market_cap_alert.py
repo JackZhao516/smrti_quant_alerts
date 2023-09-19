@@ -16,10 +16,7 @@ class CoingeckoMarketCapAlert(GetExchangeList):
         self._top_n = top_n
         self._top_n_list = defaultdict(list)
         for n in self._top_n:
-            try:
-                self._top_n_list[n] = self.get_top_n_market_cap_coins(n=n)
-            except:
-                continue
+            self._top_n_list[n] = self.get_top_n_market_cap_coins(n=n)
 
     def run(self):
         """

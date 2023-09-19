@@ -1,11 +1,13 @@
 import logging
+import random
+import time
 from requests.exceptions import RequestException
 from requests.models import Response
 import json
 from json import JSONDecodeError
 
 
-def error_handling(api="binance", function_name=""):
+def error_handling(api="binance", function_name="", retry=5, default_val=None):
     """
     decorator for handling api request exceptions
     if a library function has direct api request, use this decorator
@@ -19,45 +21,48 @@ def error_handling(api="binance", function_name=""):
     def decorator(fun):
         def wrapper(*args, **kwargs):
             error_msg = f"{api} api request error: {function_name}"
-            try:
-                response = fun(*args, **kwargs)
-                if type(response) == Response:
-                    status_code = response.status_code
-                    if status_code < 400:
+            for i in range(retry):
+                try:
+                    response = fun(*args, **kwargs)
+                    if type(response) == Response:
+                        status_code = response.status_code
+                        if status_code < 400:
+                            return response
+
+                        if 400 <= status_code < 500:
+                            try:
+                                err = json.loads(response.text)
+                            except JSONDecodeError:
+                                raise ClientError(
+                                    status_code, None, response.text, None, response.headers
+                                )
+
+                            # error code and message returned from server
+                            # binance error json
+                            data = err["data"] if "data" in err else None
+                            code = err["code"] if "code" in err else None
+                            msg = err["msg"] if "msg" in err else None
+
+                            # telegram error json
+                            code = err["error_code"] if "error_code" in err else code
+                            msg = err["description"] if "description" in err else msg
+
+                            # coingecko error json
+                            msg = err["error"] if "error" in err else msg
+
+                            raise ClientError(
+                                status_code, code, msg, response.headers, data
+                            )
+                        raise ServerError(status_code, response.text)
+                    else:
                         return response
 
-                    if 400 <= status_code < 500:
-                        try:
-                            err = json.loads(response.text)
-                        except JSONDecodeError:
-                            raise ClientError(
-                                status_code, None, response.text, None, response.headers
-                            )
-
-                        # error code and message returned from server
-                        # binance error json
-                        data = err["data"] if "data" in err else None
-                        code = err["code"] if "code" in err else None
-                        msg = err["msg"] if "msg" in err else None
-
-                        # telegram error json
-                        code = err["error_code"] if "error_code" in err else code
-                        msg = err["description"] if "description" in err else msg
-
-                        # coingecko error json
-                        msg = err["error"] if "error" in err else msg
-
-                        raise ClientError(
-                            status_code, code, msg, response.headers, data
-                        )
-                    raise ServerError(status_code, response.text)
-                else:
-                    return response
-
-            except (RequestException, ClientError, ServerError) as e:
-                logging.error(f"{error_msg}: {e}")
-            except Exception as e:
-                logging.error(f"{error_msg}: {e}")
+                except (RequestException, ClientError, ServerError) as e:
+                    logging.error(f"{error_msg}: {e}")
+                except Exception as e:
+                    logging.error(f"{error_msg}: {e}")
+                time.sleep(random.random() * 2)
+            return default_val
         return wrapper
     return decorator
 
