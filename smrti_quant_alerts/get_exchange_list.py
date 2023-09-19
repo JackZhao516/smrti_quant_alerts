@@ -42,7 +42,7 @@ class GetExchangeList:
         """
         self.active_exchanges_timestamp = 0
 
-    @error_handling("binance", "get_all_binance_exchanges", default_val=[])
+    @error_handling("binance", default_val=[])
     def get_all_binance_exchanges(self, exchange_type="SPOT"):
         """
         Get all exchanges on binance, default is SPOT
@@ -62,7 +62,7 @@ class GetExchangeList:
                 binance_exchanges.append(BinanceExchange(exchange['baseAsset'], exchange['quoteAsset']))
         return binance_exchanges
 
-    @error_handling("binance", "get_popular_quote_binance_spot_exchanges", default_val=[])
+    @error_handling("binance", default_val=[])
     def get_popular_quote_binance_spot_exchanges(self):
         """
         BTC, ETH, USDT, BUSD spot binance exchanges
@@ -79,7 +79,7 @@ class GetExchangeList:
 
         return binance_exchanges
 
-    @error_handling("coingecko", "get_all_coingecko_coins", default_val=[])
+    @error_handling("coingecko", default_val=[])
     def get_all_coingecko_coins(self):
         """
         Get all coins on coingecko
@@ -89,7 +89,7 @@ class GetExchangeList:
         coingecko_coins = self._cg.get_coins_list()
         return [CoingeckoCoin(coin["id"], coin["symbol"]) for coin in coingecko_coins]
 
-    @error_handling("binance", "get_future_exchange_funding_rate", default_val=0)
+    @error_handling("binance", default_val=0)
     def get_future_exchange_funding_rate(self, exchange):
         """
         Get funding rate of a future exchange
@@ -105,7 +105,7 @@ class GetExchangeList:
             return Decimal(response["lastFundingRate"])
         return 0
 
-    @error_handling("coingecko", "get_top_n_market_cap_coins", default_val=[])
+    @error_handling("coingecko", default_val=[])
     def get_top_n_market_cap_coins(self, n=100):
         """
         get the top n market cap coins on coingecko
@@ -133,7 +133,7 @@ class GetExchangeList:
 
         return coingecko_coins
 
-    @error_handling("coingecko", "get_coins_market_info", default_val=[])
+    @error_handling("coingecko", default_val=[])
     def get_coins_market_info(self, coingecko_coins, market_attribute_name_list):
         """
         get coin market info from coingecko
@@ -160,7 +160,7 @@ class GetExchangeList:
 
         return market_info
 
-    @error_handling("coingecko", "get_coin_market_info", default_val={})
+    @error_handling("coingecko", default_val={})
     def get_coin_market_info(self, coingecko_coin, market_attribute_name_list, days, interval="daily"):
         """
         get coin market info from coingecko
@@ -178,7 +178,7 @@ class GetExchangeList:
         return {market_attribute_name: coin_info.get(market_attribute_name, None)
                 for market_attribute_name in market_attribute_name_list}
 
-    @error_handling("coingecko", "get_coin_history_hourly_close_price", default_val=[])
+    @error_handling("coingecko", default_val=[])
     def get_coin_history_hourly_close_price(self, coingecko_coin, days=10):
         """
         Get coin past close price for the history <days> days
@@ -196,7 +196,7 @@ class GetExchangeList:
 
         return prices
 
-    @error_handling("coingecko", "get_coin_current_price", default_val=0)
+    @error_handling("coingecko", default_val=0)
     def get_coin_current_price(self, coingecko_coin):
         """
         Get coin current close price
@@ -208,7 +208,7 @@ class GetExchangeList:
         respond = self._cg.get_price(ids=coingecko_coin.coin_id, vs_currencies='usd', precision='full')
         return Decimal(respond[coingecko_coin.coin_id]['usd'])
 
-    @error_handling("binance", "get_exchange_current_price", default_val=0)
+    @error_handling("binance", default_val=0)
     def get_exchange_current_price(self, binance_exchange):
         """
         Get exchange current close price
@@ -225,7 +225,7 @@ class GetExchangeList:
         else:
             return Decimal(response[0]['price'])
 
-    @error_handling("binance", "get_exchange_history_hourly_close_price", default_val=[])
+    @error_handling("binance", default_val=[])
     def get_exchange_history_hourly_close_price(self, exchange, days=10):
         """
         Get exchange past close price for the history <days> days
@@ -243,7 +243,7 @@ class GetExchangeList:
         prices = [Decimal(i[4]) for i in response][::-1]
         return prices
 
-    @error_handling("coingecko", "get_coins_with_24h_volume_larger_than_threshold", default_val=([], []))
+    @error_handling("coingecko", default_val=([], []))
     def get_coins_with_24h_volume_larger_than_threshold(self, threshold=3000000):
         """
         Get all coins with 24h volume larger than threshold (in USD)
@@ -322,7 +322,7 @@ class GetExchangeList:
 
         if tg_alert:
             self._tg_bot.send_message(f"Top {num} coins that are not on Binance:\n {coingeco_coins}\n"
-                                     f"Top {num} coin exchanges that are on Binance:\n {binance_exchanges}")
+                                      f"Top {num} coin exchanges that are on Binance:\n {binance_exchanges}")
         return binance_exchanges, coingeco_coins
         
     def get_all_spot_exchanges_in_usdt_busd_btc(self):
@@ -344,7 +344,7 @@ class GetExchangeList:
         logging.info(f"Got {len(binance_exchanges)} coins in USDT, BUSD, or BTC format")
         return list(binance_exchanges)
 
-    @error_handling("coingecko", "get_coins_with_weekly_volume_increase", default_val=([], []))
+    @error_handling("coingecko", default_val=([], []))
     def get_coins_with_weekly_volume_increase(self, volume_threshold=1.3, num=500, tg_alert=False):
         """
         Get top <num> market cap coins with weekly volume increase larger than volume_threshold
@@ -403,7 +403,7 @@ class GetExchangeList:
                 coin_volume_increase_detail[i][0] = \
                     f"volume increase: {100 * round(coin_volume_increase_detail[i][0] - 1, 4)}%"
             self._tg_bot.send_message(f"Top 500 coins that has weekly "
-                                     f"volume increase > 30%:\n {coin_volume_increase_detail}")
+                                      f"volume increase > 30%:\n {coin_volume_increase_detail}")
 
         return binance_exchanges, coingeco_coins
 

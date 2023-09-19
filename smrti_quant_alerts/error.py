@@ -7,7 +7,7 @@ import json
 from json import JSONDecodeError
 
 
-def error_handling(api="binance", function_name="", retry=5, default_val=None):
+def error_handling(api="binance", retry=5, default_val=None):
     """
     decorator for handling api request exceptions
     if a library function has direct api request, use this decorator
@@ -16,11 +16,12 @@ def error_handling(api="binance", function_name="", retry=5, default_val=None):
     else return the object, and use general try-except to handle exceptions
 
     :param api: api name: "binance", "telegram", "coingecko"
-    :param function_name: function name
+    :param retry: retry times
+    :param default_val: default value to return if all retries failed
     """
     def decorator(fun):
         def wrapper(*args, **kwargs):
-            error_msg = f"{api} api request error: {function_name}"
+            error_msg = f"{api} api request error: {fun.__name__}"
             for i in range(retry):
                 try:
                     response = fun(*args, **kwargs)
