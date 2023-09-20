@@ -150,8 +150,6 @@ class BinancePriceVolumeAlert:
             logging.info("closing ws connection")
             self.klines_client.stop()
             self.running = False
-            self.tg_bot["15m_volume"].stop()
-            self.tg_bot["1h_volume"].stop()
             for t in monitor_threads:
                 t.join()
 
