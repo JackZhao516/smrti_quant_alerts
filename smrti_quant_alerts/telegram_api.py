@@ -11,7 +11,7 @@ class TelegramBot:
     TOKEN = tokens["TOKEN"]
     TELEGRAM_IDS = tokens["TELEGRAM_IDS"]
 
-    def __init__(self, alert_type="CG_ALERT", daemon=False):
+    def __init__(self, alert_type="CG_ALERT", daemon=True):
         """
         TelegramBot class for sending message to telegram group via bot
 
@@ -20,7 +20,7 @@ class TelegramBot:
 
 
         ::param alert_type: "CG_ALERT", "CG_SUM", "TEST", "VOLUME", "PRICE", etc.
-        ::param daemon: True if letting the TelegramBot handle the 10 msg/s limit,
+        ::param daemon: True if letting the TelegramBot handle the 20 msg/min limit,
                         False if you want to handle the limit yourself
 
         """
@@ -29,10 +29,8 @@ class TelegramBot:
         # message queue
         self.msg_queue_lock = threading.Lock()
         self.msg_queue = []
-        self.msg_thread = threading.Thread(target=self._release_msg_from_queue)
+        self.daemon = daemon
         self.running = False
-        if daemon:
-            self.msg_thread.start()
 
     @error_handling("telegram", default_val=None)
     def _send_message(self, message, blue_text=False):
@@ -42,26 +40,28 @@ class TelegramBot:
         if blue_text:
             message = message.replace("[", "(")
             message = message.replace("]", ")")
-            message = f"[{message}](https://www.google.com/)"
+            message = f"[{message}](https://api.telegram.org/bot{self.TOKEN}/getMe)"
         api_url = f'https://api.telegram.org/bot{self.TOKEN}/' \
                   f'sendMessage?chat_id={self.telegram_chat_id}&text={message}'
         if blue_text:
             api_url += '&parse_mode=Markdown'
-        requests.get(api_url, timeout=2)
+        requests.get(api_url, timeout=5)
 
     def _release_msg_from_queue(self):
         """
         helper method for releasing message from queue
         """
-        self.running = True
-        while self.running:
-            while self.msg_queue:
-                self.msg_queue_lock.acquire()
-                msg = self.msg_queue.pop(0)
-                self._send_message(msg)
-                self.msg_queue_lock.release()
-                time.sleep(0.11)  # 10 msg/s
-            time.sleep(1)
+        self.msg_queue_lock.acquire()
+        while self.msg_queue:
+            msg = self.msg_queue.pop(0)
+            blue_text = msg[1]
+            msg = msg[0]
+            self._send_message(msg, blue_text)
+            self.msg_queue_lock.release()
+            time.sleep(3.1)  # 20 msg/min
+            self.msg_queue_lock.acquire()
+        self.running = False
+        self.msg_queue_lock.release()
 
     def send_message(self, message, blue_text=False):
         """
@@ -72,16 +72,23 @@ class TelegramBot:
 
         """
         # split message if it's too long, 4000 is the limit
-        messages = [message[i:i + 4000] for i in range(0, len(message), 4000)]
+        messages = [[message[i:i + 4000], blue_text] for i in range(0, len(message), 4000)]
 
-        if not self.running:
+        if not self.daemon:
             for message in messages:
-                self._send_message(message, blue_text)
+                self._send_message(message[0], blue_text)
             return
+
         self.msg_queue_lock.acquire()
-        for message in messages:
-            self.msg_queue.append(message)
-        self.msg_queue_lock.release()
+        self.msg_queue += messages
+        if not self.running and len(self.msg_queue) == len(messages):
+            msg_thread = threading.Thread(target=self._release_msg_from_queue)
+            self.running = True
+            self.msg_queue_lock.release()
+            msg_thread.start()
+        else:
+            self.msg_queue_lock.release()
+        time.sleep(0.1)
 
     @error_handling("telegram", default_val=None)
     def send_file(self, file_path, file_name):
@@ -95,20 +102,9 @@ class TelegramBot:
                   f'sendDocument?'
         files = {'document': open(file_path, 'rb')}
         data = {'chat_id': self.telegram_chat_id, 'caption': file_name, 'parse_mode': 'HTML'}
-        requests.post(api_url, data=data, files=files, stream=True)
-
-    def stop(self):
-        """
-        stop TelegramBot
-        """
-        if not self.running:
-            return
-        self.running = False
-        self.msg_thread.join()
+        requests.post(api_url, data=data, files=files, stream=True, timeout=5)
 
 
 if __name__ == "__main__":
-    tg_bot = TelegramBot("TEST", daemon=False)
-    a = "test"
-    tg_bot.send_message(a, blue_text=True)
-    tg_bot.stop()
+    tg_bot = TelegramBot("TEST", daemon=True)
+    tg_bot.send_message("test", blue_text=True)
