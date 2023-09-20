@@ -34,7 +34,7 @@ class TelegramBot:
         if daemon:
             self.msg_thread.start()
 
-    @error_handling("telegram", "send_message")
+    @error_handling("telegram", default_val=None)
     def _send_message(self, message, blue_text=False):
         """
         helper method for sending message to telegram
@@ -83,6 +83,20 @@ class TelegramBot:
             self.msg_queue.append(message)
         self.msg_queue_lock.release()
 
+    @error_handling("telegram", default_val=None)
+    def send_file(self, file_path, file_name):
+        """
+        send file to telegram group
+
+        :param file_path: path of the file to send
+        :param file_name: name of the file to send
+        """
+        api_url = f'https://api.telegram.org/bot{self.TOKEN}/' \
+                  f'sendDocument?'
+        files = {'document': open(file_path, 'rb')}
+        data = {'chat_id': self.telegram_chat_id, 'caption': file_name, 'parse_mode': 'HTML'}
+        requests.post(api_url, data=data, files=files, stream=True)
+
     def stop(self):
         """
         stop TelegramBot
@@ -97,3 +111,4 @@ if __name__ == "__main__":
     tg_bot = TelegramBot("TEST", daemon=False)
     a = "test"
     tg_bot.send_message(a, blue_text=True)
+    tg_bot.stop()

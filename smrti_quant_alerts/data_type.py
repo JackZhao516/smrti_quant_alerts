@@ -50,9 +50,12 @@ class BinanceExchange:
 
 
 class CoingeckoCoin:
+    symbol_id_map = {}
+
     def __init__(self, coin_id, coin_symbol):
         self.coin_id = coin_id
         self.coin_symbol = coin_symbol.upper()
+        self.symbol_id_map[self.coin_symbol] = self.coin_id
 
     def __repr__(self):
         return self.coin_symbol
@@ -97,6 +100,13 @@ class CoingeckoCoin:
 
     def __hash__(self):
         return hash(self.coin_symbol)
+
+    @staticmethod
+    def get_coingecko_coin(coin_symbol):
+        if coin_symbol.upper() in CoingeckoCoin.symbol_id_map:
+            coin_id = CoingeckoCoin.symbol_id_map[coin_symbol.upper()]
+            return CoingeckoCoin(coin_id, coin_symbol)
+        return None
 
 
 if __name__ == "__main__":

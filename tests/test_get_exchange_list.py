@@ -96,8 +96,25 @@ class TestCoinList(unittest.TestCase):
         self.gel._reset_timestamp()
         coins = self.gel.get_coins_market_info([CoingeckoCoin("bitcoin", "BTC"),
                                                 CoingeckoCoin("ethereum", "ETH")], ["market_cap"])
-        self.assertEqual([{"binance_exchange": CoingeckoCoin("bitcoin", "BTC"), "market_cap": 200},
-                          {"binance_exchange": CoingeckoCoin("ethereum", "ETH"), "market_cap": 100}], coins)
+        self.assertEqual([{"coingecko_coin": CoingeckoCoin("bitcoin", "BTC"), "market_cap": 200},
+                          {"coingecko_coin": CoingeckoCoin("ethereum", "ETH"), "market_cap": 100}], coins)
+
+    @responses.activate
+    def test_get_coin_info(self):
+        api_url = f"https://pro-api.coingecko.com/api/v3/coins/bitcoin/?" \
+                  f"x_cg_pro_api_key={self.COINGECKO_API_KEY}" \
+                  f"&localization=false&tickers=false&market_data=false&" \
+                  f"community_data=false&developer_data=false&sparkline=false"
+
+        responses.add(responses.GET, api_url,
+                      json={"id": "bitcoin", "symbol": "btc", "name": "Bitcoin",
+                            "description": {"en": "test"},
+                            "links": {"homepage": ["https://www.bitcoin.org", ""]}},
+                      status=200, match_querystring=True)
+        self.gel._reset_timestamp()
+        info = self.gel.get_coin_info(CoingeckoCoin("bitcoin", "BTC"))
+        self.assertEqual({"symbol": "BTC", "name": "Bitcoin",
+                          "description": "test", "website": "https://www.bitcoin.org"}, info)
 
     @responses.activate
     def test_get_coin_market_info(self):

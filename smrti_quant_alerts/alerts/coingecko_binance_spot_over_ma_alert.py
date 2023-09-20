@@ -9,6 +9,7 @@ from smrti_quant_alerts.get_exchange_list import GetExchangeList
 from smrti_quant_alerts.telegram_api import TelegramBot
 from smrti_quant_alerts.data_type import BinanceExchange
 from smrti_quant_alerts.utility import run_task_at_daily_time
+from smrti_quant_alerts.data_type import CoingeckoCoin
 
 
 class SpotOverMABase(GetExchangeList):
@@ -37,6 +38,26 @@ class SpotOverMABase(GetExchangeList):
         self.time_frame = time_frame
         self.window = window
         self._spot_over_ma = {}
+
+    def get_coins_info_to_csv(self, coins, file_name):
+        """
+        get coins info to csv file
+
+        :param coins: coins
+        :param file_name: file name
+        :return: file path
+        """
+        with open(f"run_time_data/{file_name}.csv", "w", newline="", encoding="utf-8") as f:
+            writer = csv.writer(f)
+            writer.writerow(["symbol", "name", "website", "description"])
+            for coin in coins:
+                if isinstance(coin, BinanceExchange):
+                    coin = CoingeckoCoin.get_coingecko_coin(coin.base_symbol)
+                info = self.get_coin_info(coin)
+                writer.writerow([info["symbol"], info["name"],
+                                 info["website"], info["description"]])
+
+        return f"run_time_data/{file_name}.csv"
 
     def _expand_exclude_coins(self):
         """
@@ -238,12 +259,19 @@ def alert_spot_cross_ma(time_frame, window, exclude_coins=None, alert_type="aler
                             f"coins/coin exchanges exchanges spot"
                             f" over {ma_type} newly deleted:\n{newly_deleted_coins}\n")
 
+    # write newly added coin to csv
+    if newly_added_coins:
+        file_name = f"{alert_type}_newly_added.csv"
+        file_path = coingecko_alert.get_coins_info_to_csv(newly_added_coins, file_name)
+        tg_bot.send_file(file_path, file_name)
+
     coins = [coin[0] for coin in coins]
     return exclude_coins.union(set(coins + newly_added_coins + newly_deleted_coins))
 
 
 if __name__ == "__main__":
-    alert_type = "meme_alert"
+    alert_type = "alert_100"
     tg_mode = "TEST"
     kwargs = {"time_frame": 4, "window": 200, "alert_type": alert_type, "tg_mode": tg_mode}
-    run_task_at_daily_time(alert_spot_cross_ma, "06:11", kwargs=kwargs, duration=60 * 60 * 24)
+    alert_spot_cross_ma(**kwargs)
+    # run_task_at_daily_time(alert_spot_cross_ma, "06:11", kwargs=kwargs, duration=60 * 60 * 24)

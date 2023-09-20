@@ -161,6 +161,27 @@ class GetExchangeList:
         return market_info
 
     @error_handling("coingecko", default_val={})
+    def get_coin_info(self, coingecko_coin):
+        """
+        get coin info from coingecko
+
+        :param coingecko_coin: CoingeckoCoin
+
+        :return: {"symbol": .., "name": .., "description": .. , "website:": ..}
+        """
+        coin_info = self._cg.get_coin_by_id(id=coingecko_coin.coin_id, localization='false',
+                                            tickers='false', market_data='false',
+                                            community_data='false', developer_data='false',
+                                            sparkline='false')
+
+        links = coin_info.get("links", {}).get("homepage", [])
+        links = [link for link in links if link.startswith("http")]
+        links = "; ".join(links) if links else ""
+        return {"symbol": coingecko_coin.coin_symbol, "name": coin_info.get("name", ""),
+                "description": coin_info.get("description", "").get("en", ""),
+                "website": links}
+
+    @error_handling("coingecko", default_val={})
     def get_coin_market_info(self, coingecko_coin, market_attribute_name_list, days, interval="daily"):
         """
         get coin market info from coingecko
@@ -191,7 +212,7 @@ class GetExchangeList:
         respond = self._cg.get_coin_market_chart_by_id(id=coingecko_coin.coin_id,
                                                        vs_currency='usd', days=days,
                                                        precision="full")
-        prices = respond['prices']
+        prices = respond.get("prices", [])
         prices = [Decimal(i[1]) for i in prices][::-1]
 
         return prices
@@ -206,7 +227,8 @@ class GetExchangeList:
         :return: close_price
         """
         respond = self._cg.get_price(ids=coingecko_coin.coin_id, vs_currencies='usd', precision='full')
-        return Decimal(respond[coingecko_coin.coin_id]['usd'])
+        price = respond.get(coingecko_coin.coin_id, {}).get('usd', 0)
+        return Decimal(price)
 
     @error_handling("binance", default_val=0)
     def get_exchange_current_price(self, binance_exchange):
@@ -221,9 +243,9 @@ class GetExchangeList:
         response = requests.get(api_url, timeout=5)
         response = response.json()
         if isinstance(response, dict):
-            return Decimal(response['price'])
+            return Decimal(response.get("price", 0))
         else:
-            return Decimal(response[0]['price'])
+            return Decimal(response[0].get("price", 0))
 
     @error_handling("binance", default_val=[])
     def get_exchange_history_hourly_close_price(self, exchange, days=10):
@@ -410,4 +432,4 @@ class GetExchangeList:
 
 if __name__ == '__main__':
     cg = GetExchangeList(tg_type='TEST')
-    print(len(cg.get_exchange_history_hourly_close_price(BinanceExchange("BTC", "USDT"), 2)))
+    print(cg.get_coin_info(CoingeckoCoin("bitcoin", "BTC")))
