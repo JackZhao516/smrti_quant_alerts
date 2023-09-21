@@ -3,6 +3,7 @@ import statistics
 import csv
 import os
 import uuid
+import json
 from collections import defaultdict
 from multiprocessing.pool import ThreadPool
 
@@ -14,17 +15,7 @@ from smrti_quant_alerts.data_type import CoingeckoCoin
 
 
 class SpotOverMABase(GetExchangeList):
-    STABLE_COINS = {"USD", "USDT", "USDC", "USDBC", "DAI", "BUSD",
-                    "USDP", "GUSD", "USDC.E", "WSTUSDT", "AXLUSDC",
-                    "TUSD", "FRAX", "CUSD", "USDD", "DEI", "USDK",
-                    "MIMATIC", "OUSD", "PAX", "FEI", "USTC", "USDN",
-                    "TRIBE", "LUSD", "EURS", "VUSDC", "USDX", "SUSD",
-                    "VAI", "RSV", "CEUR", "USDS", "CUSDT", "DOLA",
-                    "HAY", "MIM", "EDGT", "ALUSD", "WBTCBTC",
-                    "BUSD", "USDC", "USDC", "USDP",
-                    "FRXETH", "WBTC", "CETH", "CDAI", "CUSDC",
-                    "AUSDC", "AETH"}
-
+    PWD = __file__.split("coingecko_binance_spot_over_ma_alert.py")[0]
     if not os.path.exists("run_time_data"):
         os.mkdir("run_time_data")
 
@@ -45,10 +36,29 @@ class SpotOverMABase(GetExchangeList):
         """
         expand exclude coins to include all quotes for each base
         """
+        # process exclude coins from class input
         for coin in self._exclude_coins.copy():
             if isinstance(coin, BinanceExchange):
                 for quote in ["USDT", "BUSD", "BTC", "ETH"]:
                     self._exclude_coins.add(BinanceExchange(coin.base_symbol, quote))
+
+        # process exclude coins from stable coins and json file
+        self.get_all_coingecko_coins()
+        exclude_coins = set()
+        if os.path.exists(f"{self.PWD}stable_coins.json"):
+            with open(f"{self.PWD}stable_coins.json", "r") as f:
+                exclude_coins.update(json.load(f))
+
+        if os.path.exists(f"{self.PWD}exclude_coins.json"):
+            with open(f"{self.PWD}exclude_coins.json", "r") as f:
+                exclude_coins.update(json.load(f))
+
+        for coin in exclude_coins:
+            coingecok_coin = CoingeckoCoin.get_coingecko_coin(coin)
+            if coingecok_coin:
+                self._exclude_coins.add(coingecok_coin)
+            for quote in ["USDT", "BUSD", "BTC", "ETH"]:
+                self._exclude_coins.add(BinanceExchange(coin, quote))
 
     def _coin_spot_over_ma(self, trading_symbol):
         """
@@ -121,7 +131,7 @@ class CoingeckoSpotOverMA(SpotOverMABase):
         return True if spot price is over ma
         """
         try:
-            if coingecko_coin in self.STABLE_COINS or coingecko_coin in self._exclude_coins:
+            if coingecko_coin in self._exclude_coins:
                 return False
             days_delta = self.time_frame * self.window // 24 + 1
             current_price = self.get_coin_current_price(coingecko_coin)
@@ -146,8 +156,7 @@ class BinanceSpotOverMA(SpotOverMABase):
         return True if spot price is over ma
         """
         try:
-            if binance_exchange.base_symbol in self.STABLE_COINS or \
-                    binance_exchange in self._exclude_coins:
+            if binance_exchange in self._exclude_coins:
                 return False
             days_delta = self.time_frame * self.window // 24 + 1
             current_price = self.get_exchange_current_price(binance_exchange)
@@ -321,7 +330,8 @@ if __name__ == "__main__":
 
     kwargs = {"time_frame": 4, "window": 200, "tg_mode": tg_mode}
     spot_over_ma_alert = SpotOverMAAlert(**kwargs)
-    kwargs = {"alert_type": alert_type, "alert_coins_info": True}
-    spot_over_ma_alert.run(**kwargs)
 
-    # run_task_at_daily_time(spot_over_ma_alert.run, "06:11", kwargs=kwargs, duration=60 * 60 * 24)
+    kwargs = {"alert_type": alert_type, "alert_coins_info": True}
+    # spot_over_ma_alert.run(**kwargs)
+
+    run_task_at_daily_time(spot_over_ma_alert.run, "06:11", kwargs=kwargs, duration=60 * 60 * 24)
