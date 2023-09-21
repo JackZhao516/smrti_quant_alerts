@@ -102,7 +102,7 @@ class TelegramBot:
                   f'sendDocument?'
         files = {'document': open(file_path, 'rb')}
         data = {'chat_id': self.telegram_chat_id, 'caption': file_name, 'parse_mode': 'HTML'}
-        requests.post(api_url, data=data, files=files, stream=True, timeout=5)
+        requests.post(api_url, data=data, files=files, stream=True, timeout=1000)
 
 
 if __name__ == "__main__":

@@ -5,7 +5,7 @@ from decimal import Decimal
 from smrti_quant_alerts.alerts.coingecko_market_cap_alert import CoingeckoMarketCapAlert
 from smrti_quant_alerts.alerts.binance_price_volume_alert import BinancePriceVolumeAlert
 from smrti_quant_alerts.alerts.coingecko_alts_alert import CGAltsAlert
-from smrti_quant_alerts.alerts.coingecko_binance_spot_over_ma_alert import alert_spot_cross_ma
+from smrti_quant_alerts.alerts.coingecko_binance_spot_over_ma_alert import SpotOverMAAlert
 from smrti_quant_alerts.alerts.binance_bi_hourly_future_funding_rate_alert import FutureFundingRate
 from smrti_quant_alerts.settings import Config
 from smrti_quant_alerts.utility import run_task_at_daily_time
@@ -34,36 +34,22 @@ def price_volume():
     BinancePriceVolumeAlert().klines_alert()
 
 
-def sequential_alert_100_300_500():
-    """
-    sequentially alert 100, 300, 500 coins
-    """
-    def sequential_task():
-        exclude_coins = set()
-        for alert_type in ["alert_100", "alert_300", "alert_500"]:
-            exclude_coins = alert_spot_cross_ma(4, 200, exclude_coins,
-                                                alert_type=alert_type, tg_mode="CG_SUM")
-
-    logging.info("routinely_sequential_alert_100_300_500 start")
-
-    daily_time = "09:00"
-    run_task_at_daily_time(sequential_task, daily_time, duration=60 * 60 * 24)
-
-    logging.info("routinely_sequential_alert_100_300_500 finished")
-
-
 def alert_spot_over_ma(alert_type):
     """
-    alert 100/300/500 coins
+    alert spot over ma, for alert_100, alert_300, alert_500, meme_alert, sequential
 
     :param alert_type: alert type
     """
     logging.info(f"alert_spot_over_ma {alert_type} start")
 
-    daily_time = "09:30"
+    daily_time = "08:50" if alert_type == "meme_alert" else "09:00"
     tg_mode = "MEME" if alert_type == "meme_alert" else "CG_SUM"
-    kwargs = {"time_frame": 1, "window": 200, "alert_type": alert_type, "tg_mode": tg_mode}
-    run_task_at_daily_time(alert_spot_cross_ma, daily_time, kwargs=kwargs, duration=60 * 60 * 24)
+    exclude_week_day = ["Mon", "Wed", "Fri", "Sat"]
+
+    spot_over_ma_alert = SpotOverMAAlert(time_frame=4, window=200, tg_mode=tg_mode)
+    kwargs = {"alert_type": alert_type, "alert_coins_info": True}
+    run_task_at_daily_time(spot_over_ma_alert.run, daily_time, kwargs=kwargs,
+                           exclude_week_day=exclude_week_day, duration=60 * 60 * 24)
 
     logging.info(f"alert_spot_over_ma {alert_type} finished")
 
@@ -104,11 +90,9 @@ if __name__ == "__main__":
         report_market_cap()
     elif sys.argv[1] == "price_volume":
         price_volume()
-    elif sys.argv[1] == "sequential":
-        sequential_alert_100_300_500()
     elif sys.argv[1] == "alts":
         alts_alert()
-    elif sys.argv[1] in ("alert_100", "alert_300", "alert_500", "meme_alert"):
+    elif sys.argv[1] in ("alert_100", "alert_300", "alert_500", "meme_alert", "sequential"):
         alert_spot_over_ma(sys.argv[1])
     elif sys.argv[1] == "funding_rate":
         funding_rate()
