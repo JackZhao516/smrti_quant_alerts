@@ -305,16 +305,18 @@ class GetExchangeList:
 
         return binance_exchanges, coingecko_coins
 
-    def get_top_market_cap_exchanges(self, num=300, tg_alert=False):
+    def get_top_market_cap_exchanges(self, num=300, volume_threshold=None, tg_alert=False):
         """
         get the top <num> market cap
         coin/usdt coin/eth coin/busd coin/btc exchanges on binance:
             [BinanceExchange, ...]
         if not on binance, get coin_id, and coin_name from coingeco:
             [CoingeckoCoin, ...]
-
+        if volume_threshold is not None, all the coins should have weekly
+           volume larger than threshold
 
         :param num: number of exchanges to get
+        :param volume_threshold: threshold of weekly volume in USD
         :param tg_alert: whether to send telegram alert
 
         :return: [BinanceExchange, ...], [CoingeckoCoin, ...]
@@ -326,6 +328,14 @@ class GetExchangeList:
 
         market_list = self.get_top_n_market_cap_coins(n=num)
         for i, coin in enumerate(market_list):
+            if volume_threshold:
+                # get weekly volume
+                data = self.get_coin_market_info(coin, ["total_volumes"], days=7, interval='daily')
+
+                data = np.array(data.get('total_volumes', []))
+                if np.sum(data[1:, 1]) < volume_threshold:
+                    continue
+
             symbol = coin.coin_symbol
             if f"{symbol}USDT" not in self.active_binance_spot_exchanges_set and \
                     f"{symbol}BTC" not in self.active_binance_spot_exchanges_set and \

@@ -250,10 +250,10 @@ class SpotOverMAAlert(GetExchangeList):
                 self.get_top_market_cap_exchanges(num=100)
         elif alert_type == "alert_500":
             binance_exchanges, coingecko_coins = \
-                self.get_coins_with_weekly_volume_increase(tg_alert=True)
+                self.get_top_market_cap_exchanges(num=500, volume_threshold=7000000)
         elif alert_type == "alert_300":
             binance_exchanges, coingecko_coins = \
-                self.get_top_market_cap_exchanges(num=300)
+                self.get_top_market_cap_exchanges(num=300, volume_threshold=7000000)
         else:
             binance_exchanges, coingecko_coins = \
                 self.get_coins_with_24h_volume_larger_than_threshold(threshold=3000000)
@@ -325,13 +325,13 @@ class SpotOverMAAlert(GetExchangeList):
 
 
 if __name__ == "__main__":
-    alert_type = "sequential"
+    alert_type = "alert_300"
     tg_mode = "TEST"
 
     kwargs = {"time_frame": 4, "window": 200, "tg_mode": tg_mode}
     spot_over_ma_alert = SpotOverMAAlert(**kwargs)
 
     kwargs = {"alert_type": alert_type, "alert_coins_info": True}
-    # spot_over_ma_alert.run(**kwargs)
+    spot_over_ma_alert.run(**kwargs)
 
-    run_task_at_daily_time(spot_over_ma_alert.run, "06:11", kwargs=kwargs, duration=60 * 60 * 24)
+    # run_task_at_daily_time(spot_over_ma_alert.run, "06:11", kwargs=kwargs, duration=60 * 60 * 24)

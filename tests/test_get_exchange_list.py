@@ -219,10 +219,35 @@ class TestCoinList(unittest.TestCase):
                       json=[{"id": "bitcoin", "symbol": "btc"}, {"id": "ethereum", "symbol": "eth"},
                             {"id": "testcoin", "symbol": "ts"}],
                       status=200, match_querystring=True)
-        self.gel._reset_timestamp()
-        exchanges, cg_coins = self.gel.get_top_market_cap_exchanges(3)
 
-        self.assertEqual([BinanceExchange("BTC", "USDT"), BinanceExchange("ETH", "BUSD")], exchanges)
+        api_url = f"https://pro-api.coingecko.com/api/v3/coins/ethereum/market_chart?" \
+                  f"vs_currency=usd&days=7&interval=daily&x_cg_pro_api_key={self.COINGECKO_API_KEY}"
+        responses.add(responses.GET, api_url,
+                      json={"id": "ethereum", "symbol": "eth",
+                            "total_volumes": [[1, 100], [2, 1000000], [3, 1000000], [4, 1000000], [5, 1000000],
+                                              [6, 1000000], [7, 1000000], [8, 1000000]]},
+                      status=200, match_querystring=True)
+
+        api_url = f"https://pro-api.coingecko.com/api/v3/coins/bitcoin/market_chart?" \
+                  f"vs_currency=usd&days=7&interval=daily&x_cg_pro_api_key={self.COINGECKO_API_KEY}"
+        responses.add(responses.GET, api_url,
+                      json={"id": "bitcoin", "symbol": "btc",
+                            "total_volumes": [[1, 100], [2, 1000000], [3, 10000], [4, 1000000], [5, 1000000],
+                                              [6, 1000000], [7, 1000000], [8, 1000000]]},
+                      status=200, match_querystring=True)
+
+        api_url = f"https://pro-api.coingecko.com/api/v3/coins/testcoin/market_chart?" \
+                  f"vs_currency=usd&days=7&interval=daily&x_cg_pro_api_key={self.COINGECKO_API_KEY}"
+        responses.add(responses.GET, api_url,
+                      json={"id": "testcoin", "symbol": "ts",
+                            "total_volumes": [[1, 100], [2, 1000000], [3, 70000000], [4, 1000000], [5, 1000000],
+                                              [6, 1000000], [7, 1000000], [8, 1000000]]},
+                      status=200, match_querystring=True)
+
+        self.gel._reset_timestamp()
+        exchanges, cg_coins = self.gel.get_top_market_cap_exchanges(3, volume_threshold=7000000)
+
+        self.assertEqual([BinanceExchange("ETH", "BUSD")], exchanges)
         self.assertEqual([CoingeckoCoin("testcoin", "ts")], cg_coins)
 
     @responses.activate
