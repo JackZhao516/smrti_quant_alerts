@@ -1,9 +1,12 @@
 import logging
 import time
 import math
-import requests
+import os
+import json
 from decimal import Decimal
+from multiprocessing.pool import ThreadPool
 
+import requests
 import numpy as np
 from pycoingecko import CoinGeckoAPI
 
@@ -18,6 +21,8 @@ class GetExchangeList:
     BINANCE_SPOT_API_URL = Config.API_ENDPOINTS["BINANCE_SPOT_API_URL"]
     BINANCE_FUTURES_API_URL = Config.API_ENDPOINTS["BINANCE_FUTURES_API_URL"]
 
+    PWD = __file__.split("get_exchange_list.py")[0]
+
     # global data
     active_binance_spot_exchanges = []
     active_exchanges_timestamp = 0
@@ -26,6 +31,7 @@ class GetExchangeList:
     def __init__(self, tg_type="TEST"):
         self._cg = CoinGeckoAPI(api_key=self.COINGECKO_API_KEY)
         self._tg_bot = TelegramBot(alert_type=tg_type)
+        self._exclude_coins = set()
 
     def _update_active_binance_spot_exchanges(self):
         """
@@ -41,6 +47,50 @@ class GetExchangeList:
         Reset timestamp to 0, for testing purpose
         """
         self.active_exchanges_timestamp = 0
+
+    def write_exclude_coins(self, input_exclude_coins):
+        """
+        write exclude coins to json file
+
+        :param input_exclude_coins: str "xxx, xxx, xxx"
+        """
+        with open(f"{self.PWD}exclude_coins.json", "r") as f:
+            exclude_coins = set(json.load(f))
+            print(exclude_coins)
+            exclude_coins.update([coin.strip().upper() for coin in input_exclude_coins.split(",")])
+        with open(f"{self.PWD}exclude_coins.json", "w") as f:
+            json.dump(list(exclude_coins), f)
+
+    def _get_exclude_coins(self, input_exclude_coins=None):
+        """
+        expand exclude coins to include all quotes for each base
+
+        :param input_exclude_coins: [BinanceExchange, CoingeckoCoin, ...]
+        """
+        # process exclude coins from class input
+        if input_exclude_coins:
+            for coin in input_exclude_coins:
+                if isinstance(coin, BinanceExchange):
+                    for quote in ["USDT", "BUSD", "BTC", "ETH"]:
+                        self._exclude_coins.add(BinanceExchange(coin.base_symbol, quote))
+
+        # process exclude coins from stable coins and json file
+        self.get_all_coingecko_coins()
+        exclude_coins = set()
+        if os.path.exists(f"{self.PWD}stable_coins.json"):
+            with open(f"{self.PWD}stable_coins.json", "r") as f:
+                exclude_coins.update(json.load(f))
+
+        if os.path.exists(f"{self.PWD}exclude_coins.json"):
+            with open(f"{self.PWD}exclude_coins.json", "r") as f:
+                exclude_coins.update(json.load(f))
+
+        for coin in exclude_coins:
+            coingecok_coin = CoingeckoCoin.get_coingecko_coin(coin)
+            if coingecok_coin:
+                self._exclude_coins.add(coingecok_coin)
+            for quote in ["USDT", "BUSD", "BTC", "ETH"]:
+                self._exclude_coins.add(BinanceExchange(coin, quote))
 
     @error_handling("binance", default_val=[])
     def get_all_binance_exchanges(self, exchange_type="SPOT"):
@@ -266,7 +316,7 @@ class GetExchangeList:
         return prices
 
     @error_handling("coingecko", default_val=([], []))
-    def get_coins_with_24h_volume_larger_than_threshold(self, threshold=3000000):
+    def get_coins_with_daily_volume_threshold(self, threshold=3000000):
         """
         Get all coins with 24h volume larger than threshold (in USD)
         coin/usdt coin/eth coin/busd coin/btc exchanges on binance:
@@ -286,14 +336,17 @@ class GetExchangeList:
         binance_exchanges = []
         
         quotes = ['USDT', 'BUSD', 'BTC', 'ETH']
+
         for page in range(pages):
-            cur_full_info = self._cg.get_coins_markets(
+            cur_coins_info = self._cg.get_coins_markets(
                 vs_currency='usd', ids=[coin.coin_id for coin in coins[page * 250:(page + 1) * 250]],
                 per_page=250, page=1)
 
-            for info in cur_full_info:
-                coin_id, symbol = info['id'], info['symbol'].upper()
-                if info["total_volume"] and int(info['total_volume']) >= threshold:
+            for info in cur_coins_info:
+                symbol = info['symbol']
+                coin = CoingeckoCoin(info['id'], info['symbol'].upper())
+
+                if info['total_volume'] and int(info['total_volume']) > threshold:
                     binance_coin = False
                     for quote in quotes:
                         exchange = BinanceExchange(symbol, quote)
@@ -301,11 +354,12 @@ class GetExchangeList:
                             binance_exchanges.append(BinanceExchange(symbol, quote))
                             binance_coin = True
                     if not binance_coin:
-                        coingecko_coins.append(CoingeckoCoin(coin_id, symbol))
+                        coingecko_coins.append(coin)
 
         return binance_exchanges, coingecko_coins
 
-    def get_top_market_cap_exchanges(self, num=300, volume_threshold=None, tg_alert=False):
+    def get_top_market_cap_coins_with_volume_threshold(self, num=300, daily_volume_threshold=None,
+                                                       weekly_volume_threshold=None, tg_alert=False):
         """
         get the top <num> market cap
         coin/usdt coin/eth coin/busd coin/btc exchanges on binance:
@@ -316,7 +370,8 @@ class GetExchangeList:
            volume larger than threshold
 
         :param num: number of exchanges to get
-        :param volume_threshold: threshold of weekly volume in USD
+        :param daily_volume_threshold: threshold of daily volume in USD
+        :param weekly_volume_threshold: threshold of weekly volume in USD
         :param tg_alert: whether to send telegram alert
 
         :return: [BinanceExchange, ...], [CoingeckoCoin, ...]
@@ -327,14 +382,16 @@ class GetExchangeList:
         coingeco_coins = []
 
         market_list = self.get_top_n_market_cap_coins(n=num)
-        for i, coin in enumerate(market_list):
-            if volume_threshold:
+
+        def filter_coin(coin):
+            if weekly_volume_threshold or daily_volume_threshold:
                 # get weekly volume
                 data = self.get_coin_market_info(coin, ["total_volumes"], days=7, interval='daily')
-
-                data = np.array(data.get('total_volumes', []))
-                if np.sum(data[1:, 1]) < volume_threshold:
-                    continue
+                weekly_volume = np.sum(np.array(data.get('total_volumes', [])))
+                daily_volume = data.get('total_volumes', [[0, 0]])[-1][1]
+                if weekly_volume_threshold and weekly_volume < weekly_volume_threshold or \
+                        daily_volume_threshold and daily_volume < daily_volume_threshold:
+                    return
 
             symbol = coin.coin_symbol
             if f"{symbol}USDT" not in self.active_binance_spot_exchanges_set and \
@@ -351,6 +408,10 @@ class GetExchangeList:
                     binance_exchanges.append(BinanceExchange(symbol, "BTC"))
                 if f"{symbol}ETH" in self.active_binance_spot_exchanges_set:
                     binance_exchanges.append(BinanceExchange(symbol, "ETH"))
+
+        pool = ThreadPool(10)
+        pool.map(filter_coin, market_list)
+        pool.close()
 
         if tg_alert:
             self._tg_bot.send_message(f"Top {num} coins that are not on Binance:\n {coingeco_coins}\n"
@@ -442,4 +503,4 @@ class GetExchangeList:
 
 if __name__ == '__main__':
     cg = GetExchangeList(tg_type='TEST')
-    print(cg.get_coin_info(CoingeckoCoin("bitcoin", "BTC")))
+    cg.write_exclude_coins("")

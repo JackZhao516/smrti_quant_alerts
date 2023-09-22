@@ -45,8 +45,9 @@ def alert_spot_over_ma(alert_type):
     daily_time = "08:50" if alert_type == "meme_alert" else "09:00"
     tg_mode = "MEME" if alert_type == "meme_alert" else "CG_SUM"
     exclude_week_day = ["Mon", "Wed", "Fri", "Sat"]
+    time_frame = 1 if alert_type == "meme_alert" else 4
 
-    spot_over_ma_alert = SpotOverMAAlert(time_frame=4, window=200, tg_mode=tg_mode)
+    spot_over_ma_alert = SpotOverMAAlert(time_frame=time_frame, window=200, tg_mode=tg_mode)
     kwargs = {"alert_type": alert_type, "alert_coins_info": True}
     run_task_at_daily_time(spot_over_ma_alert.run, daily_time, kwargs=kwargs,
                            exclude_week_day=exclude_week_day, duration=60 * 60 * 24)

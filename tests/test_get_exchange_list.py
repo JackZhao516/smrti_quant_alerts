@@ -15,6 +15,16 @@ class TestCoinList(unittest.TestCase):
     BINANCE_FUTURES_API_URL = Config.API_ENDPOINTS["BINANCE_FUTURES_API_URL"]
     gel = GetExchangeList("TEST")
 
+    def test_get_exclude_coins(self):
+        self.gel.PWD = __file__.split("test_get_exchange_list.py")[0]
+        self.gel._get_exclude_coins()
+        self.assertEqual({BinanceExchange("USDT", "USDT"), BinanceExchange("BYTE", "USDT"),
+                          BinanceExchange("USDT", "ETH"), BinanceExchange("USDT", "BTC"),
+                          BinanceExchange("USDT", "BUSD"), BinanceExchange("BYTE", "BUSD"),
+                          BinanceExchange("BYTE", "ETH"), BinanceExchange("BYTE", "BTC"),
+                          CoingeckoCoin("tether", "USDT"), CoingeckoCoin("binarydao", "BYTE")},
+                         self.gel._exclude_coins)
+
     @responses.activate
     def test_get_all_binance_exchanges(self):
         api_url = f'{self.BINANCE_SPOT_API_URL}exchangeInfo?permissions=SPOT'
@@ -173,7 +183,7 @@ class TestCoinList(unittest.TestCase):
         self.assertEqual(100, price)
 
     @responses.activate
-    def test_get_coins_with_24h_volume_larger_than_threshold(self):
+    def test_get_coins_with_daily_volume_threshold(self):
         api_url = f'{self.BINANCE_SPOT_API_URL}exchangeInfo?permissions=SPOT'
         responses.add(responses.GET, api_url,
                       json={"symbols": [{"baseAsset": "BTC", "quoteAsset": "USDT", "status": "TRADING"}]},
@@ -197,13 +207,12 @@ class TestCoinList(unittest.TestCase):
                             {"id": "okcoin", "symbol": "okc", "total_volume": 1000}],
                       status=200, match_querystring=True)
         self.gel._reset_timestamp()
-        exchanges, coins = self.gel.get_coins_with_24h_volume_larger_than_threshold(1000000)
+        exchanges, coins = self.gel.get_coins_with_daily_volume_threshold(1000000)
         self.assertEqual([BinanceExchange("BTC", "USDT")], exchanges)
         self.assertEqual([CoingeckoCoin("ethereum", "ETH")], coins)
 
-
     @responses.activate
-    def test_get_top_market_cap_exchanges(self):
+    def test_get_top_market_cap_coins_with_volume_threshold(self):
         api_url = f'{self.BINANCE_SPOT_API_URL}exchangeInfo?permissions=SPOT'
         responses.add(responses.GET, api_url,
                       json={"symbols": [{"baseAsset": "BTC", "quoteAsset": "USDT", "status": "TRADING"},
@@ -245,7 +254,7 @@ class TestCoinList(unittest.TestCase):
                       status=200, match_querystring=True)
 
         self.gel._reset_timestamp()
-        exchanges, cg_coins = self.gel.get_top_market_cap_exchanges(3, volume_threshold=7000000)
+        exchanges, cg_coins = self.gel.get_top_market_cap_coins_with_volume_threshold(3, weekly_volume_threshold=7000000)
 
         self.assertEqual([BinanceExchange("ETH", "BUSD")], exchanges)
         self.assertEqual([CoingeckoCoin("testcoin", "ts")], cg_coins)

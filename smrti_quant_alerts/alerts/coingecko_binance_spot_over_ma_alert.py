@@ -3,7 +3,6 @@ import statistics
 import csv
 import os
 import uuid
-import json
 from collections import defaultdict
 from multiprocessing.pool import ThreadPool
 
@@ -24,41 +23,12 @@ class SpotOverMABase(GetExchangeList):
         super().__init__()
         self._trading_symbols = trading_symbols
         self._symbol_type = ""
-        self._exclude_coins = exclude_coins
-        self._expand_exclude_coins()
+        self._get_exclude_coins(exclude_coins)
 
         self.alert_type = alert_type
         self.time_frame = time_frame
         self.window = window
         self._spot_over_ma = {}
-
-    def _expand_exclude_coins(self):
-        """
-        expand exclude coins to include all quotes for each base
-        """
-        # process exclude coins from class input
-        for coin in self._exclude_coins.copy():
-            if isinstance(coin, BinanceExchange):
-                for quote in ["USDT", "BUSD", "BTC", "ETH"]:
-                    self._exclude_coins.add(BinanceExchange(coin.base_symbol, quote))
-
-        # process exclude coins from stable coins and json file
-        self.get_all_coingecko_coins()
-        exclude_coins = set()
-        if os.path.exists(f"{self.PWD}stable_coins.json"):
-            with open(f"{self.PWD}stable_coins.json", "r") as f:
-                exclude_coins.update(json.load(f))
-
-        if os.path.exists(f"{self.PWD}exclude_coins.json"):
-            with open(f"{self.PWD}exclude_coins.json", "r") as f:
-                exclude_coins.update(json.load(f))
-
-        for coin in exclude_coins:
-            coingecok_coin = CoingeckoCoin.get_coingecko_coin(coin)
-            if coingecok_coin:
-                self._exclude_coins.add(coingecok_coin)
-            for quote in ["USDT", "BUSD", "BTC", "ETH"]:
-                self._exclude_coins.add(BinanceExchange(coin, quote))
 
     def _coin_spot_over_ma(self, trading_symbol):
         """
@@ -247,16 +217,18 @@ class SpotOverMAAlert(GetExchangeList):
         # get coin list
         if alert_type == "alert_100":
             binance_exchanges, coingecko_coins = \
-                self.get_top_market_cap_exchanges(num=100)
+                self.get_top_market_cap_coins_with_volume_threshold(num=100)
         elif alert_type == "alert_500":
             binance_exchanges, coingecko_coins = \
-                self.get_top_market_cap_exchanges(num=500, volume_threshold=7000000)
+                self.get_top_market_cap_coins_with_volume_threshold(num=500,
+                                                                    weekly_volume_threshold=7000000)
         elif alert_type == "alert_300":
             binance_exchanges, coingecko_coins = \
-                self.get_top_market_cap_exchanges(num=300, volume_threshold=7000000)
+                self.get_top_market_cap_coins_with_volume_threshold(
+                    num=300, daily_volume_threshold=1000000, weekly_volume_threshold=7000000)
         else:
             binance_exchanges, coingecko_coins = \
-                self.get_coins_with_24h_volume_larger_than_threshold(threshold=3000000)
+                self.get_coins_with_daily_volume_threshold(threshold=3000000)
 
         # alert
         coingecko_alert = \
@@ -332,6 +304,6 @@ if __name__ == "__main__":
     spot_over_ma_alert = SpotOverMAAlert(**kwargs)
 
     kwargs = {"alert_type": alert_type, "alert_coins_info": True}
-    spot_over_ma_alert.run(**kwargs)
+    # spot_over_ma_alert.run(**kwargs)
 
-    # run_task_at_daily_time(spot_over_ma_alert.run, "06:11", kwargs=kwargs, duration=60 * 60 * 24)
+    run_task_at_daily_time(spot_over_ma_alert.run, "06:11", kwargs=kwargs, duration=60 * 60 * 24)

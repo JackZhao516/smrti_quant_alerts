@@ -325,7 +325,7 @@ def close_all_threads(thread):
 if __name__ == '__main__':
     from smrti_quant_alerts.get_exchange_list import GetExchangeList
     cg = GetExchangeList("TEST")
-    exchanges, coin_ids, coin_symbols = cg.get_top_market_cap_exchanges(num=100)
+    exchanges, coin_ids, coin_symbols = cg.get_top_market_cap_coins_with_volume_threshold(num=100)
     print(coin_ids, coin_symbols)
     t = alert_coins(coin_ids, coin_symbols, "alert_100", "TEST")
     sleep(1800)
