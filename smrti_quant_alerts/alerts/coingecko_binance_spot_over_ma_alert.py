@@ -41,7 +41,7 @@ class SpotOverMABase(GetExchangeList):
         get all spot over ma coins
 
         """
-        pool = ThreadPool(8)
+        pool = ThreadPool(4)
         pool.map(self._coin_spot_over_ma, self._trading_symbols)
         pool.close()
 
@@ -164,6 +164,7 @@ class SpotOverMAAlert(GetExchangeList):
         super().__init__(tg_mode)
         self.time_frame = time_frame
         self.window = window
+        self.tg_mode = tg_mode
 
     def _get_coins_info_to_csv(self, coins, file_name):
         """
@@ -195,7 +196,7 @@ class SpotOverMAAlert(GetExchangeList):
             coins = sorted(coins)
             file_name = f"{uuid.uuid4()}_coins_info.csv"
             file_path = self._get_coins_info_to_csv(coins, file_name)
-            self._tg_bot = TelegramBot(tg_mode)
+            self._tg_bot = TelegramBot(self.tg_mode)
             self._tg_bot.send_file(file_path, "coins info")
             os.remove(file_path)
 
@@ -248,8 +249,11 @@ class SpotOverMAAlert(GetExchangeList):
         if alert_type in ["alert_100", "alert_300", "alert_500"]:
             count = int(alert_type.split("_")[1])
             self._tg_bot.send_message(f"{alert_type}: market cap top {count}")
-            if alert_type == "alert_500":
-                self._tg_bot.send_message("and weekly volume increase >= 30% "
+            if alert_type == "alert_300":
+                self._tg_bot.send_message("and daily volume >= 1M USDT "
+                                          "for alt/busd, alt/usdt pairs\n")
+            if alert_type in ("alert_500", "alert_300"):
+                self._tg_bot.send_message("and weekly volume >= 7M USDT  "
                                           "for alt/busd, alt/usdt pairs\n")
             self._tg_bot.send_message(f"Top {count} coins/coin exchanges spot over {ma_type}:\n{coins_count}\n\n"
                                       f"Top {count} coins/coin exchanges exchanges spot"
