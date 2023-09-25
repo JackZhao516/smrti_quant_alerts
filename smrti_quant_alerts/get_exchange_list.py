@@ -3,6 +3,7 @@ import time
 import math
 import os
 import json
+import datetime
 from decimal import Decimal
 from multiprocessing.pool import ThreadPool
 
@@ -230,7 +231,7 @@ class GetExchangeList:
         links = "; ".join(links) if links else ""
         return {"symbol": coingecko_coin.coin_symbol, "name": coin_info.get("name", ""),
                 "description": coin_info.get("description", "").get("en", ""),
-                "website": links}
+                "website": links, "genesis_date": coin_info.get("genesis_date", "")}
 
     @error_handling("coingecko", default_val={})
     def get_coin_market_info(self, coingecko_coin, market_attribute_name_list, days, interval="daily"):
@@ -317,7 +318,7 @@ class GetExchangeList:
         return prices
 
     @error_handling("coingecko", default_val=([], []))
-    def get_coins_with_daily_volume_threshold(self, threshold=3000000):
+    def get_2023_coins_with_daily_volume_threshold(self, threshold=3000000):
         """
         Get all coins with 24h volume larger than threshold (in USD)
         coin/usdt coin/eth coin/busd coin/btc exchanges on binance:
@@ -346,16 +347,25 @@ class GetExchangeList:
             for info in cur_coins_info:
                 symbol = info['symbol']
                 coin = CoingeckoCoin(info['id'], info['symbol'].upper())
+                if 'atl_date' not in info or not info['atl_date'] \
+                        or 'ath_date' not in info or not info['ath_date']:
+                    continue
+                atl_year = int(info['atl_date'][:4])
+                ath_year = int(info['ath_date'][:4])
+                if atl_year < 2023 or ath_year < 2023:
+                    continue
 
                 if info['total_volume'] and int(info['total_volume']) > threshold:
-                    binance_coin = False
-                    for quote in quotes:
-                        exchange = BinanceExchange(symbol, quote)
-                        if exchange in self.active_binance_spot_exchanges_set:
-                            binance_exchanges.append(BinanceExchange(symbol, quote))
-                            binance_coin = True
-                    if not binance_coin:
-                        coingecko_coins.append(coin)
+                    genesis_date = self.get_coin_info(coin)['genesis_date']
+                    if not genesis_date or genesis_date and int(genesis_date[:4]) >= 2023:
+                        binance_coin = False
+                        for quote in quotes:
+                            exchange = BinanceExchange(symbol, quote)
+                            if exchange in self.active_binance_spot_exchanges_set:
+                                binance_exchanges.append(BinanceExchange(symbol, quote))
+                                binance_coin = True
+                        if not binance_coin:
+                            coingecko_coins.append(coin)
 
         return binance_exchanges, coingecko_coins
 
@@ -504,4 +514,8 @@ class GetExchangeList:
 
 if __name__ == '__main__':
     cg = GetExchangeList(tg_type='TEST')
-    cg.write_exclude_coins("")
+    # cg.write_exclude_coins("")
+    b, c = cg.get_2023_coins_with_daily_volume_threshold(threshold=3000000)
+    print(b)
+    print(c)
+    print(len(b), len(c))

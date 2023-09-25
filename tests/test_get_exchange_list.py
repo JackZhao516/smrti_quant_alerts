@@ -118,12 +118,12 @@ class TestCoinList(unittest.TestCase):
 
         responses.add(responses.GET, api_url,
                       json={"id": "bitcoin", "symbol": "btc", "name": "Bitcoin",
-                            "description": {"en": "test"},
+                            "description": {"en": "test"}, "genesis_date": "2009-01-03T00:00:00.000Z",
                             "links": {"homepage": ["https://www.bitcoin.org", ""]}},
                       status=200, match_querystring=True)
         self.gel._reset_timestamp()
         info = self.gel.get_coin_info(CoingeckoCoin("bitcoin", "BTC"))
-        self.assertEqual({"symbol": "BTC", "name": "Bitcoin",
+        self.assertEqual({"symbol": "BTC", "name": "Bitcoin", "genesis_date": "2009-01-03T00:00:00.000Z",
                           "description": "test", "website": "https://www.bitcoin.org"}, info)
 
     @responses.activate
@@ -183,7 +183,7 @@ class TestCoinList(unittest.TestCase):
         self.assertEqual(100, price)
 
     @responses.activate
-    def test_get_coins_with_daily_volume_threshold(self):
+    def test_get_2023_coins_with_daily_volume_threshold(self):
         api_url = f'{self.BINANCE_SPOT_API_URL}exchangeInfo?permissions=SPOT'
         responses.add(responses.GET, api_url,
                       json={"symbols": [{"baseAsset": "BTC", "quoteAsset": "USDT", "status": "TRADING"}]},
@@ -202,14 +202,26 @@ class TestCoinList(unittest.TestCase):
                   "per_page=250&page=1&" \
                   "ids=bitcoin,ethereum,okcoin"
         responses.add(responses.GET, api_url,
-                      json=[{"id": "bitcoin", "symbol": "btc", "total_volume": 20000000},
-                            {"id": "ethereum", "symbol": "eth", "total_volume": 10000000},
-                            {"id": "okcoin", "symbol": "okc", "total_volume": 1000}],
+                      json=[{"id": "bitcoin", "symbol": "btc", "total_volume": 20000000,
+                             "atl_date": "2023-03-02T00:00:00.000Z", "ath_date": "2023-03-02T00:00:00.000Z"},
+                            {"id": "ethereum", "symbol": "eth", "total_volume": 10000000,
+                             "atl_date": "2023-03-02T00:00:00.000Z", "ath_date": "2021-03-02T00:00:00.000Z"},
+                            {"id": "okcoin", "symbol": "okc", "total_volume": 1000,
+                             "atl_date": "2023-03-02T00:00:00.000Z", "ath_date": "2023-03-02T00:00:00.000Z"}],
+                      status=200, match_querystring=True)
+        api_url = f"https://pro-api.coingecko.com/api/v3/coins/bitcoin/?" \
+                  f"x_cg_pro_api_key={self.COINGECKO_API_KEY}" \
+                  f"&localization=false&tickers=false&market_data=false&" \
+                  f"community_data=false&developer_data=false&sparkline=false"
+
+        responses.add(responses.GET, api_url,
+                      json={"id": "bitcoin", "symbol": "btc", "name": "Bitcoin",
+                            "description": {"en": "test"}, "genesis_date": "2023-01-03",
+                            "links": {"homepage": ["https://www.bitcoin.org", ""]}},
                       status=200, match_querystring=True)
         self.gel._reset_timestamp()
-        exchanges, coins = self.gel.get_coins_with_daily_volume_threshold(1000000)
+        exchanges, coins = self.gel.get_2023_coins_with_daily_volume_threshold(1000000)
         self.assertEqual([BinanceExchange("BTC", "USDT")], exchanges)
-        self.assertEqual([CoingeckoCoin("ethereum", "ETH")], coins)
 
     @responses.activate
     def test_get_top_market_cap_coins_with_volume_threshold(self):

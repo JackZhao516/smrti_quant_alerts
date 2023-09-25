@@ -59,9 +59,9 @@ def error_handling(api="binance", retry=5, default_val=None):
                         return response
 
                 except (RequestException, ClientError, ServerError) as e:
-                    logging.error(f"{error_msg}: {e}")
+                    logging.error(f"{error_msg}: {e}, retrying {i + 1} times")
                 except Exception as e:
-                    logging.error(f"{error_msg}: {e}")
+                    logging.error(f"{error_msg}: {e}, retrying {i + 1} times")
                 time.sleep(random.random() * 2)
             return default_val
         return wrapper

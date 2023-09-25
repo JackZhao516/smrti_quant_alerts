@@ -223,7 +223,7 @@ class SpotOverMAAlert(GetExchangeList):
                     num=300, daily_volume_threshold=1000000, weekly_volume_threshold=7000000)
         else:
             self._binance_exchanges, self._coingecko_coins = \
-                self.get_coins_with_daily_volume_threshold(threshold=3000000)
+                self.get_2023_coins_with_daily_volume_threshold(threshold=3000000)
 
     def _alert_spot_cross_ma_by_alert_type(self, exclude_coins=None, alert_type="alert_300"):
         """
@@ -258,11 +258,10 @@ class SpotOverMAAlert(GetExchangeList):
         if alert_type in ["alert_100", "alert_300", "alert_500"]:
             count = int(alert_type.split("_")[1])
             self._tg_bot.send_message(f"{alert_type}: market cap top {count}")
-            if alert_type == "alert_300":
-                self._tg_bot.send_message("and daily volume >= 1M USDT "
-                                          "for alt/busd, alt/usdt pairs\n")
             if alert_type in ("alert_500", "alert_300"):
-                self._tg_bot.send_message("and weekly volume >= 7M USDT  "
+                self._tg_bot.send_message("and daily volume >= 1M USDT "
+                                          "for alt/busd, alt/usdt pairs\n"
+                                          "and weekly volume >= 7M USDT  "
                                           "for alt/busd, alt/usdt pairs\n")
             self._tg_bot.send_message(f"Top {count} coins/coin exchanges spot over {ma_type}:\n{coins_count}\n\n"
                                       f"Top {count} coins/coin exchanges exchanges spot"
@@ -270,7 +269,7 @@ class SpotOverMAAlert(GetExchangeList):
                                       f"Top {count} coins/coin exchanges exchanges spot"
                                       f" over {ma_type} newly deleted:\n{newly_deleted_coins}\n")
         else:
-            self._tg_bot.send_message("For coins/exchanges with 24H volume larger than 3000000 USD")
+            self._tg_bot.send_message("For 2023 listed coins/exchanges with 24H volume larger than 3000000 USD")
             self._tg_bot.send_message(f"coins/coin exchanges spot over {ma_type}:\n{coins_count}\n\n"
                                       f"coins/coin exchanges exchanges spot"
                                       f" over {ma_type} newly added:\n{newly_added_coins}\n\n"
@@ -321,7 +320,7 @@ if __name__ == "__main__":
     spot_over_ma_alert = SpotOverMAAlert(**kwargs)
 
     kwargs = {"alert_type": alert_type, "alert_coins_info": True}
-    # spot_over_ma_alert.run(**kwargs)
+    spot_over_ma_alert.run(**kwargs)
 
-    run_task_at_daily_time(spot_over_ma_alert.run, "06:11", kwargs=kwargs, duration=60 * 60 * 24)
+    # run_task_at_daily_time(spot_over_ma_alert.run, "06:11", kwargs=kwargs, duration=60 * 60 * 24)
     print(f"Time used: {time() - start_time} seconds")
