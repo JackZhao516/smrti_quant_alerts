@@ -56,7 +56,6 @@ class GetExchangeList:
         """
         with open(f"{self.PWD}exclude_coins.json", "r") as f:
             exclude_coins = set(json.load(f))
-            print(exclude_coins)
             exclude_coins.update([coin.strip().upper() for coin in input_exclude_coins.split(",")])
         with open(f"{self.PWD}exclude_coins.json", "w") as f:
             json.dump(list(exclude_coins), f)
@@ -73,6 +72,8 @@ class GetExchangeList:
                 if isinstance(coin, BinanceExchange):
                     for quote in ["USDT", "BUSD", "BTC", "ETH"]:
                         self._exclude_coins.add(BinanceExchange(coin.base_symbol, quote))
+                else:
+                    self._exclude_coins.add(coin)
 
         # process exclude coins from stable coins and json file
         self.get_all_coingecko_coins()
@@ -409,7 +410,7 @@ class GetExchangeList:
                 if f"{symbol}ETH" in self.active_binance_spot_exchanges_set:
                     binance_exchanges.append(BinanceExchange(symbol, "ETH"))
 
-        pool = ThreadPool(10)
+        pool = ThreadPool(6)
         pool.map(filter_coin, market_list)
         pool.close()
 

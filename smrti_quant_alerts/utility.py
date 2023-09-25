@@ -18,10 +18,10 @@ def run_task_at_daily_time(task, run_time, kwargs=None, exclude_week_day=None, d
     if not kwargs:
         kwargs = {}
     while True:
-        if datetime.now(tz).strftime('%H:%M') in run_time and \
-                (not exclude_week_day or datetime.now(tz).strftime('%a') not in exclude_week_day):
+        if datetime.now(tz).strftime('%H:%M') in run_time:
             start = time()
-            task(**kwargs)
+            if not exclude_week_day or datetime.now(tz).strftime('%a') not in exclude_week_day:
+                task(**kwargs)
             # print(f"Task finished, time used: {time() - start} seconds")
-            sleep(duration - max(2 * (time() - start), 120))
+            sleep(duration - max(2 * (time() - start), 180))
         sleep(60)

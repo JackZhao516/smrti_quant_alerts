@@ -4,6 +4,7 @@ import csv
 import os
 import uuid
 from collections import defaultdict
+from time import sleep, time
 from multiprocessing.pool import ThreadPool
 
 from smrti_quant_alerts.get_exchange_list import GetExchangeList
@@ -14,7 +15,6 @@ from smrti_quant_alerts.data_type import CoingeckoCoin
 
 
 class SpotOverMABase(GetExchangeList):
-    PWD = __file__.split("coingecko_binance_spot_over_ma_alert.py")[0]
     if not os.path.exists("run_time_data"):
         os.mkdir("run_time_data")
 
@@ -36,9 +36,11 @@ class SpotOverMABase(GetExchangeList):
         """
         pass
 
-    def _coins_spot_over_ma(self):
+    def _coins_spot_over_ma(self, threads=4):
         """
         get all spot over ma coins
+
+        :param threads: number of threads to fill _spot_over_ma
 
         """
         pool = ThreadPool(4)
@@ -103,6 +105,7 @@ class CoingeckoSpotOverMA(SpotOverMABase):
         try:
             if coingecko_coin in self._exclude_coins:
                 return False
+            sleep(1.2)
             days_delta = self.time_frame * self.window // 24 + 1
             current_price = self.get_coin_current_price(coingecko_coin)
             prices = self.get_coin_history_hourly_close_price(coingecko_coin, days_delta)
@@ -140,13 +143,13 @@ class BinanceSpotOverMA(SpotOverMABase):
         except Exception as e:
             return False
 
-    def _coins_spot_over_ma(self):
+    def _coins_spot_over_ma(self, threads=6):
         """
         get all spot over ma binance exchanges, keep each base with only one quote
         if multiple quotes are available, keep the one in the availability order of
         USDT, BUSD, BTC, ETH
         """
-        super()._coins_spot_over_ma()
+        super()._coins_spot_over_ma(threads=threads)
         bases = defaultdict(set)
         for binance_exchange in self._spot_over_ma.keys():
             base = binance_exchange.base_symbol
@@ -162,9 +165,11 @@ class BinanceSpotOverMA(SpotOverMABase):
 class SpotOverMAAlert(GetExchangeList):
     def __init__(self, time_frame, window, tg_mode="CG_SUM"):
         super().__init__(tg_mode)
-        self.time_frame = time_frame
-        self.window = window
-        self.tg_mode = tg_mode
+        self._time_frame = time_frame
+        self._window = window
+        self._tg_mode = tg_mode
+        self._coingecko_coins = []
+        self._binance_exchanges = []
 
     def _get_coins_info_to_csv(self, coins, file_name):
         """
@@ -196,9 +201,29 @@ class SpotOverMAAlert(GetExchangeList):
             coins = sorted(coins)
             file_name = f"{uuid.uuid4()}_coins_info.csv"
             file_path = self._get_coins_info_to_csv(coins, file_name)
-            self._tg_bot = TelegramBot(self.tg_mode)
+            self._tg_bot = TelegramBot(self._tg_mode)
             self._tg_bot.send_file(file_path, "coins info")
             os.remove(file_path)
+
+    def _get_target_coins_by_alert_type(self):
+        """
+        get target coins by alert type
+        """
+        # get coin list
+        if alert_type == "alert_100":
+            self._binance_exchanges, self._coingecko_coins = \
+                self.get_top_market_cap_coins_with_volume_threshold(num=100)
+        elif alert_type == "alert_500":
+            self._binance_exchanges, self._coingecko_coins = \
+                self.get_top_market_cap_coins_with_volume_threshold(num=500,
+                                                                    weekly_volume_threshold=7000000)
+        elif alert_type == "alert_300":
+            self._binance_exchanges, self._coingecko_coins = \
+                self.get_top_market_cap_coins_with_volume_threshold(
+                    num=300, daily_volume_threshold=1000000, weekly_volume_threshold=7000000)
+        else:
+            self._binance_exchanges, self._coingecko_coins = \
+                self.get_coins_with_daily_volume_threshold(threshold=3000000)
 
     def _alert_spot_cross_ma_by_alert_type(self, exclude_coins=None, alert_type="alert_300"):
         """
@@ -206,7 +231,7 @@ class SpotOverMAAlert(GetExchangeList):
         the function will not alert those coins
 
         :param exclude_coins: set of coins to be excluded
-        :param alert_type: alert type, [alert_100, alert_300, alert_500, meme_alert]
+        :param alert_type: alert type [alert_100, alert_300, alert_500, meme_alert]
 
         :return: exclude_coins, coins
         """
@@ -215,29 +240,13 @@ class SpotOverMAAlert(GetExchangeList):
             exclude_coins = set()
         logging.info(f"{alert_type} start")
 
-        # get coin list
-        if alert_type == "alert_100":
-            binance_exchanges, coingecko_coins = \
-                self.get_top_market_cap_coins_with_volume_threshold(num=100)
-        elif alert_type == "alert_500":
-            binance_exchanges, coingecko_coins = \
-                self.get_top_market_cap_coins_with_volume_threshold(num=500,
-                                                                    weekly_volume_threshold=7000000)
-        elif alert_type == "alert_300":
-            binance_exchanges, coingecko_coins = \
-                self.get_top_market_cap_coins_with_volume_threshold(
-                    num=300, daily_volume_threshold=1000000, weekly_volume_threshold=7000000)
-        else:
-            binance_exchanges, coingecko_coins = \
-                self.get_coins_with_daily_volume_threshold(threshold=3000000)
-
         # alert
         coingecko_alert = \
-            CoingeckoSpotOverMA(exclude_coins, coingecko_coins, self.time_frame, self.window, alert_type)
+            CoingeckoSpotOverMA(exclude_coins, self._coingecko_coins, self._time_frame, self._window, alert_type)
         coins_count, newly_deleted_coins, newly_added_coins = coingecko_alert.run()
 
         binance_alert = \
-            BinanceSpotOverMA(exclude_coins, binance_exchanges, self.time_frame, self.window, alert_type)
+            BinanceSpotOverMA(exclude_coins, self._binance_exchanges, self._time_frame, self._window, alert_type)
         exchanges, newly_deleted_exchanges, newly_added_exchanges = binance_alert.run()
 
         coins_count.extend(exchanges)
@@ -245,7 +254,7 @@ class SpotOverMAAlert(GetExchangeList):
         newly_added_coins.extend(newly_added_exchanges)
 
         # send alert and return
-        ma_type = f"H{self.time_frame} MA{self.window}"
+        ma_type = f"H{self._time_frame} MA{self._window}"
         if alert_type in ["alert_100", "alert_300", "alert_500"]:
             count = int(alert_type.split("_")[1])
             self._tg_bot.send_message(f"{alert_type}: market cap top {count}")
@@ -269,7 +278,8 @@ class SpotOverMAAlert(GetExchangeList):
                                       f" over {ma_type} newly deleted:\n{newly_deleted_coins}\n")
 
         coins = [coin for coin, count in coins_count]
-        return exclude_coins.union(set(coins + newly_added_coins + newly_deleted_coins)), coins
+
+        return exclude_coins.union(set(coins + newly_added_coins)), coins
 
     def _sequential_alert(self):
         """
@@ -277,9 +287,11 @@ class SpotOverMAAlert(GetExchangeList):
         """
         exclude_coins, alert_coins = set(), set()
         for alert_type in ["alert_100", "alert_300", "alert_500"]:
-            exclude_coins, coins = self._alert_spot_cross_ma_by_alert_type(
+            exclude_coin, coins = self._alert_spot_cross_ma_by_alert_type(
                 exclude_coins, alert_type=alert_type)
             alert_coins.update(coins)
+            exclude_coins.update(exclude_coin)
+
         return exclude_coins, alert_coins
 
     def run(self, alert_type, alert_coins_info=True):
@@ -291,6 +303,7 @@ class SpotOverMAAlert(GetExchangeList):
         :param alert_coins_info: whether to alert coins info
 
         """
+        self._get_target_coins_by_alert_type()
         if alert_type == "sequential":
             _, alert_coins = self._sequential_alert()
         else:
@@ -301,10 +314,10 @@ class SpotOverMAAlert(GetExchangeList):
 
 
 if __name__ == "__main__":
-    alert_type = "alert_300"
-    tg_mode = "TEST"
+    start_time = time()
+    alert_type = "sequential"
 
-    kwargs = {"time_frame": 4, "window": 200, "tg_mode": tg_mode}
+    kwargs = {"time_frame": 4, "window": 200, "tg_mode": "TEST"}
     spot_over_ma_alert = SpotOverMAAlert(**kwargs)
 
     kwargs = {"alert_type": alert_type, "alert_coins_info": True}
