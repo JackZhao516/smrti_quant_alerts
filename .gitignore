@@ -145,3 +145,4 @@ daily_count.json
 test.py
 
 _trial_temp/
+exclude_coins.json
