@@ -315,12 +315,13 @@ class SpotOverMAAlert(GetExchangeList):
 
 if __name__ == "__main__":
     start_time = time()
-    alert_type = "sequential"
+    alert_type = "meme_alert"
 
-    kwargs = {"time_frame": 4, "window": 200, "tg_mode": "TEST"}
+    kwargs = {"time_frame": 1, "window": 200, "tg_mode": "TEST"}
     spot_over_ma_alert = SpotOverMAAlert(**kwargs)
 
     kwargs = {"alert_type": alert_type, "alert_coins_info": True}
     # spot_over_ma_alert.run(**kwargs)
 
     run_task_at_daily_time(spot_over_ma_alert.run, "06:11", kwargs=kwargs, duration=60 * 60 * 24)
+    print(f"Time used: {time() - start_time} seconds")
