@@ -215,8 +215,8 @@ class SpotOverMAAlert(GetExchangeList):
                 self.get_top_market_cap_coins_with_volume_threshold(num=100)
         elif alert_type == "alert_500":
             self._binance_exchanges, self._coingecko_coins = \
-                self.get_top_market_cap_coins_with_volume_threshold(num=500,
-                                                                    weekly_volume_threshold=7000000)
+                self.get_top_market_cap_coins_with_volume_threshold(
+                    num=500, daily_volume_threshold=1000000, weekly_volume_threshold=7000000)
         elif alert_type == "alert_300":
             self._binance_exchanges, self._coingecko_coins = \
                 self.get_top_market_cap_coins_with_volume_threshold(
