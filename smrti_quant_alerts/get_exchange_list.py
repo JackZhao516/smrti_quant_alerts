@@ -504,4 +504,4 @@ class GetExchangeList:
 
 if __name__ == '__main__':
     cg = GetExchangeList(tg_type='TEST')
-    cg.write_exclude_coins("XAUT,USDT,PAXG,WBTC,LOOMOLD,BTM,TT,BTC.B,CDAI,CUSDC,HBTC,MIM,0XBTC,3CRV,ATUSD,AUSDC,XBT")
+    cg.write_exclude_coins("")
