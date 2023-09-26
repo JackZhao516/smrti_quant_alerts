@@ -515,7 +515,7 @@ class GetExchangeList:
 if __name__ == '__main__':
     cg = GetExchangeList(tg_type='TEST')
     # cg.write_exclude_coins("")
-    b, c = cg.get_2023_coins_with_daily_volume_threshold(threshold=3000000)
+    b, c = cg.get_top_market_cap_coins_with_volume_threshold(num=100, tg_alert=False)
     print(b)
     print(c)
     print(len(b), len(c))

@@ -241,6 +241,7 @@ class SpotOverMAAlert(GetExchangeList):
         if exclude_coins is None:
             exclude_coins = set()
         logging.info(f"{alert_type} start")
+        self._get_target_coins_by_alert_type(alert_type)
 
         # alert
         coingecko_alert = \
@@ -304,7 +305,6 @@ class SpotOverMAAlert(GetExchangeList):
         :param alert_coins_info: whether to alert coins info
 
         """
-        self._get_target_coins_by_alert_type(alert_type)
         if alert_type == "sequential":
             _, alert_coins = self._sequential_alert()
         else:
@@ -316,9 +316,9 @@ class SpotOverMAAlert(GetExchangeList):
 
 if __name__ == "__main__":
     start_time = time()
-    alert_type = "meme_alert"
+    alert_type = "sequential"
 
-    kwargs = {"time_frame": 1, "window": 200, "tg_mode": "TEST"}
+    kwargs = {"time_frame": 4, "window": 200, "tg_mode": "TEST"}
     spot_over_ma_alert = SpotOverMAAlert(**kwargs)
 
     kwargs = {"alert_type": alert_type, "alert_coins_info": True}
