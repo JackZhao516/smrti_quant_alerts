@@ -205,9 +205,11 @@ class SpotOverMAAlert(GetExchangeList):
             self._tg_bot.send_file(file_path, "coins info")
             os.remove(file_path)
 
-    def _get_target_coins_by_alert_type(self):
+    def _get_target_coins_by_alert_type(self, alert_type="alert_300"):
         """
         get target coins by alert type
+
+        :param alert_type: alert type [alert_100, alert_300, alert_500, meme_alert]
         """
         # get coin list
         if alert_type == "alert_100":
@@ -302,7 +304,7 @@ class SpotOverMAAlert(GetExchangeList):
         :param alert_coins_info: whether to alert coins info
 
         """
-        self._get_target_coins_by_alert_type()
+        self._get_target_coins_by_alert_type(alert_type)
         if alert_type == "sequential":
             _, alert_coins = self._sequential_alert()
         else:
