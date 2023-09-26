@@ -42,7 +42,7 @@ def alert_spot_over_ma(alert_type):
     """
     logging.info(f"alert_spot_over_ma {alert_type} start")
 
-    daily_time = "09:25" if alert_type == "meme_alert" else "09:35"
+    daily_time = "08:50" if alert_type == "meme_alert" else "09:00"
     tg_mode = "MEME" if alert_type == "meme_alert" else "CG_SUM"
     exclude_week_day = ["Mon", "Wed", "Fri", "Sat"]
     time_frame = 1 if alert_type == "meme_alert" else 4
