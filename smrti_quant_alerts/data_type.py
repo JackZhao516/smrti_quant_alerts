@@ -92,9 +92,9 @@ class StockSymbol(TradingSymbol):
     nasdaq100_set = set()
     sp500_set = set()
 
-    def __init__(self, symbol, security_name=None, gics_sector=None,
-                 gics_sub_industry=None, location=None, cik=None,
-                 founded_time=None, sp500=False, nasdaq100=False):
+    def __init__(self, symbol, security_name="", gics_sector="",
+                 gics_sub_industry="", location="", cik="",
+                 founded_time="", sp500=False, nasdaq100=False):
         super().__init__(symbol.upper())
 
         self.security_name = security_name
