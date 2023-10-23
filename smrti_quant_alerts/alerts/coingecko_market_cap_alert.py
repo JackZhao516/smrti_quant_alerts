@@ -2,6 +2,8 @@
 This script is used to send a weekly report of newly deleted and newly added
 top n market cap coins
 """
+import time
+import logging
 from collections import defaultdict
 
 from smrti_quant_alerts.get_exchange_list import GetExchangeList
@@ -26,6 +28,7 @@ class CoingeckoMarketCapAlert(GetExchangeList):
             cur_set = set(self._top_n_list[n])
             new_list = self.get_top_n_market_cap_coins(n=n)
             if not new_list:
+                logging.error(f"get_top_n_market_cap_coins({n}) failed")
                 continue
             new_set = set(new_list)
             deleted_list, added_list = [], []
@@ -41,6 +44,7 @@ class CoingeckoMarketCapAlert(GetExchangeList):
                                       f"Deleted: {deleted_list}\n"
                                       f"Added: {added_list}\n"
                                       f"(Added in market cap desc order)")
+            time.sleep(5)
 
 
 if __name__ == '__main__':
