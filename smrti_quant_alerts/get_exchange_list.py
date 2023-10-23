@@ -118,7 +118,7 @@ class GetExchangeList:
         for i, row in df.iterrows():
             stock_list.append(StockSymbol(row["Symbol"], row["Security"], row["GICS Sector"],
                                           row["GICS Sub-Industry"], row["Headquarters Location"],
-                                          row["CIK"], row["Founded"]))
+                                          row["CIK"], row["Founded"], sp500=True))
         return stock_list
 
     @error_handling("nasdaq100", default_val=[])
@@ -136,7 +136,7 @@ class GetExchangeList:
         for stock in response:
             stock_list.append(StockSymbol(stock["symbol"], stock["name"], stock["sector"],
                                           stock["subSector"], stock["headQuarter"],
-                                          stock["cik"], stock["founded"]))
+                                          stock["cik"], stock["founded"], nasdaq100=True))
         return stock_list
 
     @error_handling("finnhub", default_val=[])
@@ -149,11 +149,6 @@ class GetExchangeList:
         :return: daily price change percentage. 0.01 means 1%
         """
 
-        # api_url = f"{self.POLYGON_API_URL}open-close/{stock}/2021-01-01?adjusted=false&apiKey={self.POLYGON_API_KEY}"
-        # api_url = "https://www.alphavantage.co/query?function=TIME_SERIES_DAILY&symbol=MMM&apikey=X6AMH84N8ELD0VQ0"
-        # response = requests.get(api_url, timeout=5)
-        # response = response.json()
-        # print(response)
         current_time = datetime.datetime.now(pytz.timezone('US/Eastern'))
         delta = datetime.timedelta(days=1)
         if current_time.hour < 9 or (current_time.hour == 9 and current_time.minute < 30):

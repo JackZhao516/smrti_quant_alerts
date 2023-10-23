@@ -89,8 +89,12 @@ class CoingeckoCoin(TradingSymbol):
 
 
 class StockSymbol(TradingSymbol):
+    nasdaq100_set = set()
+    sp500_set = set()
+
     def __init__(self, symbol, security_name=None, gics_sector=None,
-                 gics_sub_industry=None, location=None, cik=None, founded_time=None):
+                 gics_sub_industry=None, location=None, cik=None,
+                 founded_time=None, sp500=False, nasdaq100=False):
         super().__init__(symbol.upper())
 
         self.security_name = security_name
@@ -100,6 +104,11 @@ class StockSymbol(TradingSymbol):
         self.cik = cik
         self.founded_time = founded_time
 
+        if sp500:
+            StockSymbol.sp500_set.add(self._symbol)
+        if nasdaq100:
+            StockSymbol.nasdaq100_set.add(self._symbol)
+
     @property
     def ticker(self):
         return self._symbol
@@ -107,6 +116,14 @@ class StockSymbol(TradingSymbol):
     @ticker.setter
     def ticker(self, value):
         self._symbol = value.upper()
+
+    @property
+    def is_sp500(self):
+        return self._symbol in StockSymbol.sp500_set
+
+    @property
+    def is_nasdaq100(self):
+        return self._symbol in StockSymbol.nasdaq100_set
 
 
 if __name__ == "__main__":
