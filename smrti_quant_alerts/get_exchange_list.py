@@ -23,13 +23,11 @@ from smrti_quant_alerts.data_type import BinanceExchange, CoingeckoCoin, StockSy
 class GetExchangeList:
     COINGECKO_API_KEY = Config.TOKENS["COINGECKO_API_KEY"]
     FMP_API_KEY = Config.TOKENS["FMP_API_KEY"]
-    POLYGON_API_KEY = Config.TOKENS["POLYGON_API_KEY"]
 
     BINANCE_SPOT_API_URL = Config.API_ENDPOINTS["BINANCE_SPOT_API_URL"]
     BINANCE_FUTURES_API_URL = Config.API_ENDPOINTS["BINANCE_FUTURES_API_URL"]
     SP_500_SOURCE_URL = Config.API_ENDPOINTS["SP_500_SOURCE_URL"]
     FMP_API_URL = Config.API_ENDPOINTS["FMP_API_URL"]
-    POLYGON_API_URL = Config.API_ENDPOINTS["Polygon_API_URL"]
     FINNHUB_API_KEY = Config.TOKENS["FINNHUB_API_KEY"]
 
     PWD = __file__.split("get_exchange_list.py")[0]

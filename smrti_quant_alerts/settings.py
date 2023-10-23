@@ -40,8 +40,8 @@ class Config:
             logging.warning('token.json does not contain FMP_API_KEY, '
                             'cannot run "nasdaq 100" alert')
 
-        if "POLYGON_API_KEY" not in self.TOKENS:
-            logging.warning('token.json does not contain POLYGON_API_KEY, '
+        if "FINNHUB_API_KEY" not in self.TOKENS:
+            logging.warning('token.json does not contain FINNHUB_API_KEY, '
                             'cannot run "nasdaq 100", "sp_500" alert')
 
         logging.warning('"TELEGRAM_IDS" in token.json:\n'
