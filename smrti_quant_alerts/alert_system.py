@@ -7,6 +7,7 @@ from smrti_quant_alerts.alerts.binance_price_volume_alert import BinancePriceVol
 from smrti_quant_alerts.alerts.coingecko_alts_alert import CGAltsAlert
 from smrti_quant_alerts.alerts.coingecko_binance_spot_over_ma_alert import SpotOverMAAlert
 from smrti_quant_alerts.alerts.binance_bi_hourly_future_funding_rate_alert import FutureFundingRate
+from smrti_quant_alerts.alerts.stock_alert import StockAlert
 from smrti_quant_alerts.settings import Config
 from smrti_quant_alerts.utility import run_task_at_daily_time
 
@@ -84,6 +85,19 @@ def funding_rate():
     logging.info("funding_rate finished")
 
 
+def stock_alert():
+    """
+    alert top performing stocks daily
+    """
+    logging.info("stock_alert start")
+
+    daily_time = "08:55"
+    alert = StockAlert(tg_type="STOCK")
+    run_task_at_daily_time(alert.run, daily_time, duration=60 * 60 * 24, exclude_week_day=["Mon", "Sun"])
+
+    logging.info("stock_alert finished")
+
+
 if __name__ == "__main__":
     Config()
     # sys.argv[1] is the mode
@@ -97,3 +111,5 @@ if __name__ == "__main__":
         alert_spot_over_ma(sys.argv[1])
     elif sys.argv[1] == "funding_rate":
         funding_rate()
+    elif sys.argv[1] == "stock_alert":
+        stock_alert()

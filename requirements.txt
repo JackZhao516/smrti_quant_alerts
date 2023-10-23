@@ -4,3 +4,5 @@ pycoingecko==3.1.0
 requests
 pytz~=2022.7.1
 responses
+pandas
+lxml

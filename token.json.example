@@ -16,5 +16,7 @@
       "ALTS": "<Group/Channel ID>",
     }
   },
-  "COINGECKO_API_KEY": "<API Token>"
+  "COINGECKO_API_KEY": "<API Token>",
+  "FMP_API_KEY": "<API Token>",
+  "POLYGON_API_KEY": "<API Token>"
 }

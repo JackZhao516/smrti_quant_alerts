@@ -4,23 +4,33 @@ import math
 import os
 import json
 import datetime
+import pytz
 from decimal import Decimal
 from multiprocessing.pool import ThreadPool
 
 import requests
+import finnhub
+import pandas as pd
 import numpy as np
 from pycoingecko import CoinGeckoAPI
 
 from smrti_quant_alerts.telegram_api import TelegramBot
 from smrti_quant_alerts.error import error_handling
 from smrti_quant_alerts.settings import Config
-from smrti_quant_alerts.data_type import BinanceExchange, CoingeckoCoin
+from smrti_quant_alerts.data_type import BinanceExchange, CoingeckoCoin, StockSymbol
 
 
 class GetExchangeList:
     COINGECKO_API_KEY = Config.TOKENS["COINGECKO_API_KEY"]
+    FMP_API_KEY = Config.TOKENS["FMP_API_KEY"]
+    POLYGON_API_KEY = Config.TOKENS["POLYGON_API_KEY"]
+
     BINANCE_SPOT_API_URL = Config.API_ENDPOINTS["BINANCE_SPOT_API_URL"]
     BINANCE_FUTURES_API_URL = Config.API_ENDPOINTS["BINANCE_FUTURES_API_URL"]
+    SP_500_SOURCE_URL = Config.API_ENDPOINTS["SP_500_SOURCE_URL"]
+    FMP_API_URL = Config.API_ENDPOINTS["FMP_API_URL"]
+    POLYGON_API_URL = Config.API_ENDPOINTS["Polygon_API_URL"]
+    FINNHUB_API_KEY = Config.TOKENS["FINNHUB_API_KEY"]
 
     PWD = __file__.split("get_exchange_list.py")[0]
 
@@ -33,6 +43,7 @@ class GetExchangeList:
         self._cg = CoinGeckoAPI(api_key=self.COINGECKO_API_KEY)
         self._tg_bot = TelegramBot(alert_type=tg_type)
         self._exclude_coins = set()
+        self.finnhub_client = finnhub.Client(api_key=self.FINNHUB_API_KEY)
 
     def _update_active_binance_spot_exchanges(self):
         """
@@ -93,6 +104,73 @@ class GetExchangeList:
                 self._exclude_coins.add(coingecok_coin)
             for quote in ["USDT", "BUSD", "BTC", "ETH"]:
                 self._exclude_coins.add(BinanceExchange(coin, quote))
+
+    @error_handling("sp500", default_val=[])
+    def get_sp_500_list(self):
+        """
+        Get all stocks in SP 500
+
+        :return: [StockSymbol, ...]
+        """
+        stock_list = []
+        link = self.SP_500_SOURCE_URL
+        df = pd.read_html(link, header=0)[0]
+        for i, row in df.iterrows():
+            stock_list.append(StockSymbol(row["Symbol"], row["Security"], row["GICS Sector"],
+                                          row["GICS Sub-Industry"], row["Headquarters Location"],
+                                          row["CIK"], row["Founded"]))
+        return stock_list
+
+    @error_handling("nasdaq100", default_val=[])
+    def get_nasdaq_100_list(self):
+        """
+        Get all stocks in NASDAQ 100
+
+        :return: [StockSymbol, ...]
+        """
+        stock_list = []
+        api_url = f"{self.FMP_API_URL}nasdaq_constituent?apikey={self.FMP_API_KEY}"
+
+        response = requests.get(api_url, timeout=5)
+        response = response.json()
+        for stock in response:
+            stock_list.append(StockSymbol(stock["symbol"], stock["name"], stock["sector"],
+                                          stock["subSector"], stock["headQuarter"],
+                                          stock["cik"], stock["founded"]))
+        return stock_list
+
+    @error_handling("finnhub", default_val=[])
+    def get_stock_daily_price_change_percentage(self, stock):
+        """
+        Get stock daily price change percentage
+
+        :param stock: StockSymbol
+
+        :return: daily price change percentage. 0.01 means 1%
+        """
+
+        # api_url = f"{self.POLYGON_API_URL}open-close/{stock}/2021-01-01?adjusted=false&apiKey={self.POLYGON_API_KEY}"
+        # api_url = "https://www.alphavantage.co/query?function=TIME_SERIES_DAILY&symbol=MMM&apikey=X6AMH84N8ELD0VQ0"
+        # response = requests.get(api_url, timeout=5)
+        # response = response.json()
+        # print(response)
+        current_time = datetime.datetime.now(pytz.timezone('US/Eastern'))
+        delta = datetime.timedelta(days=1)
+        if current_time.hour < 9 or (current_time.hour == 9 and current_time.minute < 30):
+            current_time -= delta
+        while current_time.weekday() > 4:
+            current_time -= delta
+
+        market_data = self.finnhub_client.stock_candles(stock, 'D',
+                                                        int((current_time - delta).timestamp()),
+                                                        int(current_time.timestamp()))
+
+        if market_data['s'] == 'ok':
+            c = market_data['c'][-1]
+            o = market_data['o'][-1]
+            return (c - o) / o
+        else:
+            raise Exception(market_data['s'])
 
     @error_handling("binance", default_val=[])
     def get_all_binance_exchanges(self, exchange_type="SPOT"):
@@ -514,8 +592,5 @@ class GetExchangeList:
 
 if __name__ == '__main__':
     cg = GetExchangeList(tg_type='TEST')
-    # cg.write_exclude_coins("")
-    b, c = cg.get_top_market_cap_coins_with_volume_threshold(num=100, tg_alert=False)
-    print(b)
-    print(c)
-    print(len(b), len(c))
+    res = cg.get_stock_daily_price_change_percentage("AAPL")
+    print(res)
