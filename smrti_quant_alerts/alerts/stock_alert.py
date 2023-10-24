@@ -27,7 +27,7 @@ class StockAlert(GetExchangeList):
             stock_price_change.append((stock, self.get_stock_daily_price_change_percentage(stock)))
             counter += 1
             if counter % 60 == 0 and not finnhub_pro:
-                time.sleep(59)
+                time.sleep(60)
         stock_price_change.sort(key=lambda x: x[1], reverse=True)
         return stock_price_change[:n]
 
@@ -63,5 +63,5 @@ class StockAlert(GetExchangeList):
 
 
 if __name__ == '__main__':
-    stock_alert = StockAlert(tg_type="TEST")
+    stock_alert = StockAlert(tg_type="STOCK")
     stock_alert.run()
