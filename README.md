@@ -8,7 +8,11 @@ This repo includes several real-time alerts for crypto trading, built with Coing
 
 
 ## Get Started and Documentation
-* pre-requisites: coingecko pro api token, telegram bot token, telegram group/channel ids. Fill in all the required tokens in ``token.json``.
+* pre-requisites: 
+  * ``coingecko pro api token``: all coingecko alerts
+  * ``Finnhub api token``, ``Financial Modeling Prep api token``: stock alert
+  * ``telegram bot token``, ``telegram group/channel ids`` for all alerts
+  * Fill in the required tokens in ``token.json`` for the alerts you want to run
 * Run on server in areas where Binance and Coingecko apis are not banned.
 ## Install
     pip install -r requirements.txt
@@ -19,7 +23,8 @@ This repo includes several real-time alerts for crypto trading, built with Coing
 
 > 2. Run ``./start.sh <alert_type>``
 > Available alert types: ``market_cap``, ``price_volume``, ``sequential``, 
-> ``alts``, ``alert_100``, ``alert_300``, ``alert_500``, ``funding_rate``, ``meme_alert``
+> ``alts``, ``alert_100``, ``alert_300``, ``alert_500``, ``funding_rate``, 
+> ``meme_alert``, ``stock_alert``
 
 ## Structure
 > 1. python scripts to run those alerts are in ``alert_system.py``
@@ -28,11 +33,11 @@ This repo includes several real-time alerts for crypto trading, built with Coing
 
 > 3. ``get_exchange_list.py`` gets required exchange/coin lists from Binance and Coingecko APIs
 
-> 4. ``error.py`` defines error handling functions and ``telegram_bot.py`` defines telegram bot functions
+> 4. ``error.py`` defines error handling functions and ``telegram_bot.py`` implements a simplified message queue for telegram bot to accommodate the rate limit of telegram bot api
 
-> 5. coins: ``CoingeckoCoin``. exchanges: ``BinanceExchange``. Both are defined in ``data_type.py``
+> 5. coin: ``CoingeckoCoin``. exchange: ``BinanceExchange``. stock: ``StockSymbol``. All are defined in ``data_type.py``
 
-> 6. alerts are set to run daily/bi-hourly/hourly/quarter-hourly, run times are defined in the ``alert_system.py``, the timezone is defined in ``utility.py``
+> 6. alerts are set to run daily/bi-hourly/hourly/quarter-hourly, frequencies are defined in the ``alert_system.py``, the timezone is defined in ``utility.py``
 
 ## Alert Type Description
 * ``market_cap``: ``alerts/coingecko_market_cap_alert.py``: a daily report of newly deleted and newly added
