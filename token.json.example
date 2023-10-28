@@ -2,7 +2,7 @@
   "TelegramBot": {
     "TOKEN": "<TelegramBot ID>",
     "TELEGRAM_IDS": {
-      "CG_ALERT": "<Group/Channel ID>",
+      "CG_ALERT": "<Group/Channel ID, starting with -, like "-4002220002">",
       "CG_SUM": "<Group/Channel ID>",
       "TEST": "<Group/Channel ID>",
       "VOLUME_15M": "<Group/Channel ID>",
