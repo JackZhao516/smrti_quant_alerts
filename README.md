@@ -5,7 +5,13 @@
 ![smrti_quant_alert Python Versions](https://img.shields.io/pypi/pyversions/python-bitget?logo=pypi)
 
 This repo includes several real-time alerts for crypto trading, built with Coingecko and Binance APIs. Alerts are sent to Telegram groups/channels.
-
+## Next Steps
+* Rebuild ``price_volume`` alert in a more oop manner. [IN PROGRESS]
+* Incorporate sqlite3 database to store data instead of csv/json files. [IN PROGRESS]
+* Let users set all the alert args in ``settings.json``.
+* Cut out the telegram messages into functions and make them more customizable.
+* Improve test coverage.
+* Enhance documentation.
 
 ## Get Started and Documentation
 * pre-requisites: 
