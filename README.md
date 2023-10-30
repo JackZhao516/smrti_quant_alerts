@@ -12,6 +12,8 @@ This repo includes several real-time alerts for crypto trading, built with Coing
 * Cut out the telegram messages into functions and make them more customizable.
 * Improve test coverage.
 * Enhance documentation.
+* Setup CI/CD.
+* Setup Docker.
 
 ## Get Started and Documentation
 * pre-requisites: 
