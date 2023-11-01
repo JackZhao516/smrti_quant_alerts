@@ -7,3 +7,4 @@ responses
 pandas
 lxml
 finnhub-python
+peewee

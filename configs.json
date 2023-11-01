@@ -1,0 +1,15 @@
+{
+  "price_volume": {
+    "alert_input_args": {},
+    "alert_params": {
+      "15m_volume_usd": 500000.0,
+      "1h_volume_usd": 1000000.0,
+      "15m_price_change_percentage": 5.0,
+      "1h_price_change_percentage": 10.0
+    },
+    "daily_times": null,
+    "excluded_week_days": null,
+    "timezone": "Asia/Shanghai",
+    "database_name": "price_volume"
+  }
+}

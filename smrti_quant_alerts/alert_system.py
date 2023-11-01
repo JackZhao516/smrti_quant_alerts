@@ -23,7 +23,7 @@ def report_market_cap():
     daily_time = "00:00"
     nums = [100, 200, 300, 400, 500]
     cmc_alert = CoingeckoMarketCapAlert(top_n=nums, tg_type="CG_MAR_CAP")
-    run_task_at_daily_time(cmc_alert.run, daily_time, duration=60 * 60 * 24)
+    run_task_at_daily_time(cmc_alert.run, daily_time)
 
     logging.info("report_market_cap finished")
 
@@ -45,13 +45,13 @@ def alert_spot_over_ma(alert_type):
 
     daily_time = "08:50" if alert_type == "meme_alert" else "09:00"
     tg_mode = "MEME" if alert_type == "meme_alert" else "CG_SUM"
-    exclude_week_day = ["Mon", "Wed", "Fri", "Sat"]
+    excluded_week_day = ["Mon", "Wed", "Fri", "Sat"]
     time_frame = 1 if alert_type == "meme_alert" else 4
 
     spot_over_ma_alert = SpotOverMAAlert(time_frame=time_frame, window=200, tg_mode=tg_mode)
     kwargs = {"alert_type": alert_type, "alert_coins_info": True}
     run_task_at_daily_time(spot_over_ma_alert.run, daily_time, kwargs=kwargs,
-                           exclude_week_day=exclude_week_day, duration=60 * 60 * 24)
+                           excluded_week_day=excluded_week_day)
 
     logging.info(f"alert_spot_over_ma {alert_type} finished")
 
@@ -65,7 +65,7 @@ def alts_alert():
     daily_time = {"00:00", "02:00", "04:00", "06:00", "08:00", "10:00",
                   "12:00", "14:00", "16:00", "18:00", "20:00", "22:00"}
     cg_alts_alert = CGAltsAlert(tg_type="ALTS")
-    run_task_at_daily_time(cg_alts_alert.run, daily_time, duration=60 * 60 * 2)
+    run_task_at_daily_time(cg_alts_alert.run, daily_time)
 
     logging.info("alts_alert finished")
 
@@ -80,7 +80,7 @@ def funding_rate():
                   "12:00", "14:00", "16:00", "18:00", "20:00", "22:00"}
     future_funding_rate = FutureFundingRate(rate_threshold=Decimal(0.002),
                                             tg_type="FUNDING_RATE")
-    run_task_at_daily_time(future_funding_rate.run, daily_time, duration=60 * 60 * 2)
+    run_task_at_daily_time(future_funding_rate.run, daily_time)
 
     logging.info("funding_rate finished")
 
@@ -93,7 +93,7 @@ def stock_alert():
 
     daily_time = "08:55"
     alert = StockAlert(tg_type="STOCK")
-    run_task_at_daily_time(alert.run, daily_time, duration=60 * 60 * 24, exclude_week_day=["Mon", "Sun"])
+    run_task_at_daily_time(alert.run, daily_time, excluded_week_day=["Mon", "Sun"])
 
     logging.info("stock_alert finished")
 

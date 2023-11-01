@@ -324,5 +324,5 @@ if __name__ == "__main__":
     kwargs = {"alert_type": alert_type, "alert_coins_info": True}
     spot_over_ma_alert.run(**kwargs)
 
-    # run_task_at_daily_time(spot_over_ma_alert.run, "06:11", kwargs=kwargs, duration=60 * 60 * 24)
+    # run_task_at_daily_time(spot_over_ma_alert.run, "06:11", kwargs=kwargs)
     print(f"Time used: {time() - start_time} seconds")

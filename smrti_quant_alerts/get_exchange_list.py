@@ -30,6 +30,8 @@ class GetExchangeList:
     FMP_API_URL = Config.API_ENDPOINTS["FMP_API_URL"]
     FINNHUB_API_KEY = Config.TOKENS["FINNHUB_API_KEY"]
 
+    ALERT_SETTINGS = Config.SETTINGS
+
     PWD = __file__.split("get_exchange_list.py")[0]
 
     # global data
