@@ -587,5 +587,5 @@ class GetExchangeList:
 
 if __name__ == '__main__':
     cg = GetExchangeList(tg_type='TEST')
-    res = cg.get_stock_daily_price_change_percentage("AAPL")
+    res = cg.get_all_coingecko_coins()
     print(res)

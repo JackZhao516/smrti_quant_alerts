@@ -146,8 +146,9 @@ class BinanceSpotOverMA(SpotOverMABase):
     def _coins_spot_over_ma(self, threads=6):
         """
         get all spot over ma binance exchanges, keep each base with only one quote
-        if multiple quotes are available, keep the one in the availability order of
-        USDT, BUSD, BTC, ETH
+        plus the ETH quote if available. if multiple quotes are available,
+        keep the one in the availability order of USDT, BUSD, BTC.
+        Keep ETH quote even if other quotes are available
         """
         super()._coins_spot_over_ma(threads=threads)
         bases = defaultdict(set)
@@ -156,10 +157,12 @@ class BinanceSpotOverMA(SpotOverMABase):
             bases[base].add(binance_exchange.quote_symbol)
         self._spot_over_ma = {}
         for base, quotes in bases.items():
-            for quote in ["USDT", "BUSD", "BTC", "ETH"]:
+            for quote in ["USDT", "BUSD", "BTC"]:
                 if quote in quotes:
                     self._spot_over_ma[BinanceExchange(base, quote)] = 1
                     break
+            if quote == "ETH":
+                self._spot_over_ma[BinanceExchange(base, "ETH")] = 1
 
 
 class SpotOverMAAlert(GetExchangeList):
