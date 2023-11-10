@@ -161,7 +161,7 @@ class BinanceSpotOverMA(SpotOverMABase):
                 if quote in quotes:
                     self._spot_over_ma[BinanceExchange(base, quote)] = 1
                     break
-            if quote == "ETH":
+            if "ETH" in quotes and base != "ETH":
                 self._spot_over_ma[BinanceExchange(base, "ETH")] = 1
 
 
