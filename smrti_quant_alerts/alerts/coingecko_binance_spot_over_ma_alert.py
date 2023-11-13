@@ -43,7 +43,7 @@ class SpotOverMABase(GetExchangeList):
         :param threads: number of threads to fill _spot_over_ma
 
         """
-        pool = ThreadPool(4)
+        pool = ThreadPool(threads)
         pool.map(self._coin_spot_over_ma, self._trading_symbols)
         pool.close()
 
@@ -105,7 +105,7 @@ class CoingeckoSpotOverMA(SpotOverMABase):
         try:
             if coingecko_coin in self._exclude_coins:
                 return False
-            sleep(1.2)
+            sleep(2)
             days_delta = self.time_frame * self.window // 24 + 1
             current_price = self.get_coin_current_price(coingecko_coin)
             prices = self.get_coin_history_hourly_close_price(coingecko_coin, days_delta)
@@ -319,7 +319,7 @@ class SpotOverMAAlert(GetExchangeList):
 
 if __name__ == "__main__":
     start_time = time()
-    alert_type = "sequential"
+    alert_type = "alert_300"
 
     kwargs = {"time_frame": 4, "window": 200, "tg_mode": "TEST"}
     spot_over_ma_alert = SpotOverMAAlert(**kwargs)

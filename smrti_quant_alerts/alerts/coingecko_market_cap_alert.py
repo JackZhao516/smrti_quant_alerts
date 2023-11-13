@@ -50,4 +50,4 @@ class CoingeckoMarketCapAlert(GetExchangeList):
 if __name__ == '__main__':
     nums = [100, 200, 300, 400, 500]
     cmc_alert = CoingeckoMarketCapAlert(top_n=nums, tg_type="TEST")
-    run_task_at_daily_time(cmc_alert.run, "05:35", duration=60 * 60 * 24)
+    run_task_at_daily_time(cmc_alert.run, "05:35")
