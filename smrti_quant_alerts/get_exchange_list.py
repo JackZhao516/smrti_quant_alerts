@@ -469,6 +469,7 @@ class GetExchangeList:
         market_list = self.get_top_n_market_cap_coins(n=num)
 
         def filter_coin(coin):
+            time.sleep(0.5)
             if weekly_volume_threshold or daily_volume_threshold:
                 # get weekly volume
                 data = self.get_coin_market_info(coin, ["total_volumes"], days=7, interval='daily')
@@ -494,7 +495,7 @@ class GetExchangeList:
                 if f"{symbol}ETH" in self.active_binance_spot_exchanges_set:
                     binance_exchanges.append(BinanceExchange(symbol, "ETH"))
 
-        pool = ThreadPool(6)
+        pool = ThreadPool(4)
         pool.map(filter_coin, market_list)
         pool.close()
 
