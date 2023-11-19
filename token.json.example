@@ -14,7 +14,8 @@
       "FUNDING_RATE": "<Group/Channel ID>",
       "MEME": "<Group/Channel ID>",
       "ALTS": "<Group/Channel ID>",
-      "STOCK": "<Group/Channel ID>"
+      "STOCK": "<Group/Channel ID>",
+      "CG_PRICE_INCREASE": "<Group/Channel ID>"
     }
   },
   "COINGECKO_API_KEY": "<API Token>",

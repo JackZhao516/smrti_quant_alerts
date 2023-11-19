@@ -51,6 +51,7 @@ class Config:
                         '"FUNDING_RATE": funding_rate\n'
                         '"MEME": meme_alert\n'
                         '"STOCK": stock_alert\n'
+                        '"CG_PRICE_INCREASE": price_increase\n'
                         'Remember to fill in the Telegram channel/group ID for each alert type')
         logging.info("token.json validated")
 
@@ -59,8 +60,7 @@ class Config:
         validate configs.json
         """
         # every alert setting should contain these keys
-        alert_setting_keys = ["alert_input_args", "alert_params", "daily_times",
-                              "excluded_week_days", "timezone", "database_name"]
+        alert_setting_keys = ["alert_input_args", "alert_params", "run_time_input_args", "database_name"]
         for alert_name, alert_setting in self.SETTINGS.items():
             for key in alert_setting_keys:
                 if key not in alert_setting:

@@ -8,11 +8,13 @@ from smrti_quant_alerts.alerts.coingecko_alts_alert import CGAltsAlert
 from smrti_quant_alerts.alerts.coingecko_binance_spot_over_ma_alert import SpotOverMAAlert
 from smrti_quant_alerts.alerts.binance_bi_hourly_future_funding_rate_alert import FutureFundingRate
 from smrti_quant_alerts.alerts.stock_alert import StockAlert
+from smrti_quant_alerts.alerts.coingecko_price_increase_alert import CoingeckoPriceIncreaseAlert
+
 from smrti_quant_alerts.settings import Config
 from smrti_quant_alerts.utility import run_task_at_daily_time
 
 logging.disable(logging.DEBUG)
-
+configs = Config()
 
 def report_market_cap():
     """
@@ -51,7 +53,7 @@ def alert_spot_over_ma(alert_type):
     spot_over_ma_alert = SpotOverMAAlert(time_frame=time_frame, window=200, tg_mode=tg_mode)
     kwargs = {"alert_type": alert_type, "alert_coins_info": True}
     run_task_at_daily_time(spot_over_ma_alert.run, daily_time, kwargs=kwargs,
-                           excluded_week_day=excluded_week_day)
+                           excluded_week_days=excluded_week_day)
 
     logging.info(f"alert_spot_over_ma {alert_type} finished")
 
@@ -93,13 +95,24 @@ def stock_alert():
 
     daily_time = "08:55"
     alert = StockAlert(tg_type="STOCK")
-    run_task_at_daily_time(alert.run, daily_time, excluded_week_day=["Mon", "Sun"])
+    run_task_at_daily_time(alert.run, daily_time, excluded_week_days=["Mon", "Sun"])
 
     logging.info("stock_alert finished")
 
 
+def price_increase_alert(timeframe_in_days=14):
+    """
+    alert price increase
+    """
+    logging.info("price_increase_alert start")
+    settings = configs.SETTINGS[f"price_increase_alert_{timeframe_in_days}d"]
+    alert = CoingeckoPriceIncreaseAlert(**settings["alert_input_args"])
+    run_task_at_daily_time(alert.run, **settings["run_time_input_args"])
+
+    logging.info("price_increase_alert finished")
+
+
 if __name__ == "__main__":
-    Config()
     # sys.argv[1] is the mode
     if sys.argv[1] == "market_cap":
         report_market_cap()
@@ -113,3 +126,8 @@ if __name__ == "__main__":
         funding_rate()
     elif sys.argv[1] == "stock_alert":
         stock_alert()
+    elif sys.argv[1] == "price_increase_alert":
+        if len(sys.argv) == 2:
+            price_increase_alert()
+        else:
+            price_increase_alert(timeframe_in_days=int(sys.argv[2]))

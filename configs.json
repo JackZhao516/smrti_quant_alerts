@@ -7,9 +7,39 @@
       "15m_price_change_percentage": 5.0,
       "1h_price_change_percentage": 10.0
     },
-    "daily_times": null,
-    "excluded_week_days": null,
-    "timezone": "Asia/Shanghai",
+    "run_time_input_args": {
+      "daily_times": null,
+      "excluded_week_days": null,
+      "timezone": "Asia/Shanghai"
+    },
     "database_name": "price_volume"
+  },
+  "price_increase_alert_14d": {
+    "alert_input_args": {
+      "top_n": 500,
+      "timeframe_in_days": 14,
+      "tg_type": "CG_PRICE_INCREASE"
+    },
+    "alert_params": {},
+    "run_time_input_args": {
+      "daily_times": "09:30",
+      "excluded_week_days": ["Tue", "Wed", "Thu", "Fri", "Sat", "Sun"],
+      "timezone": "Asia/Shanghai"
+    },
+    "database_name": "price_increase_alert"
+  },
+  "price_increase_alert_30d": {
+    "alert_input_args": {
+      "top_n": 500,
+      "timeframe_in_days": 30,
+      "tg_type": "CG_PRICE_INCREASE"
+    },
+    "alert_params": {},
+    "run_time_input_args": {
+      "daily_times": "09:35",
+      "excluded_week_days": ["Tue", "Wed", "Thu", "Fri", "Sat", "Sun"],
+      "timezone": "Asia/Shanghai"
+    },
+    "database_name": "price_increase_alert"
   }
 }

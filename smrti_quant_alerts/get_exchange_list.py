@@ -259,12 +259,13 @@ class GetExchangeList:
         return coingecko_coins
 
     @error_handling("coingecko", default_val=[])
-    def get_coins_market_info(self, coingecko_coins, market_attribute_name_list):
+    def get_coins_market_info(self, coingecko_coins, market_attribute_name_list, price_change_percentage="24h"):
         """
         get coin market info from coingecko
 
         :param coingecko_coins: [CoingeckoCoin, ...]
         :param market_attribute_name_list: [market_attribute_name, ...]
+        :param price_change_percentage: comma separated list of price change percentage, e.g. "24h,7d,30d,1y"
 
         :return: [{"coingecko_coin": CoingeckoCoin, <market_attribute_name>: value, ...}]
         """
@@ -274,7 +275,7 @@ class GetExchangeList:
             cur_full_info = self._cg.get_coins_markets(
                 vs_currency='usd', ids=[coin.coin_id for coin in coingecko_coins[page * 250:(page + 1) * 250]],
                 per_page=250, page=1, sparkline=False,
-                price_change_percentage='24h', locale='en')
+                price_change_percentage=price_change_percentage, locale='en')
 
             for info in cur_full_info:
                 cur_info = {"coingecko_coin": CoingeckoCoin(info['id'], info['symbol'])}
@@ -307,7 +308,7 @@ class GetExchangeList:
                 "website": links, "genesis_date": coin_info.get("genesis_date", "")}
 
     @error_handling("coingecko", default_val={})
-    def get_coin_market_info(self, coingecko_coin, market_attribute_name_list, days, interval="daily"):
+    def get_coin_market_info(self, coingecko_coin, market_attribute_name_list, days=1, interval="daily"):
         """
         get coin market info from coingecko
 
