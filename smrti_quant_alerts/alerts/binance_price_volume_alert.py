@@ -9,11 +9,61 @@ from datetime import datetime
 
 import pytz
 from binance.lib.utils import config_logging
+# from binance.websocket.spot.websocket_stream import SpotWebsocketStreamClient
 from binance.websocket.spot.websocket_client import SpotWebsocketClient as Client
 
 from smrti_quant_alerts.get_exchange_list import GetExchangeList
+from smrti_quant_alerts.error import error_handling
 from smrti_quant_alerts.telegram_api import TelegramBot
 from smrti_quant_alerts.settings import Config
+
+
+# class BinancePriceVolumeBase(GetExchangeList):
+#     config_logging(logging, logging.WARNING)
+#
+#     def __init__(self, tg_mode="TEST", timeframe="15m", alert_type="price"):
+#         super().__init__(tg_mode)
+#         self.running = True
+#         self.timeframe = timeframe
+#         self.alert_type = alert_type
+#         self.SETTINGS = self.ALERT_SETTINGS["price_volume"]
+#
+#         # monitored exchanges
+#         self.exchanges = self.get_all_spot_exchanges_in_usdt_busd_btc()
+#         self.exchanges = [e.lower() for e in self.exchanges]
+#
+#         self.exchanges_update_timestamp = time.time()
+#         self.exchange_bar_dict = defaultdict(list)
+#
+#         # websocket client
+#         self.websocket_client = SpotWebsocketStreamClient(on_message=self._handle_tick_message, is_combined=True)
+#
+#     def _handle_tick_message(self, msg):
+#         """
+#         Handle tick message parsed from websocket
+#         """
+#         pass
+#
+#     def _update_active_exchanges(self):
+#         """
+#         Update exchanges list if last update was more than 15 min ago
+#         If new exchanges appear, subscribe to new exchanges
+#         """
+#         if (time.time() - self.exchanges_update_timestamp) >= 900:
+#             exchanges = self.get_all_spot_exchanges_in_usdt_busd_btc()
+#             exchanges = {e.lower() for e in exchanges}
+#             old_exchanges_set = set(self.exchanges)
+#             if exchanges != old_exchanges_set:
+#                 new_exchanges = exchanges - old_exchanges_set
+#                 self.websocket_client.subscribe(
+#                     stream=self._exchanges_to_subscription_stream_names(new_exchanges))
+#             self.exchanges_update_timestamp = time.time()
+#
+#     def _exchanges_to_subscription_stream_names(self, exchanges):
+#         """
+#         Convert exchanges to subscription stream names
+#         """
+#         return [f"{e.lower()}@kline_{self.timeframe}" for e in exchanges]
 
 
 class BinancePriceVolumeAlert:
@@ -167,7 +217,7 @@ class BinancePriceVolumeAlert:
         while self.running:
             time_now = datetime.now().strftime('%M')
             if time_now[1] == "2":
-                self.settings = json.load(open("settings.json"))
+                self.settings = json.load(open("configs.json"))
                 logging.info("subscribe new exchange start checking every ten minutes")
                 all_exchanges = set(self.cg.get_all_binance_exchanges())
                 if self.all_exchanges != all_exchanges:
@@ -223,7 +273,7 @@ class BinancePriceVolumeAlert:
                     message_list = message_list[:30]
                     for exchange, count in message_list:
                         message_string += f"{exchange} monthly count: {count[0]}\n"
-                        
+
                     self.tg_bot[alert_type].send_message(
                         f"Daily {alert_type} alert ticker count:\n"
                         f"{message_string}", blue_text=True
@@ -314,7 +364,7 @@ class BinancePriceVolumeAlert:
                     self.lock_15m.acquire()
                 elif timeframe == "1h":
                     self.lock_1h.acquire()
-                
+
                 price_lists = [[k, v] for k, v in self.price_dict[timeframe].items()]
                 largest, smallest = [], []
                 self.price_dict[timeframe] = {}
@@ -532,4 +582,23 @@ class BinancePriceVolumeAlert:
 
 
 if __name__ == "__main__":
-    BinancePriceVolumeAlert().klines_alert()
+    def message_handler(_, msg):
+        msg = json.loads(msg)
+        if "stream" not in msg or "data" not in msg or "k" not in msg["data"] or \
+                msg["data"]["k"]["x"] is False:
+            return
+        logging.info(msg)
+
+    #
+    # my_client = SpotWebsocketStreamClient(on_message=message_handler, is_combined=True)
+    #
+    # my_client.subscribe(
+    #     stream=["bnbusdt@kline_1m", "ethusdt@kline_1m"]
+    # )
+    # time.sleep(60)
+    # my_client.subscribe(
+    #     stream=["btcusdt@kline_1m"]
+    # )
+    #
+    # time.sleep(130)
+    # my_client.stop()
