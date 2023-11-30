@@ -87,16 +87,15 @@ def funding_rate():
     logging.info("funding_rate finished")
 
 
-def stock_alert():
+def stock_alert(longer_timeframe=False):
     """
     alert top performing stocks daily
     """
     logging.info("stock_alert start")
-
-    daily_time = "08:55"
-    alert = StockAlert(tg_type="STOCK")
-    run_task_at_daily_time(alert.run, daily_time, excluded_week_days=["Mon", "Sun"])
-
+    config_name = "stock_alert_1d" if not longer_timeframe else "stock_alert_longer_timeframe"
+    settings = configs.SETTINGS[config_name]
+    alert = StockAlert(**settings["alert_input_args"])
+    run_task_at_daily_time(alert.run, **settings["run_time_input_args"])
     logging.info("stock_alert finished")
 
 
@@ -125,7 +124,10 @@ if __name__ == "__main__":
     elif sys.argv[1] == "funding_rate":
         funding_rate()
     elif sys.argv[1] == "stock_alert":
-        stock_alert()
+        if len(sys.argv) == 2:
+            stock_alert()
+        else:
+            stock_alert(longer_timeframe=(sys.argv[2] != "1d"))
     elif sys.argv[1] == "price_increase_alert":
         if len(sys.argv) == 2:
             price_increase_alert()
