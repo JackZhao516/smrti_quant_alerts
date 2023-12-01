@@ -92,7 +92,7 @@ def stock_alert(longer_timeframe=False):
     alert top performing stocks daily
     """
     logging.info("stock_alert start")
-    config_name = "stock_alert_1d" if not longer_timeframe else "stock_alert_longer_timeframe"
+    config_name = "stock_alert_1d" if not longer_timeframe else "stock_alert_larger_timeframe"
     settings = configs.SETTINGS[config_name]
     alert = StockAlert(**settings["alert_input_args"])
     run_task_at_daily_time(alert.run, **settings["run_time_input_args"])
