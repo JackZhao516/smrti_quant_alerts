@@ -18,7 +18,6 @@ class Config:
         "BINANCE_FUTURES_API_URL": "https://fapi.binance.com/fapi/v1/",
         "SP_500_SOURCE_URL": "https://en.wikipedia.org/wiki/List_of_S%26P_500_companies#S&P_500_component_stocks",
         "FMP_API_URL": "https://financialmodelingprep.com/api/v3/",
-        "Polygon_API_URL": "https://api.polygon.io/v1/"
     }
 
     def __init__(self):
@@ -39,7 +38,7 @@ class Config:
             logging.error("token.json does not contain "
                           "TelegramBot.TOKEN or TelegramBot.TELEGRAM_IDS")
             exit(1)
-        if "FMP_API_KEY" not in self.TOKENS or "FINNHUB_API_KEY" not in self.TOKENS:
+        if "FMP_API_KEY" not in self.TOKENS:
             logging.warning('token.json does not contain FMP_API_KEY, '
                             'cannot run "stock_alert"')
 

@@ -41,5 +41,31 @@
       "timezone": "Asia/Shanghai"
     },
     "database_name": "price_increase_alert"
+  },
+  "stock_alert_1d": {
+    "alert_input_args": {
+      "timeframe_list": ["1d"],
+      "tg_type": "STOCK"
+    },
+    "alert_params": {},
+    "run_time_input_args": {
+      "daily_times": "09:10",
+      "excluded_week_days": ["Mon", "Sun"],
+      "timezone": "Asia/Shanghai"
+    },
+    "database_name": "stock_alert"
+  },
+  "stock_alert_larger_timeframe": {
+    "alert_input_args": {
+      "timeframe_list": ["5d", "1M", "3M", "6M", "1y", "3y", "5y"],
+      "tg_type": "STOCK"
+    },
+    "alert_params": {},
+    "run_time_input_args": {
+      "daily_times": "09:15",
+      "excluded_week_days": ["Wed", "Thu", "Fri", "Sat", "Sun", "Mon"],
+      "timezone": "Asia/Shanghai"
+    },
+    "database_name": "stock_alert"
   }
 }

@@ -14,7 +14,6 @@ class CoingeckoPriceIncreaseAlert(GetExchangeList):
         top_n_list = self.get_top_n_market_cap_coins(n=self._top_n)
         if not top_n_list:
             return
-        top_n_list = top_n_list[:100]
 
         price_change_attribute = f"price_change_percentage_{self._timeframe}d_in_currency"
         top_n_list = self.get_coins_market_info(top_n_list,

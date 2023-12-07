@@ -28,7 +28,6 @@ class GetExchangeList:
     BINANCE_FUTURES_API_URL = Config.API_ENDPOINTS["BINANCE_FUTURES_API_URL"]
     SP_500_SOURCE_URL = Config.API_ENDPOINTS["SP_500_SOURCE_URL"]
     FMP_API_URL = Config.API_ENDPOINTS["FMP_API_URL"]
-    FINNHUB_API_KEY = Config.TOKENS["FINNHUB_API_KEY"]
 
     ALERT_SETTINGS = Config.SETTINGS
 
@@ -43,7 +42,6 @@ class GetExchangeList:
         self._cg = CoinGeckoAPI(api_key=self.COINGECKO_API_KEY)
         self._tg_bot = TelegramBot(alert_type=tg_type)
         self._exclude_coins = set()
-        self.finnhub_client = finnhub.Client(api_key=self.FINNHUB_API_KEY)
 
     def _update_active_binance_spot_exchanges(self):
         """
@@ -121,7 +119,7 @@ class GetExchangeList:
                                           row["CIK"], row["Founded"], sp500=True))
         return stock_list
 
-    @error_handling("nasdaq100", default_val=[])
+    @error_handling("financialmodelingprep", default_val=[])
     def get_nasdaq_100_list(self):
         """
         Get all stocks in NASDAQ 100
@@ -139,33 +137,45 @@ class GetExchangeList:
                                           stock["cik"], stock["founded"], nasdaq100=True))
         return stock_list
 
-    @error_handling("finnhub", default_val=[])
-    def get_stock_daily_price_change_percentage(self, stock):
+    @error_handling("financialmodelingprep", default_val=[])
+    def get_stock_price_change_percentage(self, stock_list):
         """
-        Get stock daily price change percentage
+        Get stock price change percentage, 1D, 5D, 1M, 3M, 6M, 1Y, 3Y, 5Y
 
-        :param stock: StockSymbol
+        :param stock_list: [StockSymbol, ...]
 
-        :return: daily price change percentage. 0.01 means 1%
+        :return: price change percentage. 1 means 1%
+                {StockSymbol: {"1D": 0.01, "5D": 0.01, "1M": 0.01, "3M": 0.01,
+                "6M": 0.01, "1Y": 0.01, "3Y": 0.01}}
         """
+        # preprocess the StockSymbol list
+        stocks = set(stock_list)
+        stock_list = []
+        for stock_symbol in stocks:
+            stock_list.append(stock_symbol.ticker)
+            if stock_symbol.ticker_alias:
+                stock_list.append(stock_symbol.ticker_alias)
+        stock_str = ",".join(stock_list)
 
-        current_time = datetime.datetime.now(pytz.timezone('US/Eastern'))
-        delta = datetime.timedelta(days=1)
-        if current_time.hour < 9 or (current_time.hour == 9 and current_time.minute < 30):
-            current_time -= delta
-        while current_time.weekday() > 4:
-            current_time -= delta
+        api_url = f"{self.FMP_API_URL}stock-price-change/{stock_str}?apikey={self.FMP_API_KEY}"
 
-        market_data = self.finnhub_client.stock_candles(stock, 'D',
-                                                        int((current_time - delta).timestamp()),
-                                                        int(current_time.timestamp()))
+        response = requests.get(api_url, timeout=5)
+        response = response.json()
 
-        if market_data['s'] == 'ok':
-            c = market_data['c'][-1]
-            o = market_data['o'][-1]
-            return (c - o) / o
-        else:
-            raise Exception(market_data['s'])
+        stock_price_change = {}
+        for stock in response:
+            stock_symbol = StockSymbol.get_stock_symbol(stock["symbol"])
+            stock_price_change[stock_symbol] = {
+                "1D": stock["1D"],
+                "5D": stock["5D"],
+                "1M": stock["1M"],
+                "3M": stock["3M"],
+                "6M": stock["6M"],
+                "1Y": stock["1Y"],
+                "3Y": stock["3Y"],
+                "5Y": stock["5Y"]
+            }
+        return stock_price_change
 
     @error_handling("binance", default_val=[])
     def get_all_binance_exchanges(self, exchange_type="SPOT"):
@@ -589,5 +599,10 @@ class GetExchangeList:
 
 if __name__ == '__main__':
     cg = GetExchangeList(tg_type='TEST')
-    res = cg.get_all_coingecko_coins()
+    res = cg.get_sp_500_list()
+    res += cg.get_nasdaq_100_list()
+    res = set(res)
+    print(len(res))
+    res = cg.get_stock_price_change_percentage(list(res))
     print(res)
+    print(len(res))
