@@ -1,4 +1,4 @@
-import datetime
+import time
 
 from peewee import Model, PrimaryKeyField, CharField, IntegerField, DateTimeField
 from playhouse.shortcuts import ThreadSafeDatabaseMetadata
@@ -18,26 +18,18 @@ class BaseModel(Model):
 # -------------- price_volume ----------------
 class DailyCount(BaseModel):
     exchange = CharField()
-    # timeframe = CharField()
-    # alert_type = CharField()
-    # count = IntegerField()
-    # date = DateTimeField(default=datetime.datetime.now)
+    timeframe = CharField()
+    alert_type = CharField()
+    count = IntegerField()
+    date = DateTimeField(default=time.time)
 
 
 # class MonthlyCount(BaseModel):
 
-
-
-if __name__ == "__main__":
-    database_runtime.initialize(init_database("test.db"))
-    print(database_runtime.connect())
-    database_runtime.create_tables([DailyCount])
-    # with database_runtime.atomic():
-    #     # Attempt to create the user. If the username is taken, due to the
-    #     # unique constraint, the database will raise an IntegrityError.
-    #     user = DailyCount.create(
-    #         exchange="binance")
-
-    print(database_runtime.get_tables())
-
-
+# -------------- spot_over_ma ----------------
+class LastCount(BaseModel):
+    trading_symbol = CharField(unique=True)
+    symbol_type = CharField()
+    alert_type = CharField()
+    count = IntegerField()
+    date = DateTimeField(default=time.time)

@@ -3,13 +3,10 @@ import time
 import math
 import os
 import json
-import datetime
-import pytz
 from decimal import Decimal
 from multiprocessing.pool import ThreadPool
 
 import requests
-import finnhub
 import pandas as pd
 import numpy as np
 from pycoingecko import CoinGeckoAPI

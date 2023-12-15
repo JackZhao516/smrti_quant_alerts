@@ -52,6 +52,9 @@ class TradingSymbol:
     def upper(self):
         return self._symbol
 
+    def str(self):
+        return self._symbol
+
 
 class BinanceExchange(TradingSymbol):
     def __init__(self, base_symbol, quote_symbol):
