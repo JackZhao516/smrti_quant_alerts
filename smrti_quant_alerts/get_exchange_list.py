@@ -94,7 +94,7 @@ class GetExchangeList:
                 exclude_coins.update(json.load(f))
 
         for coin in exclude_coins:
-            coingecok_coin = CoingeckoCoin.get_coingecko_coin(coin)
+            coingecok_coin = CoingeckoCoin.get_symbol_object(coin)
             if coingecok_coin:
                 self._exclude_coins.add(coingecok_coin)
             for quote in ["USDT", "BUSD", "BTC", "ETH"]:
@@ -161,7 +161,7 @@ class GetExchangeList:
 
         stock_price_change = {}
         for stock in response:
-            stock_symbol = StockSymbol.get_stock_symbol(stock["symbol"])
+            stock_symbol = StockSymbol.get_symbol_object(stock["symbol"])
             stock_price_change[stock_symbol] = {
                 "1D": stock["1D"],
                 "5D": stock["5D"],

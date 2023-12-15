@@ -4,13 +4,12 @@ from peewee import Model, PrimaryKeyField, CharField, IntegerField, DateTimeFiel
 from playhouse.shortcuts import ThreadSafeDatabaseMetadata
 
 
-from smrti_quant_alerts.db.database import database_runtime, init_database
+from smrti_quant_alerts.db.database import database_runtime
 
 
 class BaseModel(Model):
     class Meta:
         database = database_runtime
-        print(database_runtime)
         model_metadata_class = ThreadSafeDatabaseMetadata
     id = PrimaryKeyField()
 

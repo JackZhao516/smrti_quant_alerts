@@ -1,80 +1,100 @@
+from __future__ import annotations
+from typing import Union
+
+
 class TradingSymbol:
-    def __init__(self, symbol):
+    def __init__(self, symbol: str) -> None:
         self._symbol = symbol.upper()
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return self._symbol
 
-    def __str__(self):
+    def __str__(self) -> str:
         return self._symbol
 
-    def __eq__(self, other):
+    def __eq__(self, other: Union[str, TradingSymbol]) -> bool:
         if isinstance(other, self.__class__):
             return self._symbol == other._symbol
         elif isinstance(other, str):
             return self._symbol == other.upper()
         return False
 
-    def __lt__(self, other):
+    def __lt__(self, other: Union[str, TradingSymbol]) -> bool:
         if isinstance(other, self.__class__):
             return self._symbol < other._symbol
         elif isinstance(other, str):
             return self._symbol < other.upper()
         return False
 
-    def __gt__(self, other):
+    def __gt__(self, other: Union[str, TradingSymbol]) -> bool:
         if isinstance(other, self.__class__):
             return self._symbol > other._symbol
         elif isinstance(other, str):
             return self._symbol > other.upper()
         return False
 
-    def __le__(self, other):
+    def __le__(self, other: Union[str, TradingSymbol]) -> bool:
         if isinstance(other, self.__class__):
             return self._symbol <= other._symbol
         elif isinstance(other, str):
             return self._symbol <= other.upper()
         return False
 
-    def __ge__(self, other):
+    def __ge__(self, other: Union[str, TradingSymbol]) -> bool:
         if isinstance(other, self.__class__):
             return self._symbol >= other._symbol
         elif isinstance(other, str):
             return self._symbol >= other.upper()
         return False
 
-    def __hash__(self):
+    def __hash__(self) -> int:
         return hash(self._symbol)
 
-    def lower(self):
+    def lower(self) -> str:
         return self._symbol.lower()
 
-    def upper(self):
+    def upper(self) -> str:
         return self._symbol
 
-    def str(self):
+    def str(self) -> str:
         return self._symbol
+
+    @staticmethod
+    def get_symbol_object(symbol: str) -> Union[TradingSymbol, None]:
+        pass
 
 
 class BinanceExchange(TradingSymbol):
-    def __init__(self, base_symbol, quote_symbol):
+    symbol_base_quote_map = {}
+
+    def __init__(self, base_symbol: str, quote_symbol: str) -> None:
         self.base_symbol = base_symbol.upper()
         self.quote_symbol = quote_symbol.upper()
+        self.symbol_base_quote_map[f"{self.base_symbol}{self.quote_symbol}"] = \
+            (self.base_symbol, self.quote_symbol)
+
         super().__init__(f"{self.base_symbol}{self.quote_symbol}")
 
     @property
-    def exchange(self):
+    def exchange(self) -> str:
         return self._symbol
 
     @exchange.setter
-    def exchange(self, value):
+    def exchange(self, value: str) -> None:
         self._symbol = value.upper()
+
+    @staticmethod
+    def get_symbol_object(symbol: str) -> Union[BinanceExchange, None]:
+        if symbol.upper() in BinanceExchange.symbol_base_quote_map:
+            base_symbol, quote_symbol = BinanceExchange.symbol_base_quote_map[symbol.upper()]
+            return BinanceExchange(base_symbol, quote_symbol)
+        return None
 
 
 class CoingeckoCoin(TradingSymbol):
     symbol_id_map = {}
 
-    def __init__(self, coin_id, coin_symbol):
+    def __init__(self, coin_id: str, coin_symbol: str) -> None:
         coin_symbol = coin_symbol.upper()
 
         self.coin_id = coin_id
@@ -82,18 +102,18 @@ class CoingeckoCoin(TradingSymbol):
         self.symbol_id_map[coin_symbol] = self.coin_id
 
     @property
-    def coin_symbol(self):
+    def coin_symbol(self) -> str:
         return self._symbol
 
     @coin_symbol.setter
-    def coin_symbol(self, value):
+    def coin_symbol(self, value: str) -> None:
         self._symbol = value.upper()
 
     @staticmethod
-    def get_coingecko_coin(coin_symbol):
-        if coin_symbol.upper() in CoingeckoCoin.symbol_id_map:
-            coin_id = CoingeckoCoin.symbol_id_map[coin_symbol.upper()]
-            return CoingeckoCoin(coin_id, coin_symbol)
+    def get_symbol_object(symbol: str) -> Union[CoingeckoCoin, None]:
+        if symbol.upper() in CoingeckoCoin.symbol_id_map:
+            coin_id = CoingeckoCoin.symbol_id_map[symbol.upper()]
+            return CoingeckoCoin(coin_id, symbol)
         return None
 
 
@@ -102,9 +122,9 @@ class StockSymbol(TradingSymbol):
     sp500_set = set()
     symbol_info_map = {}
 
-    def __init__(self, symbol, security_name="", gics_sector="",
-                 gics_sub_industry="", location="", cik="",
-                 founded_time="", sp500=False, nasdaq100=False):
+    def __init__(self, symbol: str, security_name: str = "", gics_sector: str = "",
+                 gics_sub_industry: str = "", location: str = "", cik: str = "",
+                 founded_time: str = "", sp500: bool = False, nasdaq100: bool = False) -> None:
         super().__init__(symbol.upper())
 
         self.security_name = security_name
@@ -122,15 +142,15 @@ class StockSymbol(TradingSymbol):
         self.symbol_info_map[self._symbol] = self
 
     @property
-    def ticker(self):
+    def ticker(self) -> str:
         return self._symbol
 
     @ticker.setter
-    def ticker(self, value):
+    def ticker(self, value: str) -> None:
         self._symbol = value.upper()
 
     @property
-    def ticker_alias(self):
+    def ticker_alias(self) -> str:
         if "." in self._symbol:
             return self._symbol.replace(".", "-")
         if "-" in self._symbol:
@@ -138,15 +158,15 @@ class StockSymbol(TradingSymbol):
         return ""
 
     @property
-    def is_sp500(self):
+    def is_sp500(self) -> bool:
         return self._symbol in StockSymbol.sp500_set
 
     @property
-    def is_nasdaq100(self):
+    def is_nasdaq100(self) -> bool:
         return self._symbol in StockSymbol.nasdaq100_set
 
     @staticmethod
-    def get_stock_symbol(symbol):
+    def get_symbol_object(symbol: str) -> StockSymbol:
         if symbol.upper() in StockSymbol.symbol_info_map:
             return StockSymbol.symbol_info_map[symbol.upper()]
         return StockSymbol(symbol)
@@ -157,3 +177,5 @@ if __name__ == "__main__":
     print(be)
     cc = CoingeckoCoin("bitcoin", "Btc")
     print(cc)
+    ss = StockSymbol("AAPL")
+    print(ss)

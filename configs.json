@@ -67,5 +67,59 @@
       "timezone": "Asia/Shanghai"
     },
     "database_name": "stock_alert"
+  },
+   "sequential": {
+    "alert_input_args": {
+      "time_frame": 4,
+      "window": 200,
+      "tg_mode": "CG_SUM"
+    },
+    "alert_params": {},
+    "run_time_input_args": {
+      "daily_times": "09:00",
+      "excluded_week_days": ["Mon", "Wed", "Fri", "Sat"],
+      "timezone": "Asia/Shanghai",
+      "kwargs": {
+        "alert_type": "sequential",
+        "alert_coins_info": true
+      }
+    },
+    "database_name": "sequential"
+  },
+  "meme_alert": {
+    "alert_input_args": {
+      "time_frame": 1,
+      "window": 200,
+      "tg_type": "MEME"
+    },
+    "alert_params": {},
+    "run_time_input_args": {
+      "daily_times": "08:50",
+      "excluded_week_days": ["Mon", "Wed", "Fri", "Sat"],
+      "timezone": "Asia/Shanghai",
+      "kwargs": {
+        "alert_type": "meme_alert",
+        "alert_coins_info": true
+      }
+    },
+    "database_name": "sequential"
+  },
+    "alert_100": {
+    "alert_input_args": {
+      "time_frame": 4,
+      "window": 200,
+      "tg_type": "CG_SUM"
+    },
+    "alert_params": {},
+    "run_time_input_args": {
+      "daily_times": "09:00",
+      "excluded_week_days": ["Mon", "Wed", "Fri", "Sat"],
+      "timezone": "Asia/Shanghai",
+      "kwargs": {
+        "alert_type": "alert_100",
+        "alert_coins_info": true
+      }
+    },
+    "database_name": "alert_100"
   }
 }

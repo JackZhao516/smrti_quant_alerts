@@ -16,6 +16,7 @@ from smrti_quant_alerts.utility import run_task_at_daily_time
 logging.disable(logging.DEBUG)
 configs = Config()
 
+
 def report_market_cap():
     """
     market cap alerts
@@ -37,7 +38,7 @@ def price_volume():
     BinancePriceVolumeAlert().klines_alert()
 
 
-def alert_spot_over_ma(alert_type):
+def alert_spot_over_ma(alert_type: str):
     """
     alert spot over ma, for alert_100, alert_300, alert_500, meme_alert, sequential
 
@@ -45,15 +46,19 @@ def alert_spot_over_ma(alert_type):
     """
     logging.info(f"alert_spot_over_ma {alert_type} start")
 
-    daily_time = "08:50" if alert_type == "meme_alert" else "09:00"
-    tg_mode = "MEME" if alert_type == "meme_alert" else "CG_SUM"
-    excluded_week_day = ["Mon", "Wed", "Fri", "Sat"]
-    time_frame = 1 if alert_type == "meme_alert" else 4
+    settings = configs.SETTINGS[alert_type]
+    alert = SpotOverMAAlert(**settings["alert_input_args"])
+    run_task_at_daily_time(alert.run, **settings["run_time_input_args"])
 
-    spot_over_ma_alert = SpotOverMAAlert(time_frame=time_frame, window=200, tg_mode=tg_mode)
-    kwargs = {"alert_type": alert_type, "alert_coins_info": True}
-    run_task_at_daily_time(spot_over_ma_alert.run, daily_time, kwargs=kwargs,
-                           excluded_week_days=excluded_week_day)
+    # daily_time = "08:50" if alert_type == "meme_alert" else "09:00"
+    # tg_mode = "MEME" if alert_type == "meme_alert" else "CG_SUM"
+    # excluded_week_day = ["Mon", "Wed", "Fri", "Sat"]
+    # time_frame = 1 if alert_type == "meme_alert" else 4
+    #
+    # spot_over_ma_alert = SpotOverMAAlert(time_frame=time_frame, window=200, tg_mode=tg_mode)
+    # kwargs = {"alert_type": alert_type, "alert_coins_info": True}
+    # run_task_at_daily_time(spot_over_ma_alert.run, daily_time, kwargs=kwargs,
+    #                        excluded_week_days=excluded_week_day)
 
     logging.info(f"alert_spot_over_ma {alert_type} finished")
 
