@@ -19,6 +19,5 @@
     }
   },
   "COINGECKO_API_KEY": "<API Token>",
-  "FMP_API_KEY": "<API Token>",
-  "FINNHUB_API_KEY": "<API Token>"
+  "FMP_API_KEY": "<API Token>"
 }
