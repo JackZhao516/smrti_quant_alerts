@@ -77,9 +77,7 @@ def write_last_counts(last_counts: dict, alert_type: str) -> None:
     :param alert_type: alert type
     """
     last_counts_existed = get_last_count()
-    print(last_counts_existed)
     last_counts = {k: v for k, v in last_counts.items() if k not in last_counts_existed}
-    print(last_counts)
     last_counts = [{"trading_symbol": k.str(), "count": v,
                     "alert_type": alert_type, "symbol_type": type(k)}
                    for k, v in last_counts.items()]
