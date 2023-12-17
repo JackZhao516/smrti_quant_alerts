@@ -90,7 +90,7 @@
     "alert_input_args": {
       "time_frame": 1,
       "window": 200,
-      "tg_type": "MEME"
+      "tg_mode": "MEME"
     },
     "alert_params": {},
     "run_time_input_args": {
@@ -108,7 +108,7 @@
     "alert_input_args": {
       "time_frame": 4,
       "window": 200,
-      "tg_type": "CG_SUM"
+      "tg_mode": "CG_SUM"
     },
     "alert_params": {},
     "run_time_input_args": {

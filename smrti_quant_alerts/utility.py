@@ -3,7 +3,8 @@ from datetime import datetime
 from time import sleep, time
 
 
-def run_task_at_daily_time(task, daily_times, kwargs=None, excluded_week_days=None, timezone=None):
+def run_task_at_daily_time(task: list, daily_times: str, kwargs: dict = None,
+                           excluded_week_days: list = None, timezone: str = None):
     """
     :param task: function to run
     :param kwargs: key word args of the function
