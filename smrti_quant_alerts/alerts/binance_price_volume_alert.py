@@ -141,7 +141,8 @@ class BinancePriceVolumeAlert:
         self.id_count = 1
 
         # threshold for price/volume alert
-        self.settings = Config.SETTINGS["price_volume"]["alert_params"]
+        self.config = Config()
+        self.settings = self.config.SETTINGS["price_volume"]["alert_params"]
 
         # # for testing only
         # self.tg_bot = {
@@ -217,7 +218,8 @@ class BinancePriceVolumeAlert:
         while self.running:
             time_now = datetime.now().strftime('%M')
             if time_now[1] == "2":
-                self.settings = json.load(open("configs.json"))
+                self.config.reload_settings()
+                self.settings = self.config.SETTINGS["price_volume"]["alert_params"]
                 logging.info("subscribe new exchange start checking every ten minutes")
                 all_exchanges = set(self.cg.get_all_binance_exchanges())
                 if self.all_exchanges != all_exchanges:

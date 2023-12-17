@@ -21,10 +21,10 @@ class Config:
     }
 
     def __init__(self):
-        self.validate_tokens()
-        self.validate_settings()
+        self._validate_tokens()
+        self._validate_settings()
 
-    def validate_tokens(self):
+    def _validate_tokens(self):
         """
         validate token.json
         """
@@ -54,7 +54,7 @@ class Config:
                         'Remember to fill in the Telegram channel/group ID for each alert type')
         logging.info("token.json validated")
 
-    def validate_settings(self):
+    def _validate_settings(self):
         """
         validate configs.json
         """
@@ -84,6 +84,10 @@ class Config:
 
                 if not alert_setting["database_name"]:
                     self.SETTINGS["price_volume"]["database_name"] = "price_volume"
+
+    def reload_settings(self):
+        self.SETTINGS = json.load(open(f"{self.current_dir}configs.json"))
+        self._validate_settings()
 
 
 if __name__ == "__main__":
