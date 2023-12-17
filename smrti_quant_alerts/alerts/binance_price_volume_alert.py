@@ -141,7 +141,7 @@ class BinancePriceVolumeAlert:
         self.id_count = 1
 
         # threshold for price/volume alert
-        self.settings = Config.SETTINGS
+        self.settings = Config.SETTINGS["price_volume"]["alert_params"]
 
         # # for testing only
         # self.tg_bot = {
