@@ -102,7 +102,7 @@
         "alert_coins_info": true
       }
     },
-    "database_name": "sequential"
+    "database_name": "meme_alert"
   },
     "alert_100": {
     "alert_input_args": {

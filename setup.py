@@ -11,5 +11,9 @@ setup(
         "pycoingecko==3.1.0",
         "Requests==2.31.0",
         "pytz~=2022.7.1",
-        "responses"],
+        "responses",
+        "pandas",
+        "lxml",
+        "peewee"
+    ],
 )

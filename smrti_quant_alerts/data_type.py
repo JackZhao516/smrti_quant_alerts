@@ -1,5 +1,6 @@
 from __future__ import annotations
-from typing import Union
+from collections import defaultdict
+from typing import Union, Type
 
 
 class TradingSymbol:
@@ -62,6 +63,18 @@ class TradingSymbol:
     @staticmethod
     def get_symbol_object(symbol: str) -> Union[TradingSymbol, None]:
         pass
+
+    @classmethod
+    def type(cls) -> str:
+        return cls.__name__
+
+    @staticmethod
+    def get_class(symbol_type: str) -> Union[Type[TradingSymbol], None]:
+        name_class_object_map = defaultdict(None, {"BinanceExchange": BinanceExchange,
+                                                   "CoingeckoCoin": CoingeckoCoin,
+                                                   "StockSymbol": StockSymbol,
+                                                   "TradingSymbol": TradingSymbol})
+        return name_class_object_map[symbol_type]
 
 
 class BinanceExchange(TradingSymbol):
@@ -179,3 +192,6 @@ if __name__ == "__main__":
     print(cc)
     ss = StockSymbol("AAPL")
     print(ss)
+    print(ss.type())
+
+    print(BinanceExchange.__name__)

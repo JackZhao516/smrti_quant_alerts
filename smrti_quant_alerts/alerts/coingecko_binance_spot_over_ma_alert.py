@@ -58,11 +58,8 @@ class SpotOverMABase(GetExchangeList):
 
         :return: newly_deleted, newly_added
         """
-        print("here")
-        start_timestamp = time()
         last_time_spot_over_ma = get_last_count(self._symbol_type)
         last_time_spot_over_ma_alert_type = get_last_count(self._symbol_type, self.alert_type)
-        print(f"Time used: {time() - start_timestamp} seconds to get last count")
 
         newly_deleted = [coin for coin in last_time_spot_over_ma_alert_type
                          if coin not in self._spot_over_ma and coin not in self._exclude_coins]
@@ -72,12 +69,8 @@ class SpotOverMABase(GetExchangeList):
                 newly_added.append(coin)
             else:
                 self._spot_over_ma[coin] = last_time_spot_over_ma[coin] + 1
-        start_timestamp = time()
         update_last_counts(self._spot_over_ma)
-        print(f"Time used: {time() - start_timestamp} seconds to update last count")
-        start_timestamp = time()
         write_last_counts(self._spot_over_ma, self.alert_type)
-        print(f"Time used: {time() - start_timestamp} seconds to write last count")
         return newly_deleted, newly_added
 
     def run(self):
@@ -242,7 +235,6 @@ class SpotOverMAAlert(GetExchangeList):
 
         :return: exclude_coins, coins
         """
-        start_timestamp = time()
         if exclude_coins is None:
             exclude_coins = set()
         logging.info(f"{alert_type} start")
@@ -260,7 +252,7 @@ class SpotOverMAAlert(GetExchangeList):
         coins_count.extend(exchanges)
         newly_deleted_coins.extend(newly_deleted_exchanges)
         newly_added_coins.extend(newly_added_exchanges)
-        print(f"Time used: {time() - start_timestamp} seconds to alert")
+
         # send alert and return
         ma_type = f"H{self._time_frame} MA{self._window}"
         if alert_type in ["alert_100", "alert_300", "alert_500"]:
@@ -331,7 +323,7 @@ class SpotOverMAAlert(GetExchangeList):
 
 if __name__ == "__main__":
     start_time = time()
-    alert_type = "sequential"
+    alert_type = "meme_alert"
 
     kwargs = {"time_frame": 4, "window": 200, "tg_mode": "TEST"}
     spot_over_ma_alert = SpotOverMAAlert(**kwargs)
