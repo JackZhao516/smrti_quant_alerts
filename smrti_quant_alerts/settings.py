@@ -20,13 +20,15 @@ class Config:
         "FMP_API_URL": "https://financialmodelingprep.com/api/v3/",
     }
 
-    def __init__(self):
-        self._validate_tokens()
+    def __init__(self, verbose: bool = True):
+        self._validate_tokens(verbose=verbose)
         self._validate_settings()
 
-    def _validate_tokens(self):
+    def _validate_tokens(self, verbose: bool = True):
         """
         validate token.json
+
+        :param verbose: print warning or not
         """
         necessary_keys = ["TelegramBot", "COINGECKO_API_KEY"]
         for key in necessary_keys:
@@ -42,16 +44,17 @@ class Config:
             logging.warning('token.json does not contain FMP_API_KEY, '
                             'cannot run "stock_alert"')
 
-        logging.warning('"TELEGRAM_IDS" in token.json:\n'
-                        '"CG_SUM": alert_100, alert_300, alert_500, sequential\n'
-                        '"VOLUME_15M", "VOLUME_1H", "PRICE_15M", "PRICE_1H": price_volume\n'
-                        '"CG_MAR_CAP": market_cap\n'
-                        '"ALTS": alts\n'
-                        '"FUNDING_RATE": funding_rate\n'
-                        '"MEME": meme_alert\n'
-                        '"STOCK": stock_alert\n'
-                        '"CG_PRICE_INCREASE": price_increase\n'
-                        'Remember to fill in the Telegram channel/group ID for each alert type')
+        if verbose:
+            logging.warning('"TELEGRAM_IDS" in token.json:\n'
+                            '"CG_SUM": alert_100, alert_300, alert_500, sequential\n'
+                            '"VOLUME_15M", "VOLUME_1H", "PRICE_15M", "PRICE_1H": price_volume\n'
+                            '"CG_MAR_CAP": market_cap\n'
+                            '"ALTS": alts\n'
+                            '"FUNDING_RATE": funding_rate\n'
+                            '"MEME": meme_alert\n'
+                            '"STOCK": stock_alert\n'
+                            '"CG_PRICE_INCREASE": price_increase\n'
+                            'Remember to fill in the Telegram channel/group ID for each alert type')
         logging.info("token.json validated")
 
     def _validate_settings(self):
