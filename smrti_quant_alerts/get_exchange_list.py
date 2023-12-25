@@ -4,7 +4,7 @@ import math
 import os
 import json
 from decimal import Decimal
-from typing import Union
+from typing import Union, List, Dict
 from collections import defaultdict
 from multiprocessing.pool import ThreadPool
 
@@ -103,7 +103,7 @@ class GetExchangeList:
                 self._exclude_coins.add(BinanceExchange(coin, quote))
 
     @error_handling("sp500", default_val=[])
-    def get_sp_500_list(self) -> list[Union[StockSymbol, None]]:
+    def get_sp_500_list(self) -> List[Union[StockSymbol, None]]:
         """
         Get all stocks in SP 500
 
@@ -119,7 +119,7 @@ class GetExchangeList:
         return stock_list
 
     @error_handling("financialmodelingprep", default_val=[])
-    def get_nasdaq_list(self) -> list[Union[StockSymbol, None]]:
+    def get_nasdaq_list(self) -> List[Union[StockSymbol, None]]:
         """
         Get all stocks in NASDAQ 100
 
@@ -135,7 +135,7 @@ class GetExchangeList:
         return stock_list
 
     @error_handling("financialmodelingprep", default_val=[])
-    def get_stock_price_change_percentage(self, stock_list: list[StockSymbol]) -> dict[StockSymbol, dict[str, float]]:
+    def get_stock_price_change_percentage(self, stock_list: List[StockSymbol]) -> Dict[StockSymbol, Dict[str, float]]:
         """
         Get stock price change percentage, 1D, 5D, 1M, 3M, 6M, 1Y, 3Y, 5Y
 
@@ -174,7 +174,7 @@ class GetExchangeList:
         return stock_price_change
 
     @error_handling("financialmodelingprep", default_val=[])
-    def get_stock_info(self, stock_list: list[StockSymbol]) -> list[Union[StockSymbol, None]]:
+    def get_stock_info(self, stock_list: List[StockSymbol]) -> List[Union[StockSymbol, None]]:
         """
         Get stock info, including gics_sector, gics_subsector, etc, ...
 

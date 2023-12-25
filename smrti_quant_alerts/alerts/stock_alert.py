@@ -2,7 +2,7 @@ import time
 import uuid
 import csv
 import os
-from typing import Union
+from typing import Union, List, Dict, Tuple
 
 from smrti_quant_alerts.get_exchange_list import GetExchangeList
 from smrti_quant_alerts.data_type import StockSymbol
@@ -12,12 +12,12 @@ class StockAlert(GetExchangeList):
     if not os.path.exists("run_time_data"):
         os.mkdir("run_time_data")
 
-    def __init__(self, tg_type: str = "TEST", timeframe_list: Union[None, list[str]] = None) -> None:
+    def __init__(self, tg_type: str = "TEST", timeframe_list: Union[None, List[str]] = None) -> None:
         super().__init__(tg_type=tg_type)
         self.timeframe_list = [timeframe.upper() for timeframe in timeframe_list] \
             if timeframe_list else None
 
-    def get_top_n_price_increased_stocks(self, n: int) -> dict[str, list[tuple[StockSymbol, float]]]:
+    def get_top_n_price_increased_stocks(self, n: int) -> Dict[str, List[Tuple[StockSymbol, float]]]:
         """
         Get the top n stocks with the highest price increase in the last 24 hours
 
