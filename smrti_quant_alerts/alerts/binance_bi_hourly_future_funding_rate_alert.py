@@ -3,18 +3,18 @@ from decimal import Decimal
 from multiprocessing.pool import ThreadPool
 
 from smrti_quant_alerts.get_exchange_list import GetExchangeList
-from smrti_quant_alerts.utility import run_task_at_daily_time
+from smrti_quant_alerts.data_type import BinanceExchange
 
 
 class FutureFundingRate(GetExchangeList):
-    def __init__(self, rate_threshold=Decimal(0.002), tg_type="FUNDING_RATE"):
+    def __init__(self, rate_threshold: Decimal = Decimal(0.002), tg_type: str = "FUNDING_RATE") -> None:
         super().__init__(tg_type=tg_type)
 
         self._rate_threshold = rate_threshold
         self._exchange_list = None
         self._pass_threshold_exchanges = []
 
-    def _exchange_funding_rate_over_threshold(self, exchange):
+    def _exchange_funding_rate_over_threshold(self, exchange: BinanceExchange) -> None:
         """
         Check whether the exchange funding rate pass threshold
         """
@@ -25,7 +25,7 @@ class FutureFundingRate(GetExchangeList):
             self._pass_threshold_exchanges.append([exchange, funding_rate])
         sleep(0.5)
 
-    def run(self):
+    def run(self) -> None:
         """
         This function is used to send bi-hourly alerts of funding rate over threshold
         """
@@ -43,5 +43,5 @@ class FutureFundingRate(GetExchangeList):
 
 
 if __name__ == '__main__':
-    t = FutureFundingRate(tg_type="TEST")
-    run_task_at_daily_time(t.run, "03:53", duration=60 * 60 * 24)
+    alert = FutureFundingRate(tg_type="TEST")
+    alert.run()

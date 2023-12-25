@@ -2,12 +2,12 @@ from smrti_quant_alerts.get_exchange_list import GetExchangeList
 
 
 class CoingeckoPriceIncreaseAlert(GetExchangeList):
-    def __init__(self, top_n=500, timeframe_in_days=14, tg_type="CG_PRICE_INCREASE"):
+    def __init__(self, top_n: int = 500, timeframe_in_days: int = 14, tg_type: str = "CG_PRICE_INCREASE") -> None:
         super().__init__(tg_type)
         self._top_n = top_n
         self._timeframe = timeframe_in_days
 
-    def run(self):
+    def run(self) -> None:
         """
         Send alert for the list of 100 coins with the biggest price increase in the last self._timeframe days
         """

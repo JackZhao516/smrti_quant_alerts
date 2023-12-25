@@ -5,13 +5,13 @@ top n market cap coins
 import time
 import logging
 from collections import defaultdict
+from typing import Union, Iterable
 
 from smrti_quant_alerts.get_exchange_list import GetExchangeList
-from smrti_quant_alerts.utility import run_task_at_daily_time
 
 
 class CoingeckoMarketCapAlert(GetExchangeList):
-    def __init__(self, top_n=200, tg_type="CG_MAR_CAP"):
+    def __init__(self, top_n: Union[Iterable[int], int] = 200, tg_type: str = "CG_MAR_CAP") -> None:
         super().__init__(tg_type)
         if isinstance(top_n, int):
             top_n = [top_n]
@@ -20,7 +20,7 @@ class CoingeckoMarketCapAlert(GetExchangeList):
         for n in self._top_n:
             self._top_n_list[n] = self.get_top_n_market_cap_coins(n=n)
 
-    def run(self):
+    def run(self) -> None:
         """
         This function is used to send daily report of newly deleted and newly added
         """
@@ -50,4 +50,4 @@ class CoingeckoMarketCapAlert(GetExchangeList):
 if __name__ == '__main__':
     nums = [100, 200, 300, 400, 500]
     cmc_alert = CoingeckoMarketCapAlert(top_n=nums, tg_type="TEST")
-    run_task_at_daily_time(cmc_alert.run, "05:35")
+    cmc_alert.run()

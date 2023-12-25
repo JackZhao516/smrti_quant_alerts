@@ -3,17 +3,16 @@ Alert daily for top 500-3000 market cap coins.
 """
 
 from smrti_quant_alerts.get_exchange_list import GetExchangeList
-from smrti_quant_alerts.utility import run_task_at_daily_time
 
 
 class CGAltsAlert(GetExchangeList):
-    def __init__(self, tg_type="ALTS"):
+    def __init__(self, tg_type: str = "ALTS") -> None:
         super().__init__(tg_type)
 
         # alts coins are from market cap 500 - 3000
         self._alts_coins = []
 
-    def run(self):
+    def run(self) -> None:
         """
         Alert daily at noon, 12:00
         Alts coin: price change >= 50% in 24 hours
@@ -57,4 +56,4 @@ class CGAltsAlert(GetExchangeList):
 
 if __name__ == "__main__":
     alts_alert = CGAltsAlert(tg_type="TEST")
-    run_task_at_daily_time(alts_alert.run, "10:37", duration=60 * 60 * 24)
+    alts_alert.run()

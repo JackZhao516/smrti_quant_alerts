@@ -11,7 +11,7 @@ class TelegramBot:
     TOKEN = tokens["TOKEN"]
     TELEGRAM_IDS = tokens["TELEGRAM_IDS"]
 
-    def __init__(self, alert_type="CG_ALERT", daemon=True):
+    def __init__(self, alert_type: str = "CG_ALERT", daemon: bool = True) -> None:
         """
         TelegramBot class for sending message to telegram group via bot
 
@@ -33,7 +33,7 @@ class TelegramBot:
         self.running = False
 
     @error_handling("telegram", default_val=None)
-    def _send_message(self, message, blue_text=False):
+    def _send_message(self, message: str, blue_text: bool = False) -> None:
         """
         helper method for sending message to telegram
         """
@@ -47,7 +47,7 @@ class TelegramBot:
             api_url += '&parse_mode=Markdown'
         requests.get(api_url, timeout=5)
 
-    def _release_msg_from_queue(self):
+    def _release_msg_from_queue(self) -> None:
         """
         helper method for releasing message from queue
         """
@@ -63,7 +63,7 @@ class TelegramBot:
         self.running = False
         self.msg_queue_lock.release()
 
-    def send_message(self, message, blue_text=False):
+    def send_message(self, message: str, blue_text: bool = False) -> None:
         """
         send message to telegram group
 
@@ -91,7 +91,7 @@ class TelegramBot:
         time.sleep(0.1)
 
     @error_handling("telegram", default_val=None)
-    def send_file(self, file_path, file_name):
+    def send_file(self, file_path: str, file_name: str) -> None:
         """
         send file to telegram group
 

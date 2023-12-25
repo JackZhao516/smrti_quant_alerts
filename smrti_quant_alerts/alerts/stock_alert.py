@@ -2,7 +2,7 @@ import time
 import uuid
 import csv
 import os
-from typing import Union, List, Dict, Tuple
+from typing import List, Dict, Tuple, Optional
 
 from smrti_quant_alerts.get_exchange_list import GetExchangeList
 from smrti_quant_alerts.data_type import StockSymbol
@@ -12,7 +12,7 @@ class StockAlert(GetExchangeList):
     if not os.path.exists("run_time_data"):
         os.mkdir("run_time_data")
 
-    def __init__(self, tg_type: str = "TEST", timeframe_list: Union[None, List[str]] = None) -> None:
+    def __init__(self, tg_type: str = "TEST", timeframe_list: Optional[List[str]] = None) -> None:
         super().__init__(tg_type=tg_type)
         self.timeframe_list = [timeframe.upper() for timeframe in timeframe_list] \
             if timeframe_list else None

@@ -1,6 +1,6 @@
 from __future__ import annotations
 from collections import defaultdict
-from typing import Union, Type
+from typing import Union, Type, Optional
 
 
 class TradingSymbol:
@@ -61,7 +61,7 @@ class TradingSymbol:
         return self._symbol
 
     @staticmethod
-    def get_symbol_object(symbol: str) -> Union[TradingSymbol, None]:
+    def get_symbol_object(symbol: str) -> Optional[TradingSymbol]:
         pass
 
     @classmethod
@@ -69,7 +69,7 @@ class TradingSymbol:
         return cls.__name__
 
     @staticmethod
-    def get_class(symbol_type: str) -> Union[Type[TradingSymbol], None]:
+    def get_class(symbol_type: str) -> Optional[Type[TradingSymbol]]:
         name_class_object_map = defaultdict(None, {"BinanceExchange": BinanceExchange,
                                                    "CoingeckoCoin": CoingeckoCoin,
                                                    "StockSymbol": StockSymbol,
@@ -97,7 +97,7 @@ class BinanceExchange(TradingSymbol):
         self._symbol = value.upper()
 
     @staticmethod
-    def get_symbol_object(symbol: str) -> Union[BinanceExchange, None]:
+    def get_symbol_object(symbol: str) -> Optional[BinanceExchange]:
         if symbol.upper() in BinanceExchange.symbol_base_quote_map:
             base_symbol, quote_symbol = BinanceExchange.symbol_base_quote_map[symbol.upper()]
             return BinanceExchange(base_symbol, quote_symbol)
@@ -123,7 +123,7 @@ class CoingeckoCoin(TradingSymbol):
         self._symbol = value.upper()
 
     @staticmethod
-    def get_symbol_object(symbol: str) -> Union[CoingeckoCoin, None]:
+    def get_symbol_object(symbol: str) -> Optional[CoingeckoCoin]:
         if symbol.upper() in CoingeckoCoin.symbol_id_map:
             coin_id = CoingeckoCoin.symbol_id_map[symbol.upper()]
             return CoingeckoCoin(coin_id, symbol)

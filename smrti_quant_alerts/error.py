@@ -1,13 +1,15 @@
 import logging
 import random
 import time
-from requests.exceptions import RequestException
-from requests.models import Response
 import json
 from json import JSONDecodeError
+from typing import Callable, Optional, Union, Any
+
+from requests.exceptions import RequestException
+from requests.models import Response
 
 
-def error_handling(api="binance", retry=5, default_val=None):
+def error_handling(api: str = "binance", retry: int = 5, default_val: Optional[Any] = None) -> Callable:
     """
     decorator for handling api request exceptions
     if a library function has direct api request, use this decorator
@@ -19,8 +21,8 @@ def error_handling(api="binance", retry=5, default_val=None):
     :param retry: retry times
     :param default_val: default value to return if all retries failed
     """
-    def decorator(fun):
-        def wrapper(*args, **kwargs):
+    def decorator(fun: Callable) -> Callable:
+        def wrapper(*args: Optional[Any], **kwargs: Optional[Any]) -> Union[Response, Any]:
             error_msg = f"{api} api request error: {fun.__name__}"
             for i in range(retry):
                 try:
@@ -69,7 +71,9 @@ def error_handling(api="binance", retry=5, default_val=None):
 
 
 class ClientError(Exception):
-    def __init__(self, status_code, error_code, error_message, header, error_data=None):
+    def __init__(self, status_code: Optional[int], error_code: Optional[int],
+                 error_message: Optional[str], header: Optional[Any],
+                 error_data: Optional[Any] = None) -> None:
         # https status code
         self.status_code = status_code
         # error code returned from server
@@ -81,17 +85,17 @@ class ClientError(Exception):
         # return data if it's returned from server
         self.error_data = error_data
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f"ClientError: status code: {self.status_code}, " \
                f"error code: {self.error_code}, " \
                f"server error message: {self.error_message}"
 
 
 class ServerError(Exception):
-    def __init__(self, status_code, message):
+    def __init__(self, status_code: Optional[int], message: Optional[str]) -> None:
         self.status_code = status_code
         self.message = message
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f"ServerError: status code: {self.status_code}, " \
                f"server error message: {self.message}"

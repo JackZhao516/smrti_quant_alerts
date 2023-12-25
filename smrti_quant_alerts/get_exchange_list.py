@@ -4,7 +4,7 @@ import math
 import os
 import json
 from decimal import Decimal
-from typing import Union, List, Dict
+from typing import Tuple, List, Dict, Optional, Set, Any, Union
 from collections import defaultdict
 from multiprocessing.pool import ThreadPool
 
@@ -16,7 +16,7 @@ from pycoingecko import CoinGeckoAPI
 from smrti_quant_alerts.telegram_api import TelegramBot
 from smrti_quant_alerts.error import error_handling
 from smrti_quant_alerts.settings import Config
-from smrti_quant_alerts.data_type import BinanceExchange, CoingeckoCoin, StockSymbol
+from smrti_quant_alerts.data_type import BinanceExchange, CoingeckoCoin, StockSymbol, TradingSymbol
 
 
 class GetExchangeList:
@@ -37,12 +37,12 @@ class GetExchangeList:
     active_exchanges_timestamp = 0
     active_binance_spot_exchanges_set = set()
 
-    def __init__(self, tg_type="TEST"):
+    def __init__(self, tg_type: str = "TEST") -> None:
         self._cg = CoinGeckoAPI(api_key=self.COINGECKO_API_KEY)
         self._tg_bot = TelegramBot(alert_type=tg_type)
         self._exclude_coins = set()
 
-    def _update_active_binance_spot_exchanges(self):
+    def _update_active_binance_spot_exchanges(self) -> None:
         """
         Update popular exchanges if last update was more than 1 hour ago
         """
@@ -51,13 +51,13 @@ class GetExchangeList:
             self.active_binance_spot_exchanges_set = set(self.active_binance_spot_exchanges)
             self.active_exchanges_timestamp = time.time()
 
-    def _reset_timestamp(self):
+    def _reset_timestamp(self) -> None:
         """
         Reset timestamp to 0, for testing purpose
         """
         self.active_exchanges_timestamp = 0
 
-    def write_exclude_coins(self, input_exclude_coins):
+    def write_exclude_coins(self, input_exclude_coins: str) -> None:
         """
         write exclude coins to json file
 
@@ -69,7 +69,8 @@ class GetExchangeList:
         with open(f"{self.PWD}exclude_coins.json", "w") as f:
             json.dump(list(exclude_coins), f)
 
-    def _get_exclude_coins(self, input_exclude_coins=None):
+    def _get_exclude_coins(
+            self, input_exclude_coins: Union[List[TradingSymbol], Set[TradingSymbol], None] = None) -> None:
         """
         expand exclude coins to include all quotes for each base
 
@@ -103,7 +104,7 @@ class GetExchangeList:
                 self._exclude_coins.add(BinanceExchange(coin, quote))
 
     @error_handling("sp500", default_val=[])
-    def get_sp_500_list(self) -> List[Union[StockSymbol, None]]:
+    def get_sp_500_list(self) -> List[StockSymbol]:
         """
         Get all stocks in SP 500
 
@@ -119,7 +120,7 @@ class GetExchangeList:
         return stock_list
 
     @error_handling("financialmodelingprep", default_val=[])
-    def get_nasdaq_list(self) -> List[Union[StockSymbol, None]]:
+    def get_nasdaq_list(self) -> List[StockSymbol]:
         """
         Get all stocks in NASDAQ 100
 
@@ -174,7 +175,7 @@ class GetExchangeList:
         return stock_price_change
 
     @error_handling("financialmodelingprep", default_val=[])
-    def get_stock_info(self, stock_list: List[StockSymbol]) -> List[Union[StockSymbol, None]]:
+    def get_stock_info(self, stock_list: List[StockSymbol]) -> List[StockSymbol]:
         """
         Get stock info, including gics_sector, gics_subsector, etc, ...
 
@@ -199,13 +200,13 @@ class GetExchangeList:
         response = response.json()
 
         res += [StockSymbol(stock["symbol"], stock["companyName"], stock["sector"],
-                           stock["industry"], f"{stock['city']}, {stock['state']}, {stock['country']}",
-                           stock["cik"], stock["ipoDate"])
+                            stock["industry"], f"{stock['city']}, {stock['state']}, {stock['country']}",
+                            stock["cik"], stock["ipoDate"])
                 for stock in response]
         return res
 
     @error_handling("binance", default_val=[])
-    def get_all_binance_exchanges(self, exchange_type="SPOT"):
+    def get_all_binance_exchanges(self, exchange_type: str = "SPOT") -> List[BinanceExchange]:
         """
         Get all exchanges on binance, default is SPOT
 
@@ -225,7 +226,7 @@ class GetExchangeList:
         return binance_exchanges
 
     @error_handling("binance", default_val=[])
-    def get_popular_quote_binance_spot_exchanges(self):
+    def get_popular_quote_binance_spot_exchanges(self) -> List[BinanceExchange]:
         """
         BTC, ETH, USDT, BUSD spot binance exchanges
 
@@ -242,7 +243,7 @@ class GetExchangeList:
         return binance_exchanges
 
     @error_handling("coingecko", default_val=[])
-    def get_all_coingecko_coins(self):
+    def get_all_coingecko_coins(self) -> List[CoingeckoCoin]:
         """
         Get all coins on coingecko
 
@@ -252,7 +253,7 @@ class GetExchangeList:
         return [CoingeckoCoin(coin["id"], coin["symbol"]) for coin in coingecko_coins]
 
     @error_handling("binance", default_val=0)
-    def get_future_exchange_funding_rate(self, exchange):
+    def get_future_exchange_funding_rate(self, exchange: BinanceExchange) -> Decimal:
         """
         Get funding rate of a future exchange
 
@@ -265,10 +266,10 @@ class GetExchangeList:
         response = response.json()
         if isinstance(response, dict) and "lastFundingRate" in response and response["lastFundingRate"]:
             return Decimal(response["lastFundingRate"])
-        return 0
+        return Decimal(0)
 
     @error_handling("coingecko", default_val=[])
-    def get_top_n_market_cap_coins(self, n=100):
+    def get_top_n_market_cap_coins(self, n: int = 100) -> List[CoingeckoCoin]:
         """
         get the top n market cap coins on coingecko
 
@@ -296,7 +297,9 @@ class GetExchangeList:
         return coingecko_coins
 
     @error_handling("coingecko", default_val=[])
-    def get_coins_market_info(self, coingecko_coins, market_attribute_name_list, price_change_percentage="24h"):
+    def get_coins_market_info(self, coingecko_coins: Union[List[CoingeckoCoin], Set[CoingeckoCoin]],
+                              market_attribute_name_list: List[str],
+                              price_change_percentage: str = "24h") -> List[Dict[str, Any]]:
         """
         get coin market info from coingecko
 
@@ -324,7 +327,7 @@ class GetExchangeList:
         return market_info
 
     @error_handling("coingecko", default_val={})
-    def get_coin_info(self, coingecko_coin):
+    def get_coin_info(self, coingecko_coin: CoingeckoCoin) -> Dict[str, Any]:
         """
         get coin info from coingecko
 
@@ -345,7 +348,9 @@ class GetExchangeList:
                 "website": links, "genesis_date": coin_info.get("genesis_date", "")}
 
     @error_handling("coingecko", default_val={})
-    def get_coin_market_info(self, coingecko_coin, market_attribute_name_list, days=1, interval="daily"):
+    def get_coin_market_info(self, coingecko_coin: CoingeckoCoin,
+                             market_attribute_name_list: List[str],
+                             days: int = 1, interval: str = "daily") -> Dict[str, Any]:
         """
         get coin market info from coingecko
 
@@ -363,7 +368,7 @@ class GetExchangeList:
                 for market_attribute_name in market_attribute_name_list}
 
     @error_handling("coingecko", default_val=[])
-    def get_coin_history_hourly_close_price(self, coingecko_coin, days=10):
+    def get_coin_history_hourly_close_price(self, coingecko_coin: CoingeckoCoin, days: int = 10) -> List[Decimal]:
         """
         Get coin past close price for the history <days> days
 
@@ -381,7 +386,7 @@ class GetExchangeList:
         return prices
 
     @error_handling("coingecko", default_val=0)
-    def get_coin_current_price(self, coingecko_coin):
+    def get_coin_current_price(self, coingecko_coin: CoingeckoCoin) -> Decimal:
         """
         Get coin current close price
 
@@ -394,7 +399,7 @@ class GetExchangeList:
         return Decimal(price)
 
     @error_handling("binance", default_val=0)
-    def get_exchange_current_price(self, binance_exchange):
+    def get_exchange_current_price(self, binance_exchange: BinanceExchange) -> Decimal:
         """
         Get exchange current close price
 
@@ -411,7 +416,7 @@ class GetExchangeList:
             return Decimal(response[0].get("price", 0))
 
     @error_handling("binance", default_val=[])
-    def get_exchange_history_hourly_close_price(self, exchange, days=10):
+    def get_exchange_history_hourly_close_price(self, exchange: BinanceExchange, days: int = 10) -> List[Decimal]:
         """
         Get exchange past close price for the history <days> days
 
@@ -429,7 +434,8 @@ class GetExchangeList:
         return prices
 
     @error_handling("coingecko", default_val=([], []))
-    def get_2023_coins_with_daily_volume_threshold(self, threshold=3000000):
+    def get_2023_coins_with_daily_volume_threshold(
+            self, threshold: int = 3000000) -> Tuple[List[BinanceExchange], List[CoingeckoCoin]]:
         """
         Get all coins with 24h volume larger than threshold (in USD)
         coin/usdt coin/eth coin/busd coin/btc exchanges on binance:
@@ -480,8 +486,10 @@ class GetExchangeList:
 
         return binance_exchanges, coingecko_coins
 
-    def get_top_market_cap_coins_with_volume_threshold(self, num=300, daily_volume_threshold=None,
-                                                       weekly_volume_threshold=None, tg_alert=False):
+    def get_top_market_cap_coins_with_volume_threshold(
+            self, num: int = 300, daily_volume_threshold: Optional[int] = None,
+            weekly_volume_threshold: Optional[int] = None,
+            tg_alert: bool = False) -> Tuple[List[BinanceExchange], List[CoingeckoCoin]]:
         """
         get the top <num> market cap
         coin/usdt coin/eth coin/busd coin/btc exchanges on binance:
@@ -541,7 +549,7 @@ class GetExchangeList:
                                       f"Top {num} coin exchanges that are on Binance:\n {binance_exchanges}")
         return binance_exchanges, coingeco_coins
         
-    def get_all_spot_exchanges_in_usdt_busd_btc(self):
+    def get_all_spot_exchanges_in_usdt_busd_btc(self) -> List[BinanceExchange]:
         """
         Get all exchanges in either USDT, BUSD, or BTC format on binance
 
@@ -561,7 +569,9 @@ class GetExchangeList:
         return list(binance_exchanges)
 
     @error_handling("coingecko", default_val=([], []))
-    def get_coins_with_weekly_volume_increase(self, volume_threshold=1.3, num=500, tg_alert=False):
+    def get_coins_with_weekly_volume_increase(
+            self, volume_threshold: float = 1.3, num: int = 500,
+            tg_alert: bool = False) -> Tuple[List[BinanceExchange], List[CoingeckoCoin]]:
         """
         Get top <num> market cap coins with weekly volume increase larger than volume_threshold
         for alt/btc, alt/eth, ignore the volume increase threshold

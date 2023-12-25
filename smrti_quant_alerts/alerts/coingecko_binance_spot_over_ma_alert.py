@@ -6,10 +6,10 @@ import uuid
 from collections import defaultdict
 from time import sleep, time
 from multiprocessing.pool import ThreadPool
+from typing import List, Set, Tuple, Union
 
 from smrti_quant_alerts.get_exchange_list import GetExchangeList
 from smrti_quant_alerts.telegram_api import TelegramBot
-from smrti_quant_alerts.utility import run_task_at_daily_time
 from smrti_quant_alerts.data_type import CoingeckoCoin, BinanceExchange, TradingSymbol
 from smrti_quant_alerts.db.utility import get_last_count, write_last_counts, \
     remove_older_count, init_database_runtime, update_last_counts, close_database
@@ -19,8 +19,9 @@ class SpotOverMABase(GetExchangeList):
     if not os.path.exists("run_time_data"):
         os.mkdir("run_time_data")
 
-    def __init__(self, exclude_coins, trading_symbols, time_frame=1,
-                 window=200, alert_type="alert_300"):
+    def __init__(self, exclude_coins: Union[List[TradingSymbol], Set[TradingSymbol]],
+                 trading_symbols: Union[List[TradingSymbol], Set[TradingSymbol]],
+                 time_frame: int = 1, window: int = 200, alert_type: str = "alert_300") -> None:
         super().__init__()
         self._trading_symbols = trading_symbols
         self._symbol_type = TradingSymbol
@@ -31,13 +32,13 @@ class SpotOverMABase(GetExchangeList):
         self.window = window
         self._spot_over_ma = {}
 
-    def _coin_spot_over_ma(self, trading_symbol):
+    def _coin_spot_over_ma(self, trading_symbol: TradingSymbol) -> bool:
         """
         return True if spot price is over ma
         """
         pass
 
-    def _coins_spot_over_ma(self, threads=4):
+    def _coins_spot_over_ma(self, threads: int = 4) -> None:
         """
         get all spot over ma coins
 
@@ -50,7 +51,7 @@ class SpotOverMABase(GetExchangeList):
 
         logging.info(f"spot_over_ma_{self.alert_type}: {self._spot_over_ma}")
 
-    def _compare_last_time(self):
+    def _compare_last_time(self) -> Tuple[List[TradingSymbol], List[TradingSymbol]]:
         """
         compare last time _spot_over_ma with current _spot_over_ma
         read/write to the database
@@ -72,7 +73,7 @@ class SpotOverMABase(GetExchangeList):
         write_last_counts(self._spot_over_ma, self.alert_type)
         return newly_deleted, newly_added
 
-    def run(self):
+    def run(self) -> Tuple[List[Tuple[TradingSymbol, int]], List[TradingSymbol], List[TradingSymbol]]:
         """
         run the alert
 
@@ -85,12 +86,13 @@ class SpotOverMABase(GetExchangeList):
 
 
 class CoingeckoSpotOverMA(SpotOverMABase):
-    def __init__(self, exclude_coins, coingecko_coins, time_frame=1,
-                 window=200, alert_type="alert_300"):
+    def __init__(self, exclude_coins: Union[List[TradingSymbol], Set[TradingSymbol]],
+                 coingecko_coins: Union[List[CoingeckoCoin], Set[CoingeckoCoin]],
+                 time_frame: int = 1, window: int = 200, alert_type: str = "alert_300") -> None:
         super().__init__(exclude_coins, coingecko_coins, time_frame, window, alert_type)
         self._symbol_type = CoingeckoCoin
 
-    def _coin_spot_over_ma(self, coingecko_coin):
+    def _coin_spot_over_ma(self, coingecko_coin: CoingeckoCoin) -> bool:
         """
         return True if spot price is over ma
         """
@@ -107,17 +109,18 @@ class CoingeckoSpotOverMA(SpotOverMABase):
                 self._spot_over_ma[coingecko_coin] = 1
                 return True
             return False
-        except Exception as e:
+        except Exception:
             return False
 
 
 class BinanceSpotOverMA(SpotOverMABase):
-    def __init__(self, exclude_coins, binance_exchanges, time_frame=1,
-                 window=200, alert_type="alert_300"):
+    def __init__(self, exclude_coins: Union[List[TradingSymbol], Set[TradingSymbol]],
+                 binance_exchanges: Union[List[BinanceExchange], Set[BinanceExchange]],
+                 time_frame: int = 1, window: int = 200, alert_type: str = "alert_300") -> None:
         super().__init__(exclude_coins, binance_exchanges, time_frame, window, alert_type)
         self._symbol_type = BinanceExchange
 
-    def _coin_spot_over_ma(self, binance_exchange):
+    def _coin_spot_over_ma(self, binance_exchange: BinanceExchange) -> bool:
         """
         return True if spot price is over ma
         """
@@ -133,10 +136,10 @@ class BinanceSpotOverMA(SpotOverMABase):
                 self._spot_over_ma[binance_exchange] = 1
                 return True
             return False
-        except Exception as e:
+        except Exception:
             return False
 
-    def _coins_spot_over_ma(self, threads=6):
+    def _coins_spot_over_ma(self, threads: int = 6) -> None:
         """
         get all spot over ma binance exchanges, keep each base with only one quote
         plus the ETH quote if available. if multiple quotes are available,
@@ -159,7 +162,7 @@ class BinanceSpotOverMA(SpotOverMABase):
 
 
 class SpotOverMAAlert(GetExchangeList):
-    def __init__(self, time_frame, window, tg_mode="CG_SUM"):
+    def __init__(self, time_frame: int, window: int, tg_mode: str = "CG_SUM") -> None:
         super().__init__(tg_mode)
         self._time_frame = time_frame
         self._window = window
@@ -167,7 +170,8 @@ class SpotOverMAAlert(GetExchangeList):
         self._coingecko_coins = []
         self._binance_exchanges = []
 
-    def _get_coins_info_to_csv(self, coins, file_name):
+    def _get_coins_info_to_csv(self, coins: Union[List[TradingSymbol], Set[TradingSymbol]],
+                               file_name: str) -> str:
         """
         get coins info to csv file
 
@@ -187,7 +191,7 @@ class SpotOverMAAlert(GetExchangeList):
 
         return f"run_time_data/{file_name}"
 
-    def _alert_coins_info_to_telegram(self, coins):
+    def _alert_coins_info_to_telegram(self, coins: Union[List[TradingSymbol], Set[TradingSymbol]]) -> None:
         """
         alert coins info
 
@@ -202,7 +206,7 @@ class SpotOverMAAlert(GetExchangeList):
             if os.path.exists(file_path):
                 os.remove(file_path)
 
-    def _get_target_coins_by_alert_type(self, alert_type="alert_300"):
+    def _get_target_coins_by_alert_type(self, alert_type: str = "alert_300") -> None:
         """
         get target coins by alert type
 
@@ -224,7 +228,9 @@ class SpotOverMAAlert(GetExchangeList):
             self._binance_exchanges, self._coingecko_coins = \
                 self.get_2023_coins_with_daily_volume_threshold(threshold=3000000)
 
-    def _alert_spot_cross_ma_by_alert_type(self, exclude_coins=None, alert_type="alert_300"):
+    def _alert_spot_cross_ma_by_alert_type(
+            self, exclude_coins: Union[List[TradingSymbol], Set[TradingSymbol], None] = None,
+            alert_type: str = "alert_300") -> Tuple[Set[TradingSymbol], List[TradingSymbol]]:
         """
         if provided with excluded coins, deleted coins, and added coins,
         the function will not alert those coins
@@ -279,7 +285,9 @@ class SpotOverMAAlert(GetExchangeList):
 
         return exclude_coins.union(set(coins + newly_added_coins)), coins
 
-    def _sequential_alert(self):
+    def _sequential_alert(self) \
+            -> Tuple[Union[List[TradingSymbol], Set[TradingSymbol]],
+                     Union[List[TradingSymbol], Set[TradingSymbol]]]:
         """
         sequentially alert 100, 300, 500 coins
         """
@@ -292,7 +300,7 @@ class SpotOverMAAlert(GetExchangeList):
 
         return exclude_coins, alert_coins
 
-    def run(self, alert_type: str, alert_coins_info: bool = True):
+    def run(self, alert_type: str, alert_coins_info: bool = True) -> None:
         """
         run the alert
 
@@ -322,7 +330,7 @@ class SpotOverMAAlert(GetExchangeList):
 
 if __name__ == "__main__":
     start_time = time()
-    alert_type = "meme_alert"
+    alert_type = "alert_100"
 
     kwargs = {"time_frame": 4, "window": 200, "tg_mode": "TEST"}
     spot_over_ma_alert = SpotOverMAAlert(**kwargs)
@@ -330,5 +338,4 @@ if __name__ == "__main__":
     kwargs = {"alert_type": alert_type, "alert_coins_info": False}
     spot_over_ma_alert.run(**kwargs)
 
-    # run_task_at_daily_time(spot_over_ma_alert.run, "06:11", kwargs=kwargs)
     print(f"Time used: {time() - start_time} seconds")

@@ -20,11 +20,11 @@ class Config:
         "FMP_API_URL": "https://financialmodelingprep.com/api/v3/",
     }
 
-    def __init__(self, verbose: bool = True):
+    def __init__(self, verbose: bool = True) -> None:
         self._validate_tokens(verbose=verbose)
         self._validate_settings()
 
-    def _validate_tokens(self, verbose: bool = True):
+    def _validate_tokens(self, verbose: bool = True) -> None:
         """
         validate token.json
 
@@ -57,7 +57,7 @@ class Config:
                             'Remember to fill in the Telegram channel/group ID for each alert type')
         logging.info("token.json validated")
 
-    def _validate_settings(self):
+    def _validate_settings(self) -> None:
         """
         validate configs.json
         """
@@ -88,7 +88,7 @@ class Config:
                 if not alert_setting["database_name"]:
                     self.SETTINGS["price_volume"]["database_name"] = "price_volume"
 
-    def reload_settings(self):
+    def reload_settings(self) -> None:
         self.SETTINGS = json.load(open(f"{self.current_dir}configs.json"))
         self._validate_settings()
 
