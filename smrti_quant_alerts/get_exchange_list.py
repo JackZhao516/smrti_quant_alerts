@@ -285,6 +285,7 @@ class GetExchangeList:
             market_list += self._cg.get_coins_markets(
                 vs_currency='usd', order='market_cap_desc', per_page=250,
                 page=page, sparkline=False)
+            time.sleep(0.2)
         market_list = market_list[:n]
 
         seen = set()
