@@ -11,7 +11,7 @@ from typing import List, Set, Tuple, Union
 from smrti_quant_alerts.get_exchange_list import GetExchangeList
 from smrti_quant_alerts.telegram_api import TelegramBot
 from smrti_quant_alerts.data_type import CoingeckoCoin, BinanceExchange, TradingSymbol
-from smrti_quant_alerts.db.utility import get_last_count, write_last_counts, \
+from smrti_quant_alerts.db import get_last_count, write_last_counts, \
     remove_older_count, init_database_runtime, update_last_counts, close_database
 
 

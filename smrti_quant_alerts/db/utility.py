@@ -5,7 +5,7 @@ from threading import RLock
 
 from smrti_quant_alerts.db.database import database_runtime, init_database
 from smrti_quant_alerts.db.models import LastCount, DailyCount
-from smrti_quant_alerts.data_type import TradingSymbol, BinanceExchange, CoingeckoCoin
+from smrti_quant_alerts.data_type import TradingSymbol, get_class
 
 
 def init_database_runtime(db_name: str) -> None:
@@ -54,7 +54,7 @@ def get_last_count(symbol_type: Type[TradingSymbol] = None, alert_type: str = No
 
         res = {}
         for i in last_counts:
-            cls = TradingSymbol.get_class(i["symbol_type"])
+            cls = get_class(i["symbol_type"])
 
             if cls:
                 trading_symbol = cls.get_symbol_object(i["trading_symbol"])
@@ -93,16 +93,3 @@ def write_last_counts(last_counts: dict, alert_type: str) -> None:
                    for k, v in last_counts.items()]
     LastCount.insert_many(last_counts).execute()
     spot_over_ma_lock.release()
-
-
-if __name__ == "__main__":
-    from smrti_quant_alerts.get_exchange_list import GetExchangeList
-
-    gel = GetExchangeList()
-    gel.get_all_coingecko_coins()
-    gel.get_all_binance_exchanges()
-    init_database_runtime("test.db")
-    write_last_counts({BinanceExchange("BTC", "USDT"): 1}, "test")
-    update_last_counts({BinanceExchange("BTC", "USDT"): 2, BinanceExchange("ETH", "USDT"): 1})
-    l = get_last_count(symbol_type=BinanceExchange, alert_type="test")
-    print(l)
