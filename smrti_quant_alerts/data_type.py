@@ -131,13 +131,13 @@ class CoingeckoCoin(TradingSymbol):
 
 
 class StockSymbol(TradingSymbol):
-    nasdaq100_set = set()
+    nasdaq_set = set()
     sp500_set = set()
     symbol_info_map = {}
 
     def __init__(self, symbol: str, security_name: str = "", gics_sector: str = "",
                  gics_sub_industry: str = "", location: str = "", cik: str = "",
-                 founded_time: str = "", sp500: bool = False, nasdaq100: bool = False) -> None:
+                 founded_time: str = "", sp500: bool = False, nasdaq: bool = False) -> None:
         super().__init__(symbol.upper())
 
         self.security_name = security_name
@@ -149,8 +149,8 @@ class StockSymbol(TradingSymbol):
 
         if sp500:
             StockSymbol.sp500_set.add(self._symbol)
-        if nasdaq100:
-            StockSymbol.nasdaq100_set.add(self._symbol)
+        if nasdaq:
+            StockSymbol.nasdaq_set.add(self._symbol)
 
         self.symbol_info_map[self._symbol] = self
 
@@ -175,8 +175,13 @@ class StockSymbol(TradingSymbol):
         return self._symbol in StockSymbol.sp500_set
 
     @property
-    def is_nasdaq100(self) -> bool:
-        return self._symbol in StockSymbol.nasdaq100_set
+    def is_nasdaq(self) -> bool:
+        return self._symbol in StockSymbol.nasdaq_set
+
+    @property
+    def has_stock_info(self) -> bool:
+        return self.security_name and self.gics_sector and self.gics_sub_industry and \
+               self.location and self.cik and self.founded_time
 
     @staticmethod
     def get_symbol_object(symbol: str) -> StockSymbol:
@@ -192,6 +197,3 @@ if __name__ == "__main__":
     print(cc)
     ss = StockSymbol("AAPL")
     print(ss)
-    print(ss.type())
-
-    print(BinanceExchange.__name__)

@@ -9,7 +9,6 @@ from multiprocessing.pool import ThreadPool
 
 from smrti_quant_alerts.get_exchange_list import GetExchangeList
 from smrti_quant_alerts.telegram_api import TelegramBot
-from smrti_quant_alerts.data_type import BinanceExchange
 from smrti_quant_alerts.utility import run_task_at_daily_time
 from smrti_quant_alerts.data_type import CoingeckoCoin, BinanceExchange, TradingSymbol
 from smrti_quant_alerts.db.utility import get_last_count, write_last_counts, \

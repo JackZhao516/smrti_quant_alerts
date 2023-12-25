@@ -4,6 +4,8 @@ import math
 import os
 import json
 from decimal import Decimal
+from typing import Union
+from collections import defaultdict
 from multiprocessing.pool import ThreadPool
 
 import requests
@@ -101,7 +103,7 @@ class GetExchangeList:
                 self._exclude_coins.add(BinanceExchange(coin, quote))
 
     @error_handling("sp500", default_val=[])
-    def get_sp_500_list(self):
+    def get_sp_500_list(self) -> list[Union[StockSymbol, None]]:
         """
         Get all stocks in SP 500
 
@@ -117,25 +119,23 @@ class GetExchangeList:
         return stock_list
 
     @error_handling("financialmodelingprep", default_val=[])
-    def get_nasdaq_100_list(self):
+    def get_nasdaq_list(self) -> list[Union[StockSymbol, None]]:
         """
         Get all stocks in NASDAQ 100
 
         :return: [StockSymbol, ...]
         """
-        stock_list = []
-        api_url = f"{self.FMP_API_URL}nasdaq_constituent?apikey={self.FMP_API_KEY}"
-
+        api_url = f"{self.FMP_API_URL}available-traded/list?apikey={self.FMP_API_KEY}"
         response = requests.get(api_url, timeout=5)
         response = response.json()
-        for stock in response:
-            stock_list.append(StockSymbol(stock["symbol"], stock["name"], stock["sector"],
-                                          stock["subSector"], stock["headQuarter"],
-                                          stock["cik"], stock["founded"], nasdaq100=True))
+
+        stock_list = [StockSymbol(stock["symbol"], stock["name"], nasdaq=True) for stock in response
+                      if stock["exchangeShortName"] and stock["exchangeShortName"].upper() == "NASDAQ"]
+
         return stock_list
 
     @error_handling("financialmodelingprep", default_val=[])
-    def get_stock_price_change_percentage(self, stock_list):
+    def get_stock_price_change_percentage(self, stock_list: list[StockSymbol]) -> dict[StockSymbol, dict[str, float]]:
         """
         Get stock price change percentage, 1D, 5D, 1M, 3M, 6M, 1Y, 3Y, 5Y
 
@@ -152,27 +152,57 @@ class GetExchangeList:
             stock_list.append(stock_symbol.ticker)
             if stock_symbol.ticker_alias:
                 stock_list.append(stock_symbol.ticker_alias)
-        stock_str = ",".join(stock_list)
 
-        api_url = f"{self.FMP_API_URL}stock-price-change/{stock_str}?apikey={self.FMP_API_KEY}"
+        responses = []
+        step = 1200  # FMP supports 1500 stocks per request
+        for i in range(math.ceil(len(stock_list) / step)):
+            stock_str = ",".join(stock_list[i * step: (i + 1) * step])
 
+            api_url = f"{self.FMP_API_URL}stock-price-change/{stock_str}?apikey={self.FMP_API_KEY}"
+
+            response = requests.get(api_url, timeout=5)
+            responses += response.json()
+
+        stock_price_change = defaultdict(dict)
+        for stock in responses:
+            stock_symbol = StockSymbol.get_symbol_object(stock["symbol"])
+            for key in ["1D", "5D", "1M", "3M", "6M", "1Y", "3Y", "5Y"]:
+                if key not in stock or not stock[key] or stock[key] > 100000:
+                    stock[key] = 0
+                stock_price_change[stock_symbol][key] = stock[key]
+
+        return stock_price_change
+
+    @error_handling("financialmodelingprep", default_val=[])
+    def get_stock_info(self, stock_list: list[StockSymbol]) -> list[Union[StockSymbol, None]]:
+        """
+        Get stock info, including gics_sector, gics_subsector, etc, ...
+
+        :param stock_list: [StockSymbol, ...] with only ticker, without other info
+
+        :return: [StockSymbol, ...] with all info
+        """
+        # preprocess the StockSymbol list
+        res = []
+        stocks = []
+        for stock in stock_list:
+            if stock.has_stock_info:
+                res.append(stock)
+            else:
+                if stock.ticker_alias:
+                    stocks.append(StockSymbol(stock.ticker_alias))
+                stocks.append(stock)
+        stock_str = ",".join([stock.ticker for stock in stocks])
+
+        api_url = f"{self.FMP_API_URL}profile/{stock_str}?apikey={self.FMP_API_KEY}"
         response = requests.get(api_url, timeout=5)
         response = response.json()
 
-        stock_price_change = {}
-        for stock in response:
-            stock_symbol = StockSymbol.get_symbol_object(stock["symbol"])
-            stock_price_change[stock_symbol] = {
-                "1D": stock["1D"],
-                "5D": stock["5D"],
-                "1M": stock["1M"],
-                "3M": stock["3M"],
-                "6M": stock["6M"],
-                "1Y": stock["1Y"],
-                "3Y": stock["3Y"],
-                "5Y": stock["5Y"]
-            }
-        return stock_price_change
+        res += [StockSymbol(stock["symbol"], stock["companyName"], stock["sector"],
+                           stock["industry"], f"{stock['city']}, {stock['state']}, {stock['country']}",
+                           stock["cik"], stock["ipoDate"])
+                for stock in response]
+        return res
 
     @error_handling("binance", default_val=[])
     def get_all_binance_exchanges(self, exchange_type="SPOT"):
@@ -592,14 +622,3 @@ class GetExchangeList:
                                       f"volume increase > 30%:\n {coin_volume_increase_detail}")
 
         return binance_exchanges, coingeco_coins
-
-
-if __name__ == '__main__':
-    cg = GetExchangeList(tg_type='TEST')
-    res = cg.get_sp_500_list()
-    res += cg.get_nasdaq_100_list()
-    res = set(res)
-    print(len(res))
-    res = cg.get_stock_price_change_percentage(list(res))
-    print(res)
-    print(len(res))
