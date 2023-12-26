@@ -4,7 +4,7 @@ import time
 from unittest import mock
 from decimal import Decimal
 
-from smrti_quant_alerts.get_exchange_list import GetExchangeList
+from smrti_quant_alerts.stock_crypto_api import BinanceApi, CoingeckoApi, CryptoComprehensiveApi, StockApi
 from smrti_quant_alerts.settings import Config
 from smrti_quant_alerts.data_type import BinanceExchange, CoingeckoCoin
 
@@ -13,17 +13,17 @@ class TestCoinList(unittest.TestCase):
     COINGECKO_API_KEY = Config.TOKENS["COINGECKO_API_KEY"]
     BINANCE_SPOT_API_URL = Config.API_ENDPOINTS["BINANCE_SPOT_API_URL"]
     BINANCE_FUTURES_API_URL = Config.API_ENDPOINTS["BINANCE_FUTURES_API_URL"]
-    gel = GetExchangeList("TEST")
+    gel = CryptoComprehensiveApi()
 
     def test_get_exclude_coins(self):
         self.gel.PWD = __file__.split("test_get_exchange_list.py")[0]
-        self.gel._get_exclude_coins()
+        exclude_coins = self.gel.get_exclude_coins()
         self.assertEqual({BinanceExchange("USDT", "USDT"), BinanceExchange("BYTE", "USDT"),
                           BinanceExchange("USDT", "ETH"), BinanceExchange("USDT", "BTC"),
                           BinanceExchange("USDT", "BUSD"), BinanceExchange("BYTE", "BUSD"),
                           BinanceExchange("BYTE", "ETH"), BinanceExchange("BYTE", "BTC"),
                           CoingeckoCoin("tether", "USDT"), CoingeckoCoin("binarydao", "BYTE")},
-                         self.gel._exclude_coins)
+                         exclude_coins)
 
     @responses.activate
     def test_get_all_binance_exchanges(self):

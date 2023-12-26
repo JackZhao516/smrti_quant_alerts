@@ -8,24 +8,21 @@ from time import sleep, time
 from multiprocessing.pool import ThreadPool
 from typing import List, Set, Tuple, Union
 
-from smrti_quant_alerts.get_exchange_list import GetExchangeList
-from smrti_quant_alerts.telegram_api import TelegramBot
+from smrti_quant_alerts.alerts.base_alert import BaseAlert
+from smrti_quant_alerts.stock_crypto_api import CryptoComprehensiveApi
 from smrti_quant_alerts.data_type import CoingeckoCoin, BinanceExchange, TradingSymbol
 from smrti_quant_alerts.db import get_last_count, write_last_counts, \
     remove_older_count, init_database_runtime, update_last_counts, close_database
 
 
-class SpotOverMABase(GetExchangeList):
-    if not os.path.exists("run_time_data"):
-        os.mkdir("run_time_data")
-
+class SpotOverMABase(CryptoComprehensiveApi):
     def __init__(self, exclude_coins: Union[List[TradingSymbol], Set[TradingSymbol]],
                  trading_symbols: Union[List[TradingSymbol], Set[TradingSymbol]],
                  time_frame: int = 1, window: int = 200, alert_type: str = "alert_300") -> None:
         super().__init__()
         self._trading_symbols = trading_symbols
         self._symbol_type = TradingSymbol
-        self._get_exclude_coins(exclude_coins)
+        self._exclude_coins = self.get_exclude_coins(exclude_coins)
 
         self.alert_type = alert_type
         self.time_frame = time_frame
@@ -36,7 +33,7 @@ class SpotOverMABase(GetExchangeList):
         """
         return True if spot price is over ma
         """
-        pass
+        raise NotImplementedError
 
     def _coins_spot_over_ma(self, threads: int = 4) -> None:
         """
@@ -161,37 +158,16 @@ class BinanceSpotOverMA(SpotOverMABase):
                 self._spot_over_ma[BinanceExchange(base, "ETH")] = 1
 
 
-class SpotOverMAAlert(GetExchangeList):
+class SpotOverMAAlert(BaseAlert, CryptoComprehensiveApi):
     def __init__(self, time_frame: int, window: int, tg_mode: str = "CG_SUM") -> None:
-        super().__init__(tg_mode)
+        BaseAlert.__init__(self, tg_mode)
+        CryptoComprehensiveApi.__init__(self)
         self._time_frame = time_frame
         self._window = window
-        self._tg_mode = tg_mode
         self._coingecko_coins = []
         self._binance_exchanges = []
 
-    def _get_coins_info_to_csv(self, coins: Union[List[TradingSymbol], Set[TradingSymbol]],
-                               file_name: str) -> str:
-        """
-        get coins info to csv file
-
-        :param coins: coins
-        :param file_name: file name
-        :return: file path
-        """
-        with open(f"run_time_data/{file_name}", "w", newline="", encoding="utf-8") as f:
-            writer = csv.writer(f)
-            writer.writerow(["symbol", "name", "website", "description"])
-            for coin in coins:
-                if isinstance(coin, BinanceExchange):
-                    coin = CoingeckoCoin.get_symbol_object(coin.base_symbol)
-                info = self.get_coin_info(coin)
-                writer.writerow([info["symbol"], info["name"],
-                                 info["website"], info["description"]])
-
-        return f"run_time_data/{file_name}"
-
-    def _alert_coins_info_to_telegram(self, coins: Union[List[TradingSymbol], Set[TradingSymbol]]) -> None:
+    def _send_coins_info_to_telegram(self, coins: Union[List[TradingSymbol], Set[TradingSymbol]]) -> None:
         """
         alert coins info
 
@@ -199,12 +175,19 @@ class SpotOverMAAlert(GetExchangeList):
         """
         if coins:
             coins = sorted(coins)
-            file_name = f"{uuid.uuid4()}_coins_info.csv"
-            file_path = self._get_coins_info_to_csv(coins, file_name)
-            self._tg_bot = TelegramBot(self._tg_mode)
-            self._tg_bot.send_file(file_path, "coins info")
-            if os.path.exists(file_path):
-                os.remove(file_path)
+
+            file_name = f"coins_info_{uuid.uuid4()}.csv"
+            headers = ["symbol", "name", "website", "description"]
+            data = []
+            for i, coin in enumerate(coins):
+                if isinstance(coin, BinanceExchange):
+                    coins[i] = CoingeckoCoin.get_symbol_object(coin.base_symbol)
+            coins = set(coins)
+            for coin in coins:
+                info = self.get_coin_info(coin)
+                data.append([info["symbol"], info["name"],
+                             info["website"], info["description"]])
+            self._tg_bot.send_data_as_csv_file(file_name, headers, data)
 
     def _get_target_coins_by_alert_type(self, alert_type: str = "alert_300") -> None:
         """
@@ -224,7 +207,7 @@ class SpotOverMAAlert(GetExchangeList):
             self._binance_exchanges, self._coingecko_coins = \
                 self.get_top_market_cap_coins_with_volume_threshold(
                     num=300, daily_volume_threshold=1000000, weekly_volume_threshold=7000000)
-        else:
+        elif alert_type == "meme_alert":
             self._binance_exchanges, self._coingecko_coins = \
                 self.get_2023_coins_with_daily_volume_threshold(threshold=3000000)
 
@@ -325,7 +308,7 @@ class SpotOverMAAlert(GetExchangeList):
         close_database()
 
         if alert_coins_info:
-            self._alert_coins_info_to_telegram(alert_coins)
+            self._send_coins_info_to_telegram(alert_coins)
 
 
 if __name__ == "__main__":
@@ -335,7 +318,7 @@ if __name__ == "__main__":
     kwargs = {"time_frame": 4, "window": 200, "tg_mode": "TEST"}
     spot_over_ma_alert = SpotOverMAAlert(**kwargs)
 
-    kwargs = {"alert_type": alert_type, "alert_coins_info": False}
+    kwargs = {"alert_type": alert_type, "alert_coins_info": True}
     spot_over_ma_alert.run(**kwargs)
 
     print(f"Time used: {time() - start_time} seconds")

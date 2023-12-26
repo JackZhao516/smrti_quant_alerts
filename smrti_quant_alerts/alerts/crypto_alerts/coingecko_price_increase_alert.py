@@ -1,9 +1,11 @@
-from smrti_quant_alerts.get_exchange_list import GetExchangeList
+from smrti_quant_alerts.alerts.base_alert import BaseAlert
+from smrti_quant_alerts.stock_crypto_api import CoingeckoApi
 
 
-class CoingeckoPriceIncreaseAlert(GetExchangeList):
+class CoingeckoPriceIncreaseAlert(BaseAlert, CoingeckoApi):
     def __init__(self, top_n: int = 500, timeframe_in_days: int = 14, tg_type: str = "CG_PRICE_INCREASE") -> None:
-        super().__init__(tg_type)
+        BaseAlert.__init__(self, tg_type)
+        CoingeckoApi.__init__(self)
         self._top_n = top_n
         self._timeframe = timeframe_in_days
 

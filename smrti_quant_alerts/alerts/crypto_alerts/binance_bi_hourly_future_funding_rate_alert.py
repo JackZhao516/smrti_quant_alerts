@@ -2,13 +2,15 @@ from time import sleep
 from decimal import Decimal
 from multiprocessing.pool import ThreadPool
 
-from smrti_quant_alerts.get_exchange_list import GetExchangeList
+from smrti_quant_alerts.alerts.base_alert import BaseAlert
+from smrti_quant_alerts.stock_crypto_api import BinanceApi
 from smrti_quant_alerts.data_type import BinanceExchange
 
 
-class FutureFundingRate(GetExchangeList):
+class FutureFundingRate(BaseAlert, BinanceApi):
     def __init__(self, rate_threshold: Decimal = Decimal(0.002), tg_type: str = "FUNDING_RATE") -> None:
-        super().__init__(tg_type=tg_type)
+        BaseAlert.__init__(self, tg_type=tg_type)
+        BinanceApi.__init__(self)
 
         self._rate_threshold = rate_threshold
         self._exchange_list = None

@@ -1,19 +1,16 @@
 import time
 import uuid
-import csv
-import os
 from typing import List, Dict, Tuple, Optional
 
-from smrti_quant_alerts.get_exchange_list import GetExchangeList
 from smrti_quant_alerts.data_type import StockSymbol
+from smrti_quant_alerts.stock_crypto_api import StockApi
+from smrti_quant_alerts.alerts.base_alert import BaseAlert
 
 
-class StockAlert(GetExchangeList):
-    if not os.path.exists("run_time_data"):
-        os.mkdir("run_time_data")
-
+class StockAlert(BaseAlert, StockApi):
     def __init__(self, tg_type: str = "TEST", timeframe_list: Optional[List[str]] = None) -> None:
-        super().__init__(tg_type=tg_type)
+        BaseAlert.__init__(self, tg_type=tg_type)
+        StockApi.__init__(self)
         self.timeframe_list = [timeframe.upper() for timeframe in timeframe_list] \
             if timeframe_list else None
 
@@ -62,20 +59,16 @@ class StockAlert(GetExchangeList):
 
         time.sleep(10)
         # save stock info to csv file
-        top_stocks = sorted(list(top_stocks_set), key=lambda x: x.ticker)
+        top_stocks = sorted(self.get_stock_info(top_stocks_set), key=lambda x: x.ticker)
+
         file_name = f"stock_alert_{uuid.uuid4()}.csv"
-        with open(f"run_time_data/{file_name}", "w", newline="", encoding="utf-8") as f:
-            writer = csv.writer(f)
-            writer.writerow(["Symbol", "Name", "GICS Sector",
-                             "Sub Sector", "Headquarter Location", "Founded Year/IPO Date",
-                             "is SP500", "is Nasdaq"])
-            top_stocks = sorted(self.get_stock_info(top_stocks), key=lambda x: x.ticker)
-            for stock in top_stocks:
-                writer.writerow([stock.ticker, stock.security_name, stock.gics_sector,
-                                 stock.gics_sub_industry, stock.location,
-                                 stock.founded_time, stock.is_sp500, stock.is_nasdaq])
-        self._tg_bot.send_file(f"run_time_data/{file_name}", file_name)
-        os.remove(f"run_time_data/{file_name}")
+        header = ["Symbol", "Name", "GICS Sector", "Sub Sector", "Headquarter Location",
+                  "Founded Year/IPO Date", "is SP500", "is Nasdaq"]
+        stock_info = [[stock.ticker, stock.security_name, stock.gics_sector,
+                       stock.gics_sub_industry, stock.location,
+                       stock.founded_time, stock.is_sp500, stock.is_nasdaq]
+                      for stock in top_stocks]
+        self._tg_bot.send_data_as_csv_file(file_name, header, stock_info)
 
 
 if __name__ == '__main__':

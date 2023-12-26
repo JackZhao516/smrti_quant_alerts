@@ -39,7 +39,7 @@ class GetExchangeList:
 
     def __init__(self, tg_type: str = "TEST") -> None:
         self._cg = CoinGeckoAPI(api_key=self.COINGECKO_API_KEY)
-        self._tg_bot = TelegramBot(alert_type=tg_type)
+        self._tg_bot = TelegramBot(tg_type=tg_type)
         self._exclude_coins = set()
 
     def _update_active_binance_spot_exchanges(self) -> None:

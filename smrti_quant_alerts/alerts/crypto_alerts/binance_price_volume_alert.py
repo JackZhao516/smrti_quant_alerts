@@ -12,7 +12,8 @@ from binance.lib.utils import config_logging
 # from binance.websocket.spot.websocket_stream import SpotWebsocketStreamClient
 from binance.websocket.spot.websocket_client import SpotWebsocketClient as Client
 
-from smrti_quant_alerts.get_exchange_list import GetExchangeList
+from smrti_quant_alerts.alerts.base_alert import BaseAlert
+from smrti_quant_alerts.stock_crypto_api import CryptoComprehensiveApi
 from smrti_quant_alerts.error import error_handling
 from smrti_quant_alerts.telegram_api import TelegramBot
 from smrti_quant_alerts.settings import Config
@@ -72,7 +73,7 @@ class BinancePriceVolumeAlert:
 
     def __init__(self):
         self.running = True
-        self.cg = GetExchangeList("TEST")
+        self.cg = CryptoComprehensiveApi()
         self.tg_bot = {
             "15m_price": TelegramBot("PRICE_15M", daemon=False),
             "1h_price": TelegramBot("PRICE_1H", daemon=False),
@@ -322,8 +323,7 @@ class BinancePriceVolumeAlert:
 
     def _monthly_reset_volume_alert_count(self):
         """
-        Reset volume alert count monthly
-        reset monthly count at 11:59:30
+        Reset volume alert count monthly count at 11:59:30
         """
         logging.info("monthly reset volume count start")
         while self.running:

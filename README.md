@@ -9,8 +9,7 @@ This repo includes several real-time alerts for crypto trading, built with Coing
 * Rebuild ``price_volume`` alert in a more oop manner. [IN PROGRESS]
 * Incorporate sqlite3 database to store data instead of csv/json files. [IN PROGRESS]
 * Let users set all the alert args in ``settings.json``. [IN PROGRESS]
-* Setup a base alert class and let all alerts inherit from it.
-* Split ``get_exchange_list.py`` and ``data_type.py`` into Coingecko, Binance, and Stock.
+* Enhance error handling.
 * Cut out the telegram messages into functions and make them more customizable.
 * Improve test coverage.
 * Enhance documentation.

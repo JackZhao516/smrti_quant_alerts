@@ -2,12 +2,14 @@
 Alert daily for top 500-3000 market cap coins.
 """
 
-from smrti_quant_alerts.get_exchange_list import GetExchangeList
+from smrti_quant_alerts.alerts.base_alert import BaseAlert
+from smrti_quant_alerts.stock_crypto_api import CoingeckoApi
 
 
-class CGAltsAlert(GetExchangeList):
+class CGAltsAlert(BaseAlert, CoingeckoApi):
     def __init__(self, tg_type: str = "ALTS") -> None:
-        super().__init__(tg_type)
+        BaseAlert.__init__(self, tg_type)
+        CoingeckoApi.__init__(self)
 
         # alts coins are from market cap 500 - 3000
         self._alts_coins = []

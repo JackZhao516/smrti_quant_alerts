@@ -7,12 +7,14 @@ import logging
 from collections import defaultdict
 from typing import Union, Iterable
 
-from smrti_quant_alerts.get_exchange_list import GetExchangeList
+from smrti_quant_alerts.alerts.base_alert import BaseAlert
+from smrti_quant_alerts.stock_crypto_api import CoingeckoApi
 
 
-class CoingeckoMarketCapAlert(GetExchangeList):
+class CoingeckoMarketCapAlert(BaseAlert, CoingeckoApi):
     def __init__(self, top_n: Union[Iterable[int], int] = 200, tg_type: str = "CG_MAR_CAP") -> None:
-        super().__init__(tg_type)
+        BaseAlert.__init__(self, tg_type)
+        CoingeckoApi.__init__(self)
         if isinstance(top_n, int):
             top_n = [top_n]
         self._top_n = top_n

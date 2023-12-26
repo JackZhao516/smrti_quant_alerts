@@ -4,15 +4,15 @@ import logging
 
 
 class Config:
-    current_dir = os.getcwd().split("smrti_quant_alerts")[0] + "smrti_quant_alerts/"
-    if not os.path.isfile(f"{current_dir}token.json"):
+    PROJECT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    if not os.path.isfile(os.path.join(PROJECT_DIR, "token.json")):
         logging.error("token.json not found")
         exit(1)
-    if not os.path.isfile(f"{current_dir}configs.json"):
+    if not os.path.isfile(os.path.join(PROJECT_DIR, "configs.json")):
         logging.error("configs.json not found")
         exit(1)
-    TOKENS = json.load(open(f"{current_dir}token.json"))
-    SETTINGS = json.load(open(f"{current_dir}configs.json"))
+    TOKENS = json.load(open(os.path.join(PROJECT_DIR, "token.json")))
+    SETTINGS = json.load(open(os.path.join(PROJECT_DIR, "configs.json")))
     API_ENDPOINTS = {
         "BINANCE_SPOT_API_URL": "https://api.binance.com/api/v3/",
         "BINANCE_FUTURES_API_URL": "https://fapi.binance.com/fapi/v1/",
@@ -89,7 +89,7 @@ class Config:
                     self.SETTINGS["price_volume"]["database_name"] = "price_volume"
 
     def reload_settings(self) -> None:
-        self.SETTINGS = json.load(open(f"{self.current_dir}configs.json"))
+        self.SETTINGS = json.load(open(os.path.join(self.PROJECT_DIR, "configs.json")))
         self._validate_settings()
 
 

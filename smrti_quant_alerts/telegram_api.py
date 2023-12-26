@@ -1,6 +1,9 @@
+import os
 import time
 import threading
 import requests
+import csv
+from typing import List, Any
 
 from smrti_quant_alerts.error import error_handling
 from smrti_quant_alerts.settings import Config
@@ -10,8 +13,12 @@ class TelegramBot:
     tokens = Config.TOKENS["TelegramBot"]
     TOKEN = tokens["TOKEN"]
     TELEGRAM_IDS = tokens["TELEGRAM_IDS"]
+    PWD = os.path.join(Config.PROJECT_DIR, "runtime_data")
 
-    def __init__(self, alert_type: str = "CG_ALERT", daemon: bool = True) -> None:
+    if not os.path.exists(PWD):
+        os.mkdir(PWD)
+
+    def __init__(self, tg_type: str = "CG_ALERT", daemon: bool = True) -> None:
         """
         TelegramBot class for sending message to telegram group via bot
 
@@ -24,7 +31,7 @@ class TelegramBot:
                         False if you want to handle the limit yourself
 
         """
-        self.telegram_chat_id = self.TELEGRAM_IDS[alert_type]
+        self.telegram_chat_id = self.TELEGRAM_IDS[tg_type]
 
         # message queue
         self.msg_queue_lock = threading.Lock()
@@ -45,7 +52,7 @@ class TelegramBot:
                   f'sendMessage?chat_id={self.telegram_chat_id}&text={message}'
         if blue_text:
             api_url += '&parse_mode=Markdown'
-        requests.get(api_url, timeout=5)
+        requests.get(api_url, timeout=20)
 
     def _release_msg_from_queue(self) -> None:
         """
@@ -91,18 +98,36 @@ class TelegramBot:
         time.sleep(0.1)
 
     @error_handling("telegram", default_val=None)
-    def send_file(self, file_path: str, file_name: str) -> None:
+    def send_file(self, file_path: str, output_file_name: str) -> None:
         """
         send file to telegram group
 
         :param file_path: path of the file to send
-        :param file_name: name of the file to send
+        :param output_file_name: output name of the sent file
         """
         api_url = f'https://api.telegram.org/bot{self.TOKEN}/' \
                   f'sendDocument?'
         files = {'document': open(file_path, 'rb')}
-        data = {'chat_id': self.telegram_chat_id, 'caption': file_name, 'parse_mode': 'HTML'}
+        data = {'chat_id': self.telegram_chat_id, 'caption': output_file_name, 'parse_mode': 'HTML'}
         requests.post(api_url, data=data, files=files, stream=True, timeout=1000)
+
+    @error_handling("telegram", default_val=None)
+    def send_data_as_csv_file(self, output_file_name: str, headers: List[str], data: List[List[Any]]) -> None:
+        """
+        send data as csv file to telegram group
+
+        :param output_file_name: output name of the sent file
+        :param headers: headers of the csv file
+        :param data: data of the csv file
+        """
+        target_file_path = os.path.join(self.PWD, output_file_name)
+        with open(target_file_path, "w", newline="", encoding="utf-8") as csv_file:
+            writer = csv.writer(csv_file)
+            writer.writerow(headers)
+            writer.writerows(data)
+        self.send_file(target_file_path, output_file_name)
+        if os.path.exists(target_file_path):
+            os.remove(target_file_path)
 
 
 if __name__ == "__main__":
