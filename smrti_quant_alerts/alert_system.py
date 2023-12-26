@@ -2,13 +2,8 @@ import sys
 import logging
 from decimal import Decimal
 
-from smrti_quant_alerts.alerts.coingecko_market_cap_alert import CoingeckoMarketCapAlert
-from smrti_quant_alerts.alerts.binance_price_volume_alert import BinancePriceVolumeAlert
-from smrti_quant_alerts.alerts.coingecko_alts_alert import CGAltsAlert
-from smrti_quant_alerts.alerts.coingecko_binance_spot_over_ma_alert import SpotOverMAAlert
-from smrti_quant_alerts.alerts.binance_bi_hourly_future_funding_rate_alert import FutureFundingRate
-from smrti_quant_alerts.alerts.stock_alert import StockAlert
-from smrti_quant_alerts.alerts.coingecko_price_increase_alert import CoingeckoPriceIncreaseAlert
+from smrti_quant_alerts.alerts import CoingeckoMarketCapAlert, BinancePriceVolumeAlert, \
+    CGAltsAlert, SpotOverMAAlert, FutureFundingRate, StockAlert, CoingeckoPriceIncreaseAlert
 
 from smrti_quant_alerts.settings import Config
 from smrti_quant_alerts.utility import run_task_at_daily_time
