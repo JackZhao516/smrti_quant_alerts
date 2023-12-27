@@ -5,7 +5,7 @@ from collections import defaultdict
 import requests
 import pandas as pd
 
-from smrti_quant_alerts.error import error_handling
+from smrti_quant_alerts.exception import error_handling
 from smrti_quant_alerts.settings import Config
 from smrti_quant_alerts.data_type import StockSymbol
 

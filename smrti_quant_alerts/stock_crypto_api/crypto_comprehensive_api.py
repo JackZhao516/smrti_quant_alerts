@@ -5,7 +5,7 @@ from multiprocessing.pool import ThreadPool
 
 import numpy as np
 
-from smrti_quant_alerts.error import error_handling
+from smrti_quant_alerts.exception import error_handling
 from smrti_quant_alerts.data_type import BinanceExchange, CoingeckoCoin, TradingSymbol
 from .crypto_binance_api import BinanceApi
 from .crypto_coingecko_api import CoingeckoApi

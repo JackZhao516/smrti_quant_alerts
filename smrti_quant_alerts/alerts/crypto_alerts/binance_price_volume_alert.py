@@ -14,7 +14,7 @@ from binance.websocket.spot.websocket_client import SpotWebsocketClient as Clien
 
 from smrti_quant_alerts.alerts.base_alert import BaseAlert
 from smrti_quant_alerts.stock_crypto_api import CryptoComprehensiveApi
-from smrti_quant_alerts.error import error_handling
+from smrti_quant_alerts.exception import error_handling
 from smrti_quant_alerts.telegram_api import TelegramBot
 from smrti_quant_alerts.settings import Config
 
