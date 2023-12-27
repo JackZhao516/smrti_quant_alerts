@@ -5,7 +5,7 @@ import requests
 import csv
 from typing import List, Any
 
-from smrti_quant_alerts.error import error_handling
+from smrti_quant_alerts.exception import error_handling
 from smrti_quant_alerts.settings import Config
 
 

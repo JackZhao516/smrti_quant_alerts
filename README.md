@@ -20,7 +20,7 @@ This repo includes several real-time alerts for crypto trading, built with Coing
 ## Get Started and Documentation
 * pre-requisites: 
   * ``coingecko pro api token``: all coingecko alerts
-  * ``Finnhub api token``, ``Financial Modeling Prep api token``: stock alert
+  * ``Financial Modeling Prep api token``: stock alert
   * ``telegram bot token``, ``telegram group/channel ids`` for all alerts
   * Fill in the required tokens in ``token.json`` for the alerts you want to run
 * Run on server in areas where Binance and Coingecko apis are not banned.
