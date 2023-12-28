@@ -1,5 +1,6 @@
 {
-  "price_volume": {
+  "<price_volume_alert_example_name>": {
+    "alert_type": "price_volume",
     "alert_input_args": {},
     "alert_params": {
       "15m_volume_usd": 500000.0,
@@ -14,10 +15,13 @@
     },
     "database_name": "price_volume"
   },
-  "price_increase_alert_14d": {
+
+  "<price_increase_alert_example_name>": {
+    "alert_type": "price_increase_alert",
     "alert_input_args": {
-      "top_n": 500,
-      "timeframe_in_days": 14,
+      "top_range": [0, 500],
+      "top_n": 100,
+      "timeframe": "14d",
       "tg_type": "CG_PRICE_INCREASE"
     },
     "alert_params": {},
@@ -28,34 +32,9 @@
     },
     "database_name": "price_increase_alert"
   },
-  "price_increase_alert_30d": {
-    "alert_input_args": {
-      "top_n": 500,
-      "timeframe_in_days": 30,
-      "tg_type": "CG_PRICE_INCREASE"
-    },
-    "alert_params": {},
-    "run_time_input_args": {
-      "daily_times": "09:35",
-      "excluded_week_days": ["Tue", "Wed", "Thu", "Fri", "Sat", "Sun"],
-      "timezone": "Asia/Shanghai"
-    },
-    "database_name": "price_increase_alert"
-  },
-  "stock_alert_1d": {
-    "alert_input_args": {
-      "timeframe_list": ["1d"],
-      "tg_type": "STOCK"
-    },
-    "alert_params": {},
-    "run_time_input_args": {
-      "daily_times": "09:10",
-      "excluded_week_days": ["Mon", "Sun"],
-      "timezone": "Asia/Shanghai"
-    },
-    "database_name": "stock_alert"
-  },
-  "stock_alert_larger_timeframe": {
+
+  "<stock_alert_example_name>": {
+    "alert_type": "stock_alert",
     "alert_input_args": {
       "timeframe_list": ["5d", "1M", "3M", "6M", "1y", "3y", "5y"],
       "tg_type": "STOCK"
@@ -68,7 +47,9 @@
     },
     "database_name": "stock_alert"
   },
-  "sequential": {
+
+  "<sequential_example_name>": {
+    "alert_type": "sequential",
     "alert_input_args": {
       "time_frame": 4,
       "window": 200,
@@ -86,7 +67,9 @@
     },
     "database_name": "sequential"
   },
-  "meme_alert": {
+
+  "<meme_alert_example_name>": {
+    "alert_type": "meme_alert",
     "alert_input_args": {
       "time_frame": 1,
       "window": 200,
@@ -104,7 +87,9 @@
     },
     "database_name": "meme_alert"
   },
-  "alert_100": {
+
+  "<alert_100_example_name>": {
+    "alert_type": "alert_100",
     "alert_input_args": {
       "time_frame": 4,
       "window": 200,
@@ -121,5 +106,54 @@
       }
     },
     "database_name": "alert_100"
+  },
+
+  "<market_cap_example_name>": {
+    "alert_type": "market_cap",
+    "alert_input_args": {
+      "top_n": [100, 200, 300, 400, 500],
+      "tg_type": "CG_MAR_CAP"
+    },
+    "alert_params": {},
+    "run_time_input_args": {
+      "daily_times": "00:00",
+      "excluded_week_days": [],
+      "timezone": "Asia/Shanghai",
+      "kwargs": {}
+    },
+    "database_name": "market_cap"
+  },
+
+  "<alts_alert_example_name>": {
+    "alert_type": "alts_alert",
+    "alert_input_args": {
+      "tg_type": "ALTS"
+    },
+    "alert_params": {},
+    "run_time_input_args": {
+      "daily_times": ["00:00", "02:00", "04:00", "06:00", "08:00", "10:00",
+                    "12:00", "14:00", "16:00", "18:00", "20:00", "22:00"],
+      "excluded_week_days": [],
+      "timezone": "Asia/Shanghai",
+      "kwargs": {}
+    },
+    "database_name": "alts_alert"
+  },
+
+  "<funding_rate_example_name>": {
+    "alert_type": "funding_rate",
+    "alert_input_args": {
+      "rate_threshold": 0.002,
+      "tg_type": "FUNDING_RATE"
+    },
+    "alert_params": {},
+    "run_time_input_args": {
+      "daily_times": ["00:00", "02:00", "04:00", "06:00", "08:00", "10:00",
+                  "12:00", "14:00", "16:00", "18:00", "20:00", "22:00"],
+      "excluded_week_days": [],
+      "timezone": "Asia/Shanghai",
+      "kwargs": {}
+    },
+    "database_name": "funding_rate"
   }
 }

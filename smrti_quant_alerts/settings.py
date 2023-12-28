@@ -62,7 +62,8 @@ class Config:
         validate configs.json
         """
         # every alert setting should contain these keys
-        alert_setting_keys = ["alert_input_args", "alert_params", "run_time_input_args", "database_name"]
+        alert_setting_keys = ["alert_input_args", "alert_params",
+                              "run_time_input_args", "database_name", "alert_type"]
         for alert_name, alert_setting in self.SETTINGS.items():
             for key in alert_setting_keys:
                 if key not in alert_setting:

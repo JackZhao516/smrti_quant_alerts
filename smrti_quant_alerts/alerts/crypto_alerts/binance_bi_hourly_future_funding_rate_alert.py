@@ -8,11 +8,11 @@ from smrti_quant_alerts.data_type import BinanceExchange
 
 
 class FutureFundingRate(BaseAlert, BinanceApi):
-    def __init__(self, rate_threshold: Decimal = Decimal(0.002), tg_type: str = "FUNDING_RATE") -> None:
+    def __init__(self, rate_threshold: float = 0.002, tg_type: str = "FUNDING_RATE") -> None:
         BaseAlert.__init__(self, tg_type=tg_type)
         BinanceApi.__init__(self)
 
-        self._rate_threshold = rate_threshold
+        self._rate_threshold = Decimal(rate_threshold)
         self._exchange_list = None
         self._pass_threshold_exchanges = []
 

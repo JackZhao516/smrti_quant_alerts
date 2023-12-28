@@ -1,7 +1,12 @@
 import pytz
+import logging
 from datetime import datetime
 from time import sleep, time
 from typing import Callable, Union, Iterable, Dict, Optional, List, Any
+
+from smrti_quant_alerts.settings import Config
+
+configs = Config()
 
 
 def run_task_at_daily_time(task: Callable, daily_times: Union[Iterable[str], str],
@@ -36,3 +41,17 @@ def run_task_at_daily_time(task: Callable, daily_times: Union[Iterable[str], str
             # print(f"Task finished, time used: {time() - start} seconds")
             sleep(between_time - max(2 * (time() - start), 180))
         sleep(60)
+
+
+def run_alert(alert_name: str, alert_class: Callable) -> None:
+    """
+    run alert by name and CONFIGS defined in configs.json
+
+    :param alert_name: alert name
+    :param alert_class: alert class
+    """
+    logging.info(f"{alert_name} start")
+    settings = configs.SETTINGS[alert_name]
+    alert = alert_class(**settings["alert_input_args"])
+    run_task_at_daily_time(alert.run, **settings["run_time_input_args"])
+    logging.info(f"{alert_name} finished")
