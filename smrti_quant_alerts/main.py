@@ -13,7 +13,7 @@ configs = Config()
 alert_type_to_alert_class = {
     "market_cap": CoingeckoMarketCapAlert,
     "price_volume": BinancePriceVolumeAlert,
-    "alts": CGAltsAlert,
+    "alts_alert": CGAltsAlert,
     "alert_100": SpotOverMAAlert,
     "alert_300": SpotOverMAAlert,
     "alert_500": SpotOverMAAlert,

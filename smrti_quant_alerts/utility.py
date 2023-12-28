@@ -6,8 +6,6 @@ from typing import Callable, Union, Iterable, Dict, Optional, List, Any
 
 from smrti_quant_alerts.settings import Config
 
-configs = Config()
-
 
 def run_task_at_daily_time(task: Callable, daily_times: Union[Iterable[str], str],
                            kwargs: Optional[Dict[str, Any]] = None,
@@ -51,7 +49,7 @@ def run_alert(alert_name: str, alert_class: Callable) -> None:
     :param alert_class: alert class
     """
     logging.info(f"{alert_name} start")
-    settings = configs.SETTINGS[alert_name]
+    settings = Config.SETTINGS[alert_name]
     alert = alert_class(**settings["alert_input_args"])
     run_task_at_daily_time(alert.run, **settings["run_time_input_args"])
     logging.info(f"{alert_name} finished")
