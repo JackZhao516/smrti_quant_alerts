@@ -14,6 +14,7 @@ setup(
         "responses",
         "pandas",
         "lxml",
-        "peewee"
+        "peewee",
+        "polygon-api-client"
     ],
 )

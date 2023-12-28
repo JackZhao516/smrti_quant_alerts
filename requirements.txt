@@ -7,3 +7,4 @@ responses
 pandas
 lxml
 peewee
+polygon-api-client

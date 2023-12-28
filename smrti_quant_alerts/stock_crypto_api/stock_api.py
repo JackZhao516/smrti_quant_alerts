@@ -1,9 +1,12 @@
 import math
-from typing import List, Dict, Set, Union
+import datetime
+import pytz
+from typing import List, Dict, Set, Union, Tuple, Optional
 from collections import defaultdict
 
 import requests
 import pandas as pd
+from polygon import RESTClient
 
 from smrti_quant_alerts.exception import error_handling
 from smrti_quant_alerts.settings import Config
@@ -18,7 +21,7 @@ class StockApi:
     PWD = Config.PROJECT_DIR
 
     def __init__(self) -> None:
-        pass
+        self.poly_client = RESTClient(Config.TOKENS["POLYGON_IO_API_KEY"])
 
     @error_handling("sp500", default_val=[])
     def get_sp_500_list(self) -> List[StockSymbol]:
@@ -51,44 +54,142 @@ class StockApi:
                       if stock["exchangeShortName"] and stock["exchangeShortName"].upper() == "NASDAQ"]
 
         return stock_list
+    #
+    # def get_stock_price_change_percentage(
+    #         self, stock_list: List[StockSymbol],
+    #         timeframe_list: Optional[List[str]] = None,
+    #         adjusted: bool = True) -> Dict[StockSymbol, Dict[str, float]]:
+    #     """
+    #     Get adjusted/unadjusted stock price change percentage, 1D, 5D, 1M, 3M, 6M, 1Y, 3Y, 5Y
+    #
+    #     :param stock_list: [StockSymbol, ...]
+    #     :param timeframe_list: ["1D", "5D", "1M", "3M", "6M", "1Y", "3Y", "5Y"]
+    #     :param adjusted: True/False
+    #
+    #     :return: price change percentage. 1 means 1%
+    #             {StockSymbol: {"1D": 0.01, "5D": 0.01, "1M": 0.01, "3M": 0.01,
+    #             "6M": 0.01, "1Y": 0.01, "3Y": 0.01}}
+    #     """
+    #     if adjusted:
+    #         return self._get_stock_price_change_percentage_adjusted(stock_list, timeframe_list)
+    #     else:
+    #         return self._get_stock_price_change_percentage_unadjusted(stock_list, timeframe_list)
+    #
+    # @error_handling("financialmodelingprep", default_val=[])
+    # def _get_stock_price_change_percentage_unadjusted(
+    #         self, stock_list: List[StockSymbol],
+    #         timeframe_list: Optional[List[str]] = None) -> Dict[StockSymbol, Dict[str, float]]:
+    #     """
+    #     Get unadjusted stock price change percentage, 1D, 5D, 1M, 3M, 6M, 1Y, 3Y, 5Y
+    #
+    #     :param stock_list: [StockSymbol, ...]
+    #     :param timeframe_list: ["1D", "5D", "1M", "3M", "6M", "1Y", "3Y", "5Y"]
+    #
+    #     :return: price change percentage. 1 means 1%
+    #             {StockSymbol: {"1D": 0.01, "5D": 0.01, "1M": 0.01, "3M": 0.01,
+    #             "6M": 0.01, "1Y": 0.01, "3Y": 0.01}}
+    #     """
+    #     if not timeframe_list:
+    #         timeframe_list = ["1D", "5D", "1M", "3M", "6M", "1Y", "3Y", "5Y"]
+    #
+    #     # preprocess the StockSymbol list
+    #     stocks = []
+    #     for stock_symbol in stock_list:
+    #         stocks.append(stock_symbol.ticker)
+    #         if stock_symbol.ticker_alias:
+    #             stocks.append(stock_symbol.ticker_alias)
+    #
+    #     responses = []
+    #     step = 1200  # FMP supports 1500 stocks per request
+    #     for i in range(math.ceil(len(stocks) / step)):
+    #         stock_str = ",".join(stocks[i * step: (i + 1) * step])
+    #
+    #         api_url = f"{self.FMP_API_URL}stock-price-change/{stock_str}?apikey={self.FMP_API_KEY}"
+    #
+    #         response = requests.get(api_url, timeout=5)
+    #         responses += response.json()
+    #
+    #     stock_price_change = defaultdict(dict)
+    #     for stock in responses:
+    #         stock_symbol = StockSymbol.get_symbol_object(stock["symbol"])
+    #         for key in timeframe_list:
+    #             if key not in stock or not stock[key] or stock[key] > 100000:
+    #                 stock[key] = 0
+    #             stock_price_change[stock_symbol][key] = stock[key]
+    #
+    #     return stock_price_change
 
-    @error_handling("financialmodelingprep", default_val=[])
-    def get_stock_price_change_percentage(self, stock_list: List[StockSymbol]) -> Dict[StockSymbol, Dict[str, float]]:
+    @error_handling("polygon", default_val=[])
+    def _get_stocks_close_price_with_given_date(self, date: str, adjusted: bool = True) \
+            -> Tuple[str, Dict[StockSymbol, float]]:
         """
-        Get stock price change percentage, 1D, 5D, 1M, 3M, 6M, 1Y, 3Y, 5Y
+        Get stock price with given date
+
+        :param date: date in the format of YYYY-MM-DD
+        """
+        grouped = []
+        while not grouped:
+            grouped = self.poly_client.get_grouped_daily_aggs(
+                date, adjusted
+            )
+            date = (datetime.datetime.strptime(date, "%Y-%m-%d") - datetime.timedelta(days=1)).strftime("%Y-%m-%d")
+        date = (datetime.datetime.strptime(date, "%Y-%m-%d") + datetime.timedelta(days=1)).strftime("%Y-%m-%d")
+        stock_price = {}
+        for g in grouped:
+            stock = StockSymbol.get_symbol_object(g.ticker)
+            if stock and g.close is not None:
+                stock_price[stock] = g.close
+        return date, stock_price
+
+    def get_stock_price_change_percentage(
+            self, stock_list: List[StockSymbol],
+            timeframe_list: Optional[List[str]] = None,
+            adjusted: bool = True) -> Dict[StockSymbol, Dict[str, float]]:
+        """
+        Get adjusted/unadjusted stock price change percentage, 1D, 5D, 1M, 3M, 6M, 1Y, 3Y, 5Y
 
         :param stock_list: [StockSymbol, ...]
+        :param timeframe_list: ["1D", "5D", "1M", "3M", "6M", "1Y", "3Y", "5Y"]
+        :param adjusted: True/False
 
         :return: price change percentage. 1 means 1%
                 {StockSymbol: {"1D": 0.01, "5D": 0.01, "1M": 0.01, "3M": 0.01,
                 "6M": 0.01, "1Y": 0.01, "3Y": 0.01}}
         """
-        # preprocess the StockSymbol list
-        stocks = set(stock_list)
-        stock_list = []
-        for stock_symbol in stocks:
-            stock_list.append(stock_symbol.ticker)
-            if stock_symbol.ticker_alias:
-                stock_list.append(stock_symbol.ticker_alias)
+        if not timeframe_list:
+            timeframe_list = ["1D", "5D", "1M", "3M", "6M", "1Y", "3Y", "5Y"]
 
-        responses = []
-        step = 1200  # FMP supports 1500 stocks per request
-        for i in range(math.ceil(len(stock_list) / step)):
-            stock_str = ",".join(stock_list[i * step: (i + 1) * step])
+        # transform the timeframe_list to number of days
+        timeframe_dict = {
+            "1D": 1,
+            "5D": 5,
+            "1M": 30,
+            "3M": 90,
+            "6M": 180,
+            "1Y": 365,
+            "3Y": 365 * 3,
+            "5Y": 365 * 5,
+        }
 
-            api_url = f"{self.FMP_API_URL}stock-price-change/{stock_str}?apikey={self.FMP_API_KEY}"
+        us_eastern = pytz.timezone('US/Eastern')
+        # get end date in the format of YYYY-MM-DD
+        end_date = datetime.datetime.now(tz=us_eastern).strftime("%Y-%m-%d")
+        end_date, end_stock_price = self._get_stocks_close_price_with_given_date(end_date, adjusted)
 
-            response = requests.get(api_url, timeout=5)
-            responses += response.json()
-
+        # calculate the price change percentage
         stock_price_change = defaultdict(dict)
-        for stock in responses:
-            stock_symbol = StockSymbol.get_symbol_object(stock["symbol"])
-            for key in ["1D", "5D", "1M", "3M", "6M", "1Y", "3Y", "5Y"]:
-                if key not in stock or not stock[key] or stock[key] > 100000:
-                    stock[key] = 0
-                stock_price_change[stock_symbol][key] = stock[key]
+        for timeframe in timeframe_list:
+            days = timeframe_dict[timeframe]
+            start_date = (datetime.datetime.strptime(end_date, "%Y-%m-%d") -
+                          datetime.timedelta(days=days)).strftime("%Y-%m-%d")
+            _, start_stock_price = self._get_stocks_close_price_with_given_date(start_date, adjusted)
 
+            for stock in stock_list:
+                if stock in start_stock_price and stock in end_stock_price and start_stock_price[stock]:
+                    stock_price_change[stock][timeframe] = \
+                        (end_stock_price[stock] - start_stock_price[stock]) / start_stock_price[stock] * 100
+                else:
+                    stock_price_change[stock][timeframe] = 0.0
         return stock_price_change
 
     @error_handling("financialmodelingprep", default_val=[])

@@ -4,7 +4,10 @@
 [![License](https://img.shields.io/badge/license-MIT-green)](https://github.com/JackZhao516/smrti_quant_alerts/blob/main/LICENSE)
 ![smrti_quant_alert Python Versions](https://img.shields.io/pypi/pyversions/python-bitget?logo=pypi)
 
-This repo includes several real-time alerts for crypto trading, built with Coingecko and Binance APIs. Alerts are sent to Telegram groups/channels.
+This repo includes several real-time alerts for crypto/stock trading, built with 
+[CoinGecko](https://www.coingecko.com/), [Binance](https://www.binance.com/en), 
+[Polygon.io](https://polygon.io/), and [Financial Modeling Prep](https://site.financialmodelingprep.com/) APIs. 
+Alerts are sent to [Telegram](https://telegram.org/) groups/channels.
 ## Next Steps
 * Rebuild ``price_volume`` alert in a more oop manner. [IN PROGRESS]
 * Incorporate sqlite3 database to store data instead of csv/json files. [IN PROGRESS]
@@ -15,16 +18,25 @@ This repo includes several real-time alerts for crypto trading, built with Coing
 * Enhance documentation.
 * Setup CI/CD.
 * Setup Docker.
+* Add a gui for setting up/running alerts.
 
 ## Get Started and Documentation
 * pre-requisites: 
-  * ``coingecko pro api token``: all coingecko alerts
-  * ``Financial Modeling Prep api token``: stock alert
-  * ``telegram bot token``, ``telegram group/channel ids`` for all alerts
-  * Fill in the required tokens in ``token.json`` for the alerts you want to run
-  * Set all the parameters in ``settings.json`` for the alerts you want to run
-  * ``python3.8`` or higher
-* Run on server in areas where Binance and Coingecko apis are not banned.
+  * ``All coingecko alerts``: [CoinGecko pro api token](https://www.coingecko.com/en/api/pricing), 
+    at least ``Analyst`` subscription
+  * ``stock_alert``: [Financial Modeling Prep api token](https://site.financialmodelingprep.com/), 
+    no subscription needed; [Polygon.io api token](https://polygon.io/pricing), at least ``Starter`` subscription
+  * ``All alerts``: [telegram bot token](https://core.telegram.org/); 
+    ``telegram group/channel ids``(whole part after the # in https://web.telegram.org/a/#-XXXXXXXX, starting with "-")
+  * Fill in the required tokens in 
+    [*token.json*](https://github.com/JackZhao516/smrti_quant_alerts/blob/main/token.json.example) 
+    for the alerts you want to run
+  * Set all the parameters in 
+    [*configs.json*](https://github.com/JackZhao516/smrti_quant_alerts/blob/main/configs.json.example) 
+    for the alerts you want to run
+  * [python3.8](https://www.python.org/downloads/release/python-380/) or higher
+* Run on server in areas where [Binance](https://www.binance.com/en) and 
+  [CoinGecko apis](https://www.coingecko.com/) are not banned.
 ## Install
     pip install -r requirements.txt
     python setup.py develop
@@ -46,27 +58,37 @@ This repo includes several real-time alerts for crypto trading, built with Coing
 
 > 3. ``stock_crypto_api`` defines interactions with stock/crypto apis
 
-> 4. ``exception/`` defines error handling functions and ``telegram_api/`` implements a simplified message queue for telegram bot to accommodate the rate limit of telegram bot api
+> 4. ``exception/`` defines error handling functions and ``telegram_api/`` 
+     implements a simplified message queue for telegram bot to accommodate the rate limit of telegram bot api
 
 > 5. coin: ``CoingeckoCoin``. exchange: ``BinanceExchange``. stock: ``StockSymbol``. All are defined in ``data_type/``
 
-> 6. alerts are set to run daily/bi-hourly/hourly/quarter-hourly, frequencies and timezones are defined in the ``settings.json``
+> 6. alerts are set to run daily/bi-hourly/hourly/quarter-hourly, 
+     frequencies and timezones are defined in the ``settings.json``
 
 ## Alert Type Description
 * ``market_cap``: ``alerts/coingecko_market_cap_alert.py``: a daily report of newly deleted and newly added
 top 100/200/300/400/500 market cap coins. 
-* ``price_volume``: ``alerts/binance_price_volume_alert.py``: real-time alerts for coins with large price and volume changes in 15min/1h timeframe.
-* ``alts``: ``alerts/coingecko_alts_alert.py``: daily report of top 500-3000 market cap alts coin with 24H price and volume increase both larger than 50%.
-* ``alert_100, alert_300, alert_500``: ``alerts/spot_over_ma_alert.py``: daily report of top 100/300/500 market cap coins/exchanges with spot price over 4H SMA200.
+* ``price_volume``: ``alerts/binance_price_volume_alert.py``: real-time alerts for coins with large price 
+  and volume changes in 15min/1h timeframe.
+* ``alts``: ``alerts/coingecko_alts_alert.py``: daily report of top 500-3000 market cap alts coin with 24H price 
+  and volume increase both larger than 50%.
+* ``alert_100, alert_300, alert_500``: ``alerts/spot_over_ma_alert.py``: daily report of 
+  top 100/300/500 market cap coins/exchanges with spot price over 4H SMA200.
 * ``sequential``: sequentially execute ``alert_100, alert_300, alert_500``.
-* ``funding_rate``: ``alerts/binance_bi_hourly_future_funding_rate_alert.py``: bi-hourly alerts for future exchanges with funding rate larger than +-0.2%.
-* ``meme_alert``: ``alerts/spot_over_ma_alert.py``: daily report of all coins/exchanges on coingecko/binance with daily volume over 3 million USD and with spot price over 1H SMA200.
-* ``stock_alert``: ``alerts/stock_alert.py``: daily report of top 20 SP500 and Nasdaq 100 stocks with highest daily price change.
-* ``price_increase``: ``alerts/coingecko_price_increase_alert.py``: daily report of top [start, end] market cap coins with the highest price increase percentage in a give timeframe.
+* ``funding_rate``: ``alerts/binance_bi_hourly_future_funding_rate_alert.py``: bi-hourly alerts for 
+  future exchanges with funding rate larger than +-0.2%.
+* ``meme_alert``: ``alerts/spot_over_ma_alert.py``: daily report of all coins/exchanges on coingecko/binance 
+  with daily volume over 3 million USD and with spot price over 1H SMA200.
+* ``stock_alert``: ``alerts/stock_alert.py``: daily report of top 20 SP500 and Nasdaq 100 stocks with 
+  highest daily price change.
+* ``price_increase``: ``alerts/coingecko_price_increase_alert.py``: daily report of top [start, end] 
+  market cap coins with the highest price increase percentage in a give timeframe.
 
 ### More on ``price_volume`` alert
 * Tracking all spot exchanges on Binance, and automatically add new exchanges to the alert list.
-* Contains 4 alerts to four different telegram groups/channels: ``price_alert_15min``, ``price_alert_1h``, ``volume_alert_1h``, ``volume_alert_15min``.
+* Contains 4 alerts to four different telegram groups/channels: ``price_alert_15min``, ``price_alert_1h``, 
+  ``volume_alert_1h``, ``volume_alert_15min``.
 * Setting thresholds defined in ``settings.json``.
 * ``price_alert_15min``: alert for coins with price change larger than ``15m_price_change_percentage`` in 15min timeframe.
 * ``price_alert_1h``: alert for coins with price change larger than ``1h_price_change_percentage`` in 1h timeframe.

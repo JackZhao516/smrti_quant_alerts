@@ -8,11 +8,18 @@ from smrti_quant_alerts.alerts.base_alert import BaseAlert
 
 
 class StockAlert(BaseAlert, StockApi):
-    def __init__(self, tg_type: str = "TEST", timeframe_list: Optional[List[str]] = None) -> None:
+    def __init__(self, tg_type: str = "TEST",
+                 timeframe_list: Optional[List[str]] = None, adjusted: bool = True) -> None:
+        """
+        :param tg_type: telegram type
+        :param timeframe_list: list of timeframe
+        :param adjusted: whether to use adjusted close price
+        """
         BaseAlert.__init__(self, tg_type=tg_type)
         StockApi.__init__(self)
         self.timeframe_list = [timeframe.upper() for timeframe in timeframe_list] \
-            if timeframe_list else None
+            if timeframe_list else ["1D", "5D", "1M", "3M", "6M", "1Y", "3Y", "5Y"]
+        self.adjusted = adjusted
 
     def get_top_n_price_increased_stocks(self, n: int) -> Dict[str, List[Tuple[StockSymbol, float]]]:
         """
@@ -26,7 +33,7 @@ class StockAlert(BaseAlert, StockApi):
         sp500 = self.get_sp_500_list()
         nasdaq = self.get_nasdaq_list()
         stocks = sp500 + nasdaq
-        stock_price_change = self.get_stock_price_change_percentage(stocks)
+        stock_price_change = self.get_stock_price_change_percentage(stocks, self.timeframe_list, self.adjusted)
         stock_price_change = {stock: price_change
                               for stock, price_change in stock_price_change.items()
                               if "ETF" not in stock.security_name}
@@ -72,5 +79,5 @@ class StockAlert(BaseAlert, StockApi):
 
 
 if __name__ == '__main__':
-    stock_alert = StockAlert(tg_type="TEST", timeframe_list=["1d", "3m", "1y"])
+    stock_alert = StockAlert(tg_type="TEST", timeframe_list=["1d", "3m", "1y"], adjusted=True)
     stock_alert.run()

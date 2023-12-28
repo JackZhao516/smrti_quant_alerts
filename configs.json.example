@@ -36,7 +36,8 @@
   "<stock_alert_example_name>": {
     "alert_type": "stock_alert",
     "alert_input_args": {
-      "timeframe_list": ["5d", "1M", "3M", "6M", "1y", "3y", "5y"],
+      "adjusted": true,
+      "timeframe_list": ["1d", "5d", "1M", "3M", "6M", "1y", "3y", "5y"],
       "tg_type": "STOCK"
     },
     "alert_params": {},
