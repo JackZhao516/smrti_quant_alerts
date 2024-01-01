@@ -61,7 +61,7 @@ class CryptoComprehensiveApi(BinanceApi, CoingeckoApi):
 
             for info in cur_coins_info:
                 symbol = info['symbol']
-                coin = CoingeckoCoin(info['id'], info['symbol'].upper())
+                coin = CoingeckoCoin(info['id'], info['symbol'])
                 if 'atl_date' not in info or not info['atl_date'] \
                         or 'ath_date' not in info or not info['ath_date']:
                     continue

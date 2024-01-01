@@ -13,9 +13,8 @@ class BaseAlert:
 
     All alerts should implement the run method, which is the main method for running the alert.
     """
-    ALERT_SETTINGS = Config.SETTINGS
-
-    PWD = Config.PROJECT_DIR
+    CONFIG = Config(verbose=False)
+    PWD = CONFIG.PROJECT_DIR
 
     def __init__(self, tg_type: str) -> None:
         self._tg_bot = TelegramBot(tg_type=tg_type)
@@ -26,7 +25,7 @@ class BaseAlert:
     def __repr__(self) -> str:
         return self.__class__.__name__
 
-    def run(self, *args: Any, **kwargs: Any) -> None:
+    def run(self) -> None:
         """
         run the alert
         """

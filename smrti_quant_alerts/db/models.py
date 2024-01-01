@@ -16,14 +16,18 @@ class BaseModel(Model):
 
 # -------------- price_volume ----------------
 class DailyCount(BaseModel):
-    exchange = CharField()
-    timeframe = CharField()
+    exchange = CharField(unique=True)
     alert_type = CharField()
     count = IntegerField()
     date = DateTimeField(default=time.time)
 
 
-# class MonthlyCount(BaseModel):
+class MonthlyCount(BaseModel):
+    exchange = CharField(unique=True)
+    alert_type = CharField()
+    count = IntegerField()
+    date = DateTimeField(default=time.time)
+
 
 # -------------- spot_over_ma ----------------
 class LastCount(BaseModel):

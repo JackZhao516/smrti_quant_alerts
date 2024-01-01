@@ -6,65 +6,202 @@ import logging
 import threading
 from collections import defaultdict
 from datetime import datetime
+from typing import List, Dict, Any, Optional, Union, Sequence, Iterable
 
 import pytz
 from binance.lib.utils import config_logging
-# from binance.websocket.spot.websocket_stream import SpotWebsocketStreamClient
-from binance.websocket.spot.websocket_client import SpotWebsocketClient as Client
+from binance.websocket.spot.websocket_stream import SpotWebsocketStreamClient
 
 from smrti_quant_alerts.alerts.base_alert import BaseAlert
-from smrti_quant_alerts.stock_crypto_api import CryptoComprehensiveApi
+from smrti_quant_alerts.stock_crypto_api import BinanceApi
+from smrti_quant_alerts.data_type import BinanceExchange
+from smrti_quant_alerts.db import init_database_runtime, close_database, PriceVolumeDBUtils
 from smrti_quant_alerts.exception import error_handling
-from smrti_quant_alerts.telegram_api import TelegramBot
 from smrti_quant_alerts.settings import Config
 
+# TODO:
+# 1. update exchange list
+# 2. somehow merge four alerts into one websocket subscription
+# 3. monthly reset
+# 4. quarterly alert
+# 5. price is one single alert, volume is one per exchange
+# 6. daily alert and reset
 
-# class BinancePriceVolumeBase(GetExchangeList):
-#     config_logging(logging, logging.WARNING)
-#
-#     def __init__(self, tg_mode="TEST", timeframe="15m", alert_type="price"):
-#         super().__init__(tg_mode)
-#         self.running = True
-#         self.timeframe = timeframe
-#         self.alert_type = alert_type
-#         self.SETTINGS = self.ALERT_SETTINGS["price_volume"]
-#
-#         # monitored exchanges
-#         self.exchanges = self.get_all_spot_exchanges_in_usdt_busd_btc()
-#         self.exchanges = [e.lower() for e in self.exchanges]
-#
-#         self.exchanges_update_timestamp = time.time()
-#         self.exchange_bar_dict = defaultdict(list)
-#
-#         # websocket client
-#         self.websocket_client = SpotWebsocketStreamClient(on_message=self._handle_tick_message, is_combined=True)
-#
-#     def _handle_tick_message(self, msg):
-#         """
-#         Handle tick message parsed from websocket
-#         """
-#         pass
-#
-#     def _update_active_exchanges(self):
-#         """
-#         Update exchanges list if last update was more than 15 min ago
-#         If new exchanges appear, subscribe to new exchanges
-#         """
-#         if (time.time() - self.exchanges_update_timestamp) >= 900:
-#             exchanges = self.get_all_spot_exchanges_in_usdt_busd_btc()
-#             exchanges = {e.lower() for e in exchanges}
-#             old_exchanges_set = set(self.exchanges)
-#             if exchanges != old_exchanges_set:
-#                 new_exchanges = exchanges - old_exchanges_set
-#                 self.websocket_client.subscribe(
-#                     stream=self._exchanges_to_subscription_stream_names(new_exchanges))
-#             self.exchanges_update_timestamp = time.time()
-#
-#     def _exchanges_to_subscription_stream_names(self, exchanges):
-#         """
-#         Convert exchanges to subscription stream names
-#         """
-#         return [f"{e.lower()}@kline_{self.timeframe}" for e in exchanges]
+
+class BinancePriceVolumeBase(BaseAlert, BinanceApi):
+    config_logging(logging, logging.WARNING)
+    _db_utils = PriceVolumeDBUtils()
+
+    def __init__(self, alert_name: str, alert_type: str = "binance_price_15m",
+                 tg_type: str = "TEST", timeframe: str = "15m") -> None:
+        BaseAlert.__init__(self, tg_type)
+        BinanceApi.__init__(self)
+
+        # alert info and settings
+        self._alert_name = alert_name
+        self._timeframe = timeframe
+        self._alert_type = alert_type
+        self._params = self.CONFIG.SETTINGS[alert_name]["alert_params"]
+
+        # data
+        self._exchanges = self.get_all_spot_exchanges_in_usdt_busd_btc()
+        self._monthly_start_timestamp = 0.0
+
+        # websocket client
+        self._websocket_client = SpotWebsocketStreamClient(on_message=self._handle_tick_message,
+                                                           is_combined=True, timeout=1000)
+
+    def _exchanges_to_subscription_stream_names(self, exchanges: Iterable[BinanceExchange]) -> List[str]:
+        """
+        Convert exchanges to subscription stream names
+        """
+        return [f"{e.lower()}@kline_{self._timeframe}" for e in exchanges]
+
+    def _handle_tick_message(self, msg: Dict[str, Any]) -> Any:
+        """
+        Handle tick message parsed from websocket
+        """
+        raise NotImplementedError
+
+    def _daily_alert_count(self) -> None:
+        """
+        Daily alert daily count and monthly count
+        """
+        logging.info("daily alert daily count and monthly count")
+        timezone = self.CONFIG.SETTINGS[self._alert_name]["timezone"]
+        daily_time = self.CONFIG.SETTINGS[self._alert_name]["daily_times"]
+        while True:
+            if datetime.now(pytz.timezone(timezone)).strftime('%H:%M') == daily_time:
+                start = time.time()
+                message_str = ""
+                # alert and reset monthly count
+                monthly_count = self._db_utils.get_count(alert_type=self._alert_type, count_type="monthly").items()
+                message_list = sorted(monthly_count, key=lambda x: x[1][0], reverse=True)[:30]
+
+                for exchange, count in message_list:
+                    message_str += f"{exchange} monthly count: {count[0]}\n"
+
+                self._tg_bot.send_message(
+                    f"Daily {self._alert_type} ticker monthly count:\n"
+                    f"{message_str}", blue_text=True
+                )
+                if time.time() - self._monthly_start_timestamp > 30 * 86400 + 180:
+                    self._db_utils.reset_count(self._alert_type, "monthly")
+                    self._monthly_start_timestamp = time.time()
+
+                daily_count = self._db_utils.get_count(alert_type=self._alert_type, count_type="daily")
+                message_list = sorted(daily_count, key=lambda x: x[1][0], reverse=True)
+                for exchange, count in message_list:
+                    message_str += f"{exchange}: {count[0]}\n"
+
+                self._tg_bot.send_message(
+                    f"Daily {self._alert_type} new alerts daily count:\n"
+                    f"{message_str}", blue_text=True)
+                self._db_utils.reset_count(self._alert_type, "daily")
+                time.sleep(86400 - max(2 * (time.time() - start), 120))
+            time.sleep(60)
+
+    def _auto_subscribe_new_exchanges(self):
+        """
+        auto subscribe new exchanges, every ten minutes
+        """
+        logging.info("subscribe new exchange start every ten minutes")
+        while True:
+            if datetime.now().strftime('%M')[1] == "2":
+                start = time.time()
+                self.CONFIG.reload_settings()
+                self._params = self.CONFIG.SETTINGS[self._alert_name]["alert_params"]
+
+                logging.info("subscribe new exchange start checking every ten minutes")
+                new_exchanges_set = set(self.get_all_spot_exchanges_in_usdt_busd_btc())
+                current_exchanges_set = set(self._exchanges)
+                if current_exchanges_set != new_exchanges_set:
+                    exchange_diff = new_exchanges_set - current_exchanges_set
+
+                    if exchange_diff:
+                        new_exchanges = self._exchanges_to_subscription_stream_names(exchange_diff)
+                        self._websocket_client.subscribe(new_exchanges)
+
+                        logging.warning(f"adding new exchanges: {exchange_diff}")
+
+                    self._exchanges += list(exchange_diff)
+                time.sleep(600 - max(2 * (time.time() - start), 120))
+            time.sleep(60)
+
+    def run(self) -> None:
+        """
+        run the alert
+        """
+        self._monthly_start_timestamp = time.time()
+        exchange_strs = self._exchanges_to_subscription_stream_names(self._exchanges)
+        self._websocket_client.subscribe(exchange_strs)
+
+        services = [
+            threading.Thread(target=self._auto_subscribe_new_exchanges),
+            threading.Thread(target=self._daily_alert_count)
+        ]
+        for service in services:
+            service.start()
+
+
+class BinancePrice15mAlert(BinancePriceVolumeBase):
+    def __init__(self, alert_name: str, tg_type: str = "TEST") -> None:
+        BinancePriceVolumeBase.__init__(self, alert_name=alert_name, alert_type="binance_price_15m",
+                                        tg_type=tg_type, timeframe="15m")
+
+    def _handle_tick_message(self, msg: Dict[str, Any]) -> Any:
+        pass
+
+
+class BinancePrice1hAlert(BinancePriceVolumeBase):
+    def __init__(self, alert_name: str, tg_type: str = "TEST") -> None:
+        BinancePriceVolumeBase.__init__(self, alert_name=alert_name, alert_type="binance_price_1h",
+                                        tg_type=tg_type, timeframe="1h")
+
+    def _handle_tick_message(self, msg: Dict[str, Any]) -> Any:
+        pass
+
+
+class BinanceVolume15mAlert(BinancePriceVolumeBase):
+    def __init__(self, alert_name: str, tg_type: str = "TEST") -> None:
+        BinancePriceVolumeBase.__init__(self, alert_name=alert_name, alert_type="binance_volume_15m",
+                                        tg_type=tg_type, timeframe="15m")
+
+    def _handle_tick_message(self, msg: Dict[str, Any]) -> Any:
+        pass
+
+
+class BinanceVolume1hAlert(BinancePriceVolumeBase):
+    def __init__(self, alert_name: str, tg_type: str = "TEST") -> None:
+        BinancePriceVolumeBase.__init__(self, alert_name=alert_name, alert_type="binance_volume_1h",
+                                        tg_type=tg_type, timeframe="1h")
+
+    def _handle_tick_message(self, msg: Dict[str, Any]) -> Any:
+        pass
+
+
+class BinancePriceVolumeAlert(BaseAlert):
+    def __init__(self, alert_name: str, alert_types: Sequence[str] = ("binance_price_15m", "binance_price_1h",
+                                                                      "binance_volume_15m", "binance_volume_1h"),
+                 tg_type: str = "TEST") -> None:
+        BaseAlert.__init__(self, tg_type)
+        self._alert_name = alert_name
+        self._alert_types = alert_types
+        self._tg_type = tg_type
+
+    def run(self) -> None:
+        init_database_runtime(self.CONFIG.SETTINGS[self._alert_name]["database_name"])
+        alert_type_to_class = {
+            "binance_price_15m": BinancePrice15mAlert,
+            "binance_price_1h": BinancePrice1hAlert,
+            "binance_volume_15m": BinanceVolume15mAlert,
+            "binance_volume_1h": BinanceVolume1hAlert,
+        }
+
+        for alert_type in self._alert_types:
+            alert = alert_type_to_class[alert_type](alert_name=self._alert_name, tg_type=self._tg_type)
+            threading.Thread(alert.run).start()
+
 
 
 class BinancePriceVolumeAlert:
@@ -584,23 +721,39 @@ class BinancePriceVolumeAlert:
 
 
 if __name__ == "__main__":
+    import datetime
+    print(datetime.datetime.fromtimestamp(1704148380))
+    l = threading.Lock()
+    t = defaultdict(set)
+    binance_api = BinanceApi()
+    exchanges = binance_api.get_all_spot_exchanges_in_usdt_busd_btc()
+    exchanges_strs = [f"{e.exchange.lower()}@kline_1m" for e in exchanges]
     def message_handler(_, msg):
         msg = json.loads(msg)
+
         if "stream" not in msg or "data" not in msg or "k" not in msg["data"] or \
                 msg["data"]["k"]["x"] is False:
             return
-        logging.info(msg)
 
-    #
-    # my_client = SpotWebsocketStreamClient(on_message=message_handler, is_combined=True)
-    #
-    # my_client.subscribe(
-    #     stream=["bnbusdt@kline_1m", "ethusdt@kline_1m"]
-    # )
-    # time.sleep(60)
-    # my_client.subscribe(
-    #     stream=["btcusdt@kline_1m"]
-    # )
-    #
-    # time.sleep(130)
-    # my_client.stop()
+        current_time = int(msg["data"]["k"]["t"])
+        l.acquire()
+        t[current_time].add(msg["stream"])
+
+        if t[current_time] == set(exchanges_strs):
+            print("all exchanges", datetime.datetime.now(), datetime.datetime.fromtimestamp(current_time/1000))
+        l.release()
+
+
+
+
+
+
+    for i in range(1):
+        print(exchanges_strs)
+        print(len(exchanges_strs))
+        my_client = SpotWebsocketStreamClient(on_message=message_handler, is_combined=True,
+                                              timeout=200)
+
+        my_client.subscribe(
+            stream=exchanges_strs
+        )

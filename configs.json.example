@@ -52,19 +52,18 @@
   "<sequential_example_name>": {
     "alert_type": "sequential",
     "alert_input_args": {
-      "time_frame": 4,
+      "timeframe": 4,
       "window": 200,
-      "tg_mode": "CG_SUM"
+      "tg_type": "CG_SUM",
+      "alert_type": "sequential",
+      "alert_name": "<sequential_example_name>",
+      "alert_coins_info": true
     },
     "alert_params": {},
     "run_time_input_args": {
       "daily_times": "09:00",
       "excluded_week_days": ["Mon", "Wed", "Fri", "Sat"],
-      "timezone": "Asia/Shanghai",
-      "kwargs": {
-        "alert_type": "sequential",
-        "alert_coins_info": true
-      }
+      "timezone": "Asia/Shanghai"
     },
     "database_name": "sequential"
   },
@@ -72,19 +71,18 @@
   "<meme_alert_example_name>": {
     "alert_type": "meme_alert",
     "alert_input_args": {
-      "time_frame": 1,
+      "timeframe": 1,
       "window": 200,
-      "tg_mode": "MEME"
+      "tg_type": "MEME",
+      "alert_type": "meme_alert",
+      "alert_name": "<meme_alert_example_name>",
+      "alert_coins_info": true
     },
     "alert_params": {},
     "run_time_input_args": {
       "daily_times": "08:50",
       "excluded_week_days": ["Mon", "Wed", "Fri", "Sat"],
-      "timezone": "Asia/Shanghai",
-      "kwargs": {
-        "alert_type": "meme_alert",
-        "alert_coins_info": true
-      }
+      "timezone": "Asia/Shanghai"
     },
     "database_name": "meme_alert"
   },
@@ -92,19 +90,18 @@
   "<alert_100_example_name>": {
     "alert_type": "alert_100",
     "alert_input_args": {
-      "time_frame": 4,
+      "timeframe": 4,
       "window": 200,
-      "tg_mode": "CG_SUM"
+      "tg_type": "CG_SUM",
+      "alert_type": "alert_100",
+      "alert_name": "<alert_100_example_name>",
+      "alert_coins_info": true
     },
     "alert_params": {},
     "run_time_input_args": {
       "daily_times": "09:00",
       "excluded_week_days": ["Mon", "Wed", "Fri", "Sat"],
-      "timezone": "Asia/Shanghai",
-      "kwargs": {
-        "alert_type": "alert_100",
-        "alert_coins_info": true
-      }
+      "timezone": "Asia/Shanghai"
     },
     "database_name": "alert_100"
   },
@@ -119,8 +116,7 @@
     "run_time_input_args": {
       "daily_times": "00:00",
       "excluded_week_days": [],
-      "timezone": "Asia/Shanghai",
-      "kwargs": {}
+      "timezone": "Asia/Shanghai"
     },
     "database_name": "market_cap"
   },
@@ -135,8 +131,7 @@
       "daily_times": ["00:00", "02:00", "04:00", "06:00", "08:00", "10:00",
                     "12:00", "14:00", "16:00", "18:00", "20:00", "22:00"],
       "excluded_week_days": [],
-      "timezone": "Asia/Shanghai",
-      "kwargs": {}
+      "timezone": "Asia/Shanghai"
     },
     "database_name": "alts_alert"
   },
@@ -152,8 +147,7 @@
       "daily_times": ["00:00", "02:00", "04:00", "06:00", "08:00", "10:00",
                   "12:00", "14:00", "16:00", "18:00", "20:00", "22:00"],
       "excluded_week_days": [],
-      "timezone": "Asia/Shanghai",
-      "kwargs": {}
+      "timezone": "Asia/Shanghai"
     },
     "database_name": "funding_rate"
   }
