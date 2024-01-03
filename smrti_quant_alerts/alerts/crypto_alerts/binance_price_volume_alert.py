@@ -233,7 +233,7 @@ class BinancePrice15mAlert(BinancePriceVolumeBase):
 class BinancePrice1hAlert(BinancePriceVolumeBase):
     def __init__(self, alert_name: str, tg_type: str = "TEST") -> None:
         BinancePriceVolumeBase.__init__(self, alert_name=alert_name, alert_type="binance_price_1h",
-                                        tg_type=tg_type, timeframe="1m")
+                                        tg_type=tg_type, timeframe="1h")
         self._alert_threshold = self._params["1h_price_change_percentage"]
         self._exchange_bar_dict = defaultdict(dict)
 
