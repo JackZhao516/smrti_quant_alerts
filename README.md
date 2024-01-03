@@ -9,8 +9,6 @@ This repo includes several real-time alerts for crypto/stock trading, built with
 [Polygon.io](https://polygon.io/), and [Financial Modeling Prep](https://site.financialmodelingprep.com/) APIs. 
 Alerts are sent to [Telegram](https://telegram.org/) groups/channels.
 ## Next Steps
-* Rebuild ``price_volume`` alert in a more oop manner. [IN PROGRESS]
-* Incorporate sqlite3 database to store data instead of csv/json files. [IN PROGRESS]
 * Use binance-connector for spot api calls.
 * Enhance error handling.
 * Enhance scripts.

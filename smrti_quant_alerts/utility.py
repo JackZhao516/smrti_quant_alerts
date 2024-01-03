@@ -2,9 +2,10 @@ import pytz
 import logging
 from datetime import datetime
 from time import sleep, time
-from typing import Callable, Union, Iterable, Dict, Optional, List, Any
+from typing import Callable, Union, Iterable, Optional, List
 
 from smrti_quant_alerts.settings import Config
+from smrti_quant_alerts.alerts import BinancePriceVolumeAlert
 
 
 def run_task_at_daily_time(task: Callable, daily_times: Union[Iterable[str], str],
@@ -47,5 +48,8 @@ def run_alert(alert_name: str, alert_class: Callable) -> None:
     logging.info(f"{alert_name} start")
     settings = Config.SETTINGS[alert_name]
     alert = alert_class(**settings["alert_input_args"])
-    run_task_at_daily_time(alert.run, **settings["run_time_input_args"])
+    if alert_class == BinancePriceVolumeAlert:
+        alert.run()
+    else:
+        run_task_at_daily_time(alert.run, **settings["run_time_input_args"])
     logging.info(f"{alert_name} finished")

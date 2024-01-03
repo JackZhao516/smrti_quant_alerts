@@ -12,7 +12,7 @@ from smrti_quant_alerts.data_type import TradingSymbol, get_class, BinanceExchan
 
 def init_database_runtime(db_name: str) -> None:
     database_runtime.initialize(init_database(db_name))
-    database_runtime.create_tables([LastCount, DailyCount])
+    database_runtime.create_tables([LastCount, DailyCount, MonthlyCount])
 
 
 def close_database() -> None:
@@ -70,7 +70,10 @@ class PriceVolumeDBUtils:
         if exchange:
             res = cls.select().where((cls.exchange == exchange.exchange) &
                                      (cls.alert_type == alert_type)).dicts()
-            return {exchange: (res[0]["count"], res[0]["date"])}
+            if res:
+                return {exchange: (res[0]["count"], res[0]["date"])}
+            else:
+                return {}
         else:
             with database_runtime.atomic():
                 counts = cls.select().where(cls.alert_type == alert_type).dicts()

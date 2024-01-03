@@ -57,7 +57,7 @@ class BinanceApi:
                 if isinstance(coin, BinanceExchange):
                     exclude_coins.add(coin)
                 elif isinstance(coin, CoingeckoCoin):
-                    for quote in ["USDT", "BUSD", "BTC", "ETH"]:
+                    for quote in ["USDT", "FDUSD", "BTC", "ETH"]:
                         binance_exchange = BinanceExchange.get_symbol_object(f"{coin.coin_symbol}{quote}")
                         if binance_exchange:
                             exclude_coins.add(binance_exchange)
@@ -70,7 +70,7 @@ class BinanceApi:
             if binance_exchange:
                 exclude_coins.add(binance_exchange)
             else:
-                for quote in ["USDT", "BUSD", "BTC", "ETH"]:
+                for quote in ["USDT", "FDUSD", "BTC", "ETH"]:
                     binance_exchange = BinanceExchange.get_symbol_object(f"{coin}{quote}")
                     if binance_exchange:
                         exclude_coins.add(binance_exchange)
@@ -99,16 +99,16 @@ class BinanceApi:
     @error_handling("binance", default_val=[])
     def get_popular_quote_binance_spot_exchanges(self) -> List[BinanceExchange]:
         """
-        BTC, ETH, USDT, BUSD spot binance exchanges
+        BTC, ETH, USDT, FDUSD spot binance exchanges
 
         :return: [BinanceExchange]
         """
         self._update_active_binance_spot_exchanges()
         binance_exchanges = []
 
-        # choose BTC, ETH, USDT, BUSD exchanges
+        # choose BTC, ETH, USDT, FDUSD exchanges
         for exchange in self.active_binance_spot_exchanges:
-            if exchange.quote_symbol in {"BTC", "ETH", "USDT", "BUSD"}:
+            if exchange.quote_symbol in {"BTC", "ETH", "USDT", "FDUSD"}:
                 binance_exchanges.append(exchange)
 
         return binance_exchanges
@@ -171,9 +171,9 @@ class BinanceApi:
         prices = [Decimal(i[4]) for i in response][::-1]
         return prices
 
-    def get_all_spot_exchanges_in_usdt_busd_btc(self) -> List[BinanceExchange]:
+    def get_all_spot_exchanges_in_usdt_fdusd_btc(self) -> List[BinanceExchange]:
         """
-        Get all exchanges in either USDT, BUSD, or BTC format on binance
+        Get all exchanges in either USDT, FDUSD, or BTC format on binance
 
         :return: [BinanceExchange, ...]
         """
@@ -182,7 +182,7 @@ class BinanceApi:
 
         for exchange in self.active_binance_spot_exchanges_set:
             base = exchange.base_symbol
-            for quote in ["USDT", "BUSD", "BTC"]:
+            for quote in ["USDT", "FDUSD", "BTC"]:
                 if BinanceExchange(base, quote) in self.active_binance_spot_exchanges_set:
                     binance_exchanges.add(BinanceExchange(base, quote))
                     break
