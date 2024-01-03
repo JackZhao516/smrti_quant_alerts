@@ -110,7 +110,6 @@ class BinancePriceVolumeBase(ABC, BaseAlert, BinanceApi):
 
         # get the largest and smallest five
         price_lists.sort(key=lambda x: x[1], reverse=True)
-        logging.warning(f"price_lists: {price_lists}")
         for i in range(5):
             if price_lists[i][1] >= self._alert_threshold:
                 count = self._db_utils.update_count(price_lists[i][0], self._alert_type, 1850, "monthly")
@@ -125,8 +124,6 @@ class BinancePriceVolumeBase(ABC, BaseAlert, BinanceApi):
 
         price_type = "close/open" if self._timeframe == "15m" else "high/low"
 
-        logging.warning(f"largest: {largest}")
-        logging.warning(f"smallest: {smallest}")
         if len(largest) > 0:
             self._tg_bot.send_message(
                 f"{self._timeframe} top {len(largest)} "
