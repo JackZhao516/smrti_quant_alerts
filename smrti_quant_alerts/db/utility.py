@@ -4,7 +4,7 @@ from threading import RLock
 
 
 from smrti_quant_alerts.db.database import database_runtime, init_database
-from smrti_quant_alerts.db.models import LastCount, DailyCount, MonthlyCount
+from smrti_quant_alerts.db.models import LastCount, ExchangeCount
 from smrti_quant_alerts.data_type import TradingSymbol, get_class, BinanceExchange
 
 # ------------ general utilities -------------
@@ -12,7 +12,7 @@ from smrti_quant_alerts.data_type import TradingSymbol, get_class, BinanceExchan
 
 def init_database_runtime(db_name: str) -> None:
     database_runtime.initialize(init_database(db_name))
-    database_runtime.create_tables([LastCount, DailyCount, MonthlyCount])
+    database_runtime.create_tables([LastCount, ExchangeCount])
 
 
 def close_database() -> None:
@@ -36,22 +36,23 @@ class PriceVolumeDBUtils:
 
         :return: current count
         """
-        cls = DailyCount if count_type == "daily" else MonthlyCount
-
         with database_runtime.atomic():
             count = PriceVolumeDBUtils.get_count(alert_type, exchange, count_type)
             if count:
                 count, date = count[exchange]
                 if date < time.time() - threshold_time:
                     # update count
-                    cls.update(count=cls.count + 1, date=time.time()).where(
-                        (cls.exchange == exchange.exchange) & (cls.alert_type == alert_type)).execute()
+                    ExchangeCount.update(count=ExchangeCount.count + 1, date=time.time()).where(
+                        (ExchangeCount.exchange == exchange.exchange) &
+                        (ExchangeCount.alert_type == alert_type) &
+                        ExchangeCount.count_type == count_type).execute()
                     count += 1
                 return count
 
             else:
                 # insert exchange
-                cls.insert(exchange=exchange.exchange, alert_type=alert_type, count=1).execute()
+                ExchangeCount.insert(exchange=exchange.exchange, alert_type=alert_type,
+                                     count=1, count_type=count_type).execute()
                 return 1
 
     @staticmethod
@@ -66,17 +67,18 @@ class PriceVolumeDBUtils:
 
         :return: {BinanceExchange: (<count>, <timestamp>)}
         """
-        cls = DailyCount if count_type == "daily" else MonthlyCount
         if exchange:
-            res = cls.select().where((cls.exchange == exchange.exchange) &
-                                     (cls.alert_type == alert_type)).dicts()
+            res = ExchangeCount.select().where((ExchangeCount.exchange == exchange.exchange) &
+                                               (ExchangeCount.alert_type == alert_type) &
+                                               (ExchangeCount.count_type == count_type)).dicts()
             if res:
                 return {exchange: (res[0]["count"], res[0]["date"])}
             else:
                 return {}
         else:
             with database_runtime.atomic():
-                counts = cls.select().where(cls.alert_type == alert_type).dicts()
+                counts = ExchangeCount.select().where((ExchangeCount.alert_type == alert_type) &
+                                                      (ExchangeCount.count_type == count_type)).dicts()
 
             return {BinanceExchange.get_symbol_object(i["exchange"]): (i["count"],  i["date"]) for i in counts}
 
@@ -88,9 +90,8 @@ class PriceVolumeDBUtils:
         :param alert_type: alert_type
         :param count_type: "daily" or "monthly"
         """
-        cls = DailyCount if count_type == "daily" else MonthlyCount
-
-        cls.delete().where(cls.alert_type == alert_type).execute()
+        ExchangeCount.delete().where((ExchangeCount.alert_type == alert_type) &
+                                     (ExchangeCount.count_type == count_type)).execute()
 
 
 # -------------- spot_over_ma ----------------

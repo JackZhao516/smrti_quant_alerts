@@ -1,12 +1,11 @@
 import logging
 import statistics
-import csv
-import os
 import uuid
 from collections import defaultdict
 from time import sleep, time
 from multiprocessing.pool import ThreadPool
 from typing import List, Set, Tuple, Union
+from abc import ABC, abstractmethod
 
 from smrti_quant_alerts.alerts.base_alert import BaseAlert
 from smrti_quant_alerts.stock_crypto_api import CryptoComprehensiveApi
@@ -16,11 +15,11 @@ from smrti_quant_alerts.db import init_database_runtime, close_database, SpotOve
 db_utils = SpotOverMaDBUtils()
 
 
-class SpotOverMABase(CryptoComprehensiveApi):
+class SpotOverMABase(ABC, CryptoComprehensiveApi):
     def __init__(self, exclude_coins: Union[List[TradingSymbol], Set[TradingSymbol]],
                  trading_symbols: Union[List[TradingSymbol], Set[TradingSymbol]],
                  time_frame: int = 1, window: int = 200, alert_type: str = "alert_300") -> None:
-        super().__init__()
+        CryptoComprehensiveApi.__init__(self)
         self._trading_symbols = trading_symbols
         self._symbol_type = TradingSymbol
         self._exclude_coins = self.get_exclude_coins(exclude_coins)
@@ -30,6 +29,7 @@ class SpotOverMABase(CryptoComprehensiveApi):
         self.window = window
         self._spot_over_ma = {}
 
+    @abstractmethod
     def _coin_spot_over_ma(self, trading_symbol: TradingSymbol) -> bool:
         """
         return True if spot price is over ma

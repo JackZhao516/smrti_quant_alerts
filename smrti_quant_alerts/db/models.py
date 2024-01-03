@@ -1,6 +1,6 @@
 import time
 
-from peewee import Model, PrimaryKeyField, CharField, IntegerField, DateTimeField
+from peewee import Model, CharField, IntegerField, DateTimeField, CompositeKey
 from playhouse.shortcuts import ThreadSafeDatabaseMetadata
 
 
@@ -11,28 +11,27 @@ class BaseModel(Model):
     class Meta:
         database = database_runtime
         model_metadata_class = ThreadSafeDatabaseMetadata
-    id = PrimaryKeyField()
 
 
 # -------------- price_volume ----------------
-class DailyCount(BaseModel):
-    exchange = CharField(unique=True)
+class ExchangeCount(BaseModel):
+    exchange = CharField()
     alert_type = CharField()
     count = IntegerField()
+    count_type = CharField()
     date = DateTimeField(default=time.time)
 
-
-class MonthlyCount(BaseModel):
-    exchange = CharField(unique=True)
-    alert_type = CharField()
-    count = IntegerField()
-    date = DateTimeField(default=time.time)
+    class Meta:
+        primary_key = CompositeKey('exchange', 'alert_type', 'count_type')
 
 
 # -------------- spot_over_ma ----------------
 class LastCount(BaseModel):
-    trading_symbol = CharField(unique=True)
+    trading_symbol = CharField()
     symbol_type = CharField()
     alert_type = CharField()
     count = IntegerField()
     date = DateTimeField(default=time.time)
+
+    class Meta:
+        primary_key = CompositeKey('trading_symbol', 'alert_type')

@@ -9,7 +9,8 @@ This repo includes several real-time alerts for crypto/stock trading, built with
 [Polygon.io](https://polygon.io/), and [Financial Modeling Prep](https://site.financialmodelingprep.com/) APIs. 
 Alerts are sent to [Telegram](https://telegram.org/) groups/channels.
 ## Next Steps
-* Use binance-connector for spot api calls.
+* Use binance-connector for spot api calls. [*In progress*]
+* Utility function for using thread pool to run requests.
 * Enhance error handling.
 * Enhance scripts.
 * Cut out the telegram messages into functions and make them more customizable.

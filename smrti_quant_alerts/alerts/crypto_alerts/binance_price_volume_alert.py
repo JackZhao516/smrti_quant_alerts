@@ -5,6 +5,7 @@ import logging
 import threading
 from typing import List, Any, Optional, Sequence, Iterable
 from collections import defaultdict
+from abc import ABC, abstractmethod
 
 from binance.lib.utils import config_logging
 from binance.websocket.spot.websocket_stream import SpotWebsocketStreamClient
@@ -16,8 +17,8 @@ from smrti_quant_alerts.db import init_database_runtime, PriceVolumeDBUtils
 from smrti_quant_alerts.utility import run_task_at_daily_time
 
 
-class BinancePriceVolumeBase(BaseAlert, BinanceApi):
-    config_logging(logging, logging.INFO)
+class BinancePriceVolumeBase(ABC, BaseAlert, BinanceApi):
+    # config_logging(logging, logging.INFO)
     _db_utils = PriceVolumeDBUtils()
 
     def __init__(self, alert_name: str, alert_type: str = "binance_price_15m",
@@ -109,7 +110,7 @@ class BinancePriceVolumeBase(BaseAlert, BinanceApi):
 
         # get the largest and smallest five
         price_lists.sort(key=lambda x: x[1], reverse=True)
-
+        logging.warning(f"price_lists: {price_lists}")
         for i in range(5):
             if price_lists[i][1] >= self._alert_threshold:
                 count = self._db_utils.update_count(price_lists[i][0], self._alert_type, 1850, "monthly")
@@ -124,6 +125,8 @@ class BinancePriceVolumeBase(BaseAlert, BinanceApi):
 
         price_type = "close/open" if self._timeframe == "15m" else "high/low"
 
+        logging.warning(f"largest: {largest}")
+        logging.warning(f"smallest: {smallest}")
         if len(largest) > 0:
             self._tg_bot.send_message(
                 f"{self._timeframe} top {len(largest)} "
@@ -133,6 +136,7 @@ class BinancePriceVolumeBase(BaseAlert, BinanceApi):
                 f"{self._timeframe} top {len(smallest)} "
                 f"negative price ({price_type}) change in % over {self._alert_threshold}%: {smallest}")
 
+    @abstractmethod
     def _handle_tick_message(self, _, msg: str) -> Any:
         """
         Handle tick message parsed from websocket
