@@ -1,7 +1,16 @@
 from __future__ import annotations
 from typing import Optional
 
-from .base_data_type import TradingSymbol
+from .base_data_type import TradingSymbol, Tick
+
+
+class ExchangeTick(Tick):
+    @property
+    def exchange(self) -> BinanceExchange:
+        if isinstance(self.symbol, BinanceExchange):
+            return self.symbol
+        else:
+            return BinanceExchange.get_symbol_object(self.symbol.str())
 
 
 class BinanceExchange(TradingSymbol):

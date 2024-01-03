@@ -41,7 +41,7 @@ class Config:
                           "TelegramBot.TOKEN or TelegramBot.TELEGRAM_IDS")
             exit(1)
         if "FMP_API_KEY" not in self.TOKENS or "POLYGON_IO_API_KEY" not in self.TOKENS:
-            logging.warning('token.json does not contain FMP_API_KEY/POLYGON_IO_API_KEY'
+            logging.warning('token.json does not contain FMP_API_KEY/POLYGON_IO_API_KEY '
                             'cannot run "stock_alert"')
 
         if verbose:

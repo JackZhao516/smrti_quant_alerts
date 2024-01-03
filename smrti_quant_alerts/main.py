@@ -24,14 +24,6 @@ alert_type_to_alert_class = {
     "price_increase_alert": CoingeckoPriceIncreaseAlert
 }
 
-
-def price_volume():
-    """
-    price/volume alerts
-    """
-    BinancePriceVolumeAlert().klines_alert()
-
-
 def main():
     if len(sys.argv) == 1:
         raise ValueError("Please specify the alert name; Alert names are defined in configs.json")
@@ -41,10 +33,7 @@ def main():
 
     alert_type = configs.SETTINGS[alert_name]["alert_type"]
     alert_class = alert_type_to_alert_class[alert_type]
-    if alert_type == "price_volume":
-        price_volume()
-    else:
-        run_alert(alert_name, alert_class)
+    run_alert(alert_name, alert_class)
 
 
 if __name__ == "__main__":

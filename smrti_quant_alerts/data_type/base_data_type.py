@@ -1,5 +1,21 @@
 from __future__ import annotations
 from typing import Union, Optional
+from dataclasses import dataclass
+
+
+@dataclass
+class Tick:
+    symbol: TradingSymbol
+    volume: float = 0.0
+    open: float = 0.0
+    close: float = 0.0
+    high: Optional[float] = None
+    low: Optional[float] = None
+    timestamp: Optional[int] = None
+
+    @property
+    def amount(self) -> float:
+        return self.close * self.volume
 
 
 class TradingSymbol:

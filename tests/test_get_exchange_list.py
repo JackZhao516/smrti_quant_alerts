@@ -282,7 +282,7 @@ class TestCoinList(unittest.TestCase):
                             },
                       status=200)
         self.gel._reset_timestamp()
-        exchanges = self.gel.get_all_spot_exchanges_in_usdt_busd_btc()
+        exchanges = self.gel.get_all_spot_exchanges_in_usdt_fdusd_btc()
         self.assertEqual({BinanceExchange("BTC", "USDT"), BinanceExchange("ETH", "BUSD")}, set(exchanges))
 
     @responses.activate

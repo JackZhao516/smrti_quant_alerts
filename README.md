@@ -9,8 +9,7 @@ This repo includes several real-time alerts for crypto/stock trading, built with
 [Polygon.io](https://polygon.io/), and [Financial Modeling Prep](https://site.financialmodelingprep.com/) APIs. 
 Alerts are sent to [Telegram](https://telegram.org/) groups/channels.
 ## Next Steps
-* Rebuild ``price_volume`` alert in a more oop manner. [IN PROGRESS]
-* Incorporate sqlite3 database to store data instead of csv/json files. [IN PROGRESS]
+* Use binance-connector for spot api calls.
 * Enhance error handling.
 * Enhance scripts.
 * Cut out the telegram messages into functions and make them more customizable.
@@ -36,7 +35,7 @@ Alerts are sent to [Telegram](https://telegram.org/) groups/channels.
     for the alerts you want to run
   * [python3.8](https://www.python.org/downloads/release/python-380/) or higher
 * Run on server in areas where [Binance](https://www.binance.com/en) and 
-  [CoinGecko apis](https://www.coingecko.com/) are not banned.
+  [CoinGecko](https://www.coingecko.com/) apis are not banned.
 ## Install
     pip install -r requirements.txt
     python setup.py develop
@@ -56,7 +55,7 @@ Alerts are sent to [Telegram](https://telegram.org/) groups/channels.
 
 > 2. alerts are defined in ``alerts/``, and will be sent to telegram groups/channels defined in ``token.json``
 
-> 3. ``stock_crypto_api`` defines interactions with stock/crypto apis
+> 3. ``stock_crypto_api/`` defines interactions with stock/crypto apis
 
 > 4. ``exception/`` defines error handling functions and ``telegram_api/`` 
      implements a simplified message queue for telegram bot to accommodate the rate limit of telegram bot api
@@ -64,7 +63,7 @@ Alerts are sent to [Telegram](https://telegram.org/) groups/channels.
 > 5. coin: ``CoingeckoCoin``. exchange: ``BinanceExchange``. stock: ``StockSymbol``. All are defined in ``data_type/``
 
 > 6. alerts are set to run daily/bi-hourly/hourly/quarter-hourly, 
-     frequencies and timezones are defined in the ``settings.json``
+     frequencies and timezones are defined in the ``configs.json``
 
 ## Alert Type Description
 * ``market_cap``: ``alerts/coingecko_market_cap_alert.py``: a daily report of newly deleted and newly added
