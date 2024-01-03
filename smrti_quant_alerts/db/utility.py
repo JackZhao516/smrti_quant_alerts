@@ -36,8 +36,8 @@ class PriceVolumeDBUtils:
 
         :return: current count
         """
+        count = PriceVolumeDBUtils.get_count(alert_type, exchange, count_type)
         with database_runtime.atomic():
-            count = PriceVolumeDBUtils.get_count(alert_type, exchange, count_type)
             if count:
                 count, date = count[exchange]
                 if date < time.time() - threshold_time:
@@ -68,13 +68,14 @@ class PriceVolumeDBUtils:
         :return: {BinanceExchange: (<count>, <timestamp>)}
         """
         if exchange:
-            res = ExchangeCount.select().where((ExchangeCount.exchange == exchange.exchange) &
-                                               (ExchangeCount.alert_type == alert_type) &
-                                               (ExchangeCount.count_type == count_type)).dicts()
-            if res:
-                return {exchange: (res[0]["count"], res[0]["date"])}
-            else:
-                return {}
+            with database_runtime.atomic():
+                res = ExchangeCount.select().where((ExchangeCount.exchange == exchange.exchange) &
+                                                   (ExchangeCount.alert_type == alert_type) &
+                                                   (ExchangeCount.count_type == count_type)).dicts()
+                if res:
+                    return {exchange: (res[0]["count"], res[0]["date"])}
+                else:
+                    return {}
         else:
             with database_runtime.atomic():
                 counts = ExchangeCount.select().where((ExchangeCount.alert_type == alert_type) &
@@ -90,8 +91,9 @@ class PriceVolumeDBUtils:
         :param alert_type: alert_type
         :param count_type: "daily" or "monthly"
         """
-        ExchangeCount.delete().where((ExchangeCount.alert_type == alert_type) &
-                                     (ExchangeCount.count_type == count_type)).execute()
+        with database_runtime.atomic():
+            ExchangeCount.delete().where((ExchangeCount.alert_type == alert_type) &
+                                         (ExchangeCount.count_type == count_type)).execute()
 
 
 # -------------- spot_over_ma ----------------
