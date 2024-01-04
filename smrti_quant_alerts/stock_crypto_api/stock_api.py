@@ -55,7 +55,7 @@ class StockApi:
 
         return stock_list
 
-    @error_handling("polygon", default_val=[])
+    @error_handling("polygon", default_val=(None, {}))
     def _get_stocks_close_price_with_given_date(self, date: str, adjusted: bool = True) \
             -> Tuple[str, Dict[StockSymbol, float]]:
         """

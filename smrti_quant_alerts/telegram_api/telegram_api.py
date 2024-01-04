@@ -52,7 +52,7 @@ class TelegramBot:
                   f'sendMessage?chat_id={self.telegram_chat_id}&text={message}'
         if blue_text:
             api_url += '&parse_mode=Markdown'
-        requests.get(api_url, timeout=100)
+        requests.get(api_url, timeout=80)
 
     def _release_msg_from_queue(self) -> None:
         """
