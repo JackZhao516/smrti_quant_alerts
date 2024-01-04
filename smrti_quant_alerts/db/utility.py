@@ -36,16 +36,17 @@ class PriceVolumeDBUtils:
 
         :return: current count
         """
-        count = PriceVolumeDBUtils.get_count(alert_type, exchange, count_type)
-        with database_runtime.atomic():
+        with database_runtime.atomic("EXCLUSIVE"):
+            count = PriceVolumeDBUtils.get_count(alert_type, exchange, count_type)
             if count:
                 count, date = count[exchange]
                 if date < time.time() - threshold_time:
                     # update count
-                    ExchangeCount.update(count=ExchangeCount.count + 1, date=time.time()).where(
+                    query = ExchangeCount.update(count=count + 1, date=time.time()).where(
                         (ExchangeCount.exchange == exchange.exchange) &
                         (ExchangeCount.alert_type == alert_type) &
-                        ExchangeCount.count_type == count_type).execute()
+                        (ExchangeCount.count_type == count_type))
+                    query.execute()
                     count += 1
                 return count
 

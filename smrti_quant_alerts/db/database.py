@@ -17,4 +17,4 @@ def init_database(db_name: str) -> SqliteDatabase:
             'cache_size': -1 * 64000,  # 64MB
             'foreign_keys': 1,
             'ignore_check_constraints': 0,
-            'synchronous': 1})
+            'synchronous': 2})
