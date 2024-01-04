@@ -1,5 +1,3 @@
-from typing import Any
-
 from smrti_quant_alerts.settings import Config
 from smrti_quant_alerts.telegram_api import TelegramBot
 

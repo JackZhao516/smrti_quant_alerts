@@ -14,8 +14,6 @@ class Config:
     TOKENS = json.load(open(os.path.join(PROJECT_DIR, "token.json")))
     SETTINGS = json.load(open(os.path.join(PROJECT_DIR, "configs.json")))
     API_ENDPOINTS = {
-        "BINANCE_SPOT_API_URL": "https://api.binance.com/api/v3/",
-        "BINANCE_FUTURES_API_URL": "https://fapi.binance.com/fapi/v1/",
         "SP_500_SOURCE_URL": "https://en.wikipedia.org/wiki/List_of_S%26P_500_companies#S&P_500_component_stocks",
         "FMP_API_URL": "https://financialmodelingprep.com/api/v3/",
     }

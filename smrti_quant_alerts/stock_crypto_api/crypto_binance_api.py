@@ -2,17 +2,16 @@ import time
 from decimal import Decimal
 from typing import List, Union, Set, Optional
 
-import requests
+from binance.spot import Spot
+from binance.um_futures import UMFutures
 
 from smrti_quant_alerts.exception import error_handling
 from smrti_quant_alerts.settings import Config
 from smrti_quant_alerts.data_type import BinanceExchange, CoingeckoCoin, TradingSymbol
-from .utility import read_exclude_coins_from_file
+from smrti_quant_alerts.stock_crypto_api.utility import read_exclude_coins_from_file
 
 
 class BinanceApi:
-    BINANCE_SPOT_API_URL = Config.API_ENDPOINTS["BINANCE_SPOT_API_URL"]
-    BINANCE_FUTURES_API_URL = Config.API_ENDPOINTS["BINANCE_FUTURES_API_URL"]
     PWD = Config.PROJECT_DIR
 
     # global data
@@ -21,7 +20,8 @@ class BinanceApi:
     active_binance_spot_exchanges_set = set()
 
     def __init__(self) -> None:
-        pass
+        self._binance_spot_client = Spot()
+        self._binance_futures_client = UMFutures()
 
     def _update_active_binance_spot_exchanges(self) -> None:
         """
@@ -84,11 +84,9 @@ class BinanceApi:
         :param exchange_type: SPOT or FUTURE
         :return: [BinanceExchange]
         """
-        api_url = f'{self.BINANCE_SPOT_API_URL}exchangeInfo?permissions=SPOT' \
-            if exchange_type == "SPOT" else f'{self.BINANCE_FUTURES_API_URL}exchangeInfo'
-
-        response = requests.get(api_url, timeout=5)
-        response = response.json()
+        client = self._binance_spot_client if exchange_type == "SPOT" else self._binance_futures_client
+        args = {"permissions": ["SPOT"]} if exchange_type == "SPOT" else {}
+        response = client.exchange_info(**args)
 
         binance_exchanges = []
         for exchange in response['symbols']:
@@ -123,10 +121,8 @@ class BinanceApi:
         """
         if not exchange:
             return Decimal(0)
-        api_url = f'{self.BINANCE_FUTURES_API_URL}premiumIndex?symbol={exchange}'
+        response = self._binance_futures_client.mark_price(symbol=exchange)
 
-        response = requests.get(api_url, timeout=5)
-        response = response.json()
         if isinstance(response, dict) and "lastFundingRate" in response and response["lastFundingRate"]:
             return Decimal(response["lastFundingRate"])
         return Decimal(0)
@@ -142,9 +138,8 @@ class BinanceApi:
         """
         if not binance_exchange:
             return Decimal(0)
-        api_url = f'{self.BINANCE_SPOT_API_URL}ticker/price?symbol={binance_exchange.exchange}'
-        response = requests.get(api_url, timeout=5)
-        response = response.json()
+        response = self._binance_spot_client.ticker_price(symbol=binance_exchange.exchange)
+
         if isinstance(response, dict):
             return Decimal(response.get("price", 0))
         else:
@@ -164,10 +159,9 @@ class BinanceApi:
         if not exchange:
             return []
         start_time = (int(time.time()) - days * 24 * 60 * 60) * 1000
-        api_url = f'{self.BINANCE_SPOT_API_URL}klines?symbol={exchange.exchange}' \
-                  f'&interval=1h&startTime={start_time}&limit=1000'
-        response = requests.get(api_url, timeout=5)
-        response = response.json()
+        response = self._binance_spot_client.klines(symbol=exchange, interval="1h",
+                                                    startTime=start_time, limit=1000)
+
         prices = [Decimal(i[4]) for i in response][::-1]
         return prices
 

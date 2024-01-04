@@ -18,14 +18,14 @@ db_utils = SpotOverMaDBUtils()
 class SpotOverMABase(ABC, CryptoComprehensiveApi):
     def __init__(self, exclude_coins: Union[List[TradingSymbol], Set[TradingSymbol]],
                  trading_symbols: Union[List[TradingSymbol], Set[TradingSymbol]],
-                 time_frame: int = 1, window: int = 200, alert_type: str = "alert_300") -> None:
+                 timeframe: int = 1, window: int = 200, alert_type: str = "alert_300") -> None:
         CryptoComprehensiveApi.__init__(self)
         self._trading_symbols = trading_symbols
         self._symbol_type = TradingSymbol
         self._exclude_coins = self.get_exclude_coins(exclude_coins)
 
         self.alert_type = alert_type
-        self.time_frame = time_frame
+        self.time_frame = timeframe
         self.window = window
         self._spot_over_ma = {}
 
@@ -86,8 +86,8 @@ class SpotOverMABase(ABC, CryptoComprehensiveApi):
 class CoingeckoSpotOverMA(SpotOverMABase):
     def __init__(self, exclude_coins: Union[List[TradingSymbol], Set[TradingSymbol]],
                  coingecko_coins: Union[List[CoingeckoCoin], Set[CoingeckoCoin]],
-                 time_frame: int = 1, window: int = 200, alert_type: str = "alert_300") -> None:
-        super().__init__(exclude_coins, coingecko_coins, time_frame, window, alert_type)
+                 timeframe: int = 1, window: int = 200, alert_type: str = "alert_300") -> None:
+        super().__init__(exclude_coins, coingecko_coins, timeframe, window, alert_type)
         self._symbol_type = CoingeckoCoin
 
     def _coin_spot_over_ma(self, coingecko_coin: CoingeckoCoin) -> bool:
@@ -114,8 +114,8 @@ class CoingeckoSpotOverMA(SpotOverMABase):
 class BinanceSpotOverMA(SpotOverMABase):
     def __init__(self, exclude_coins: Union[List[TradingSymbol], Set[TradingSymbol]],
                  binance_exchanges: Union[List[BinanceExchange], Set[BinanceExchange]],
-                 time_frame: int = 1, window: int = 200, alert_type: str = "alert_300") -> None:
-        super().__init__(exclude_coins, binance_exchanges, time_frame, window, alert_type)
+                 timeframe: int = 1, window: int = 200, alert_type: str = "alert_300") -> None:
+        super().__init__(exclude_coins, binance_exchanges, timeframe, window, alert_type)
         self._symbol_type = BinanceExchange
 
     def _coin_spot_over_ma(self, binance_exchange: BinanceExchange) -> bool:

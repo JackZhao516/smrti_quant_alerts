@@ -21,7 +21,7 @@ class StockApi:
     PWD = Config.PROJECT_DIR
 
     def __init__(self) -> None:
-        self.poly_client = RESTClient(Config.TOKENS["POLYGON_IO_API_KEY"])
+        self._poly_client = RESTClient(Config.TOKENS["POLYGON_IO_API_KEY"])
 
     @error_handling("sp500", default_val=[])
     def get_sp_500_list(self) -> List[StockSymbol]:
@@ -65,7 +65,7 @@ class StockApi:
         """
         grouped = []
         while not grouped:
-            grouped = self.poly_client.get_grouped_daily_aggs(
+            grouped = self._poly_client.get_grouped_daily_aggs(
                 date, adjusted
             )
             date = (datetime.datetime.strptime(date, "%Y-%m-%d") - datetime.timedelta(days=1)).strftime("%Y-%m-%d")

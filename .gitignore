@@ -128,12 +128,9 @@ dmypy.json
 # Pyre type checker
 .pyre/
 *.csv
-coins_with_weekly_volume_increase.txt
-300/
-300_cache/
-tmp/
+
 token.json.yangda
-*.log
+
 .idea/
 *.txt
 *.out
@@ -147,5 +144,6 @@ test.py
 _trial_temp/
 exclude_coins.json
 *.db
-
+*.db-shm
+*.db-wal
 configs.json

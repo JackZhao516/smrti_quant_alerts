@@ -7,7 +7,6 @@ from typing import List, Any, Optional, Sequence, Iterable
 from collections import defaultdict
 from abc import ABC, abstractmethod
 
-from binance.lib.utils import config_logging
 from binance.websocket.spot.websocket_stream import SpotWebsocketStreamClient
 
 from smrti_quant_alerts.alerts.base_alert import BaseAlert
@@ -18,7 +17,6 @@ from smrti_quant_alerts.utility import run_task_at_daily_time
 
 
 class BinancePriceVolumeBase(ABC, BaseAlert, BinanceApi):
-    # config_logging(logging, logging.INFO)
     _db_utils = PriceVolumeDBUtils()
 
     def __init__(self, alert_name: str, alert_type: str = "binance_price_15m",
