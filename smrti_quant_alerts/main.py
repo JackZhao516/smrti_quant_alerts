@@ -1,13 +1,8 @@
 import sys
-import logging
-
-from binance.lib.utils import config_logging
-config_logging(logging, logging.WARNING)
-
-from smrti_quant_alerts.alerts import CoingeckoMarketCapAlert, BinancePriceVolumeAlert, \
-    CGAltsAlert, SpotOverMAAlert, FutureFundingRate, StockAlert, CoingeckoPriceIncreaseAlert
 
 from smrti_quant_alerts.settings import Config
+from smrti_quant_alerts.alerts import CoingeckoMarketCapAlert, BinancePriceVolumeAlert, \
+    CGAltsAlert, SpotOverMAAlert, FutureFundingRate, StockAlert, CoingeckoPriceIncreaseAlert
 from smrti_quant_alerts.utility import run_alert
 
 configs = Config()

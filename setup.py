@@ -2,7 +2,7 @@ from setuptools import setup
 
 setup(
     name='smrti_quant_alerts',
-    version='0.1.0',
+    version='0.9.0',
     packages=['smrti_quant_alerts'],
     include_package_data=True,
     install_requires=[
@@ -16,6 +16,10 @@ setup(
         "pandas",
         "lxml",
         "peewee",
-        "polygon-api-client"
+        "polygon-api-client",
+        "urllib3>=1.26.9,<2.0.0",
+        "pycodestyle",
+        "pytest",
+        "pytest-cov"
     ],
 )

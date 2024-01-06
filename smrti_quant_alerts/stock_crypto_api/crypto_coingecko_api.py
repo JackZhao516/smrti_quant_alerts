@@ -165,7 +165,8 @@ class CoingeckoApi:
                 for market_attribute_name in market_attribute_name_list}
 
     @error_handling("coingecko", default_val=[])
-    def get_coin_history_hourly_close_price(self, coingecko_coin: Optional[CoingeckoCoin], days: int = 10) -> List[Decimal]:
+    def get_coin_history_hourly_close_price(self, coingecko_coin: Optional[CoingeckoCoin], days: int = 10) \
+            -> List[Decimal]:
         """
         Get coin past close price for the history <days> days
 

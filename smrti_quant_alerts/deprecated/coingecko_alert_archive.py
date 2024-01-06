@@ -13,7 +13,7 @@ STABLE_COINS = {"USDT", "USDC", "DAI", "BUSD", "USDP", "GUSD",
                 "TUSD", "FRAX", "CUSD", "USDD", "DEI", "USDK",
                 "MIMATIC", "OUSD", "PAX", "FEI", "USTC", "USDN",
                 "TRIBE", "LUSD", "EURS", "VUSDC", "USDX", "SUSD",
-                "VAI", "RSV", "CEUR", "USDS", "CUSDT", "DOLA", 
+                "VAI", "RSV", "CEUR", "USDS", "CUSDT", "DOLA",
                 "HAY", "MIM", "EDGT", "ALUSD"}
 running = True
 config_logging(logging, logging.INFO)
@@ -100,11 +100,6 @@ class CoingeckoAlert(GetExchangeList):
         self.counter_4h = min(len(price), 800) // 4
         self.ma_4h = np.sum(self.list_4h)/self.counter_4h
         self.spot_over_ma_4h = price[0][1] > self.ma_4h
-        # print(f"h4 init: {self.coin_id}, ma_4h: {self.ma_4h}, list_4h: {self.list_4h},spot_over_ma_4h: {self.spot_over_ma_4h}")
-        # except Exception as e:
-        #     print("h4 init error")
-        #     sleep(60)
-        #     self.h4_init()
 
     def h4_500_init(self):
         # try:
@@ -193,14 +188,7 @@ class CoingeckoAlert(GetExchangeList):
                 f"100_{self.symbol} spot: {str(price)} crossover H4 ma200: {str(self.ma_4h)}")
             self.spot_over_ma_4h = True
 
-        # logging.info(f"100_{self.symbol} spot: {str(price)} ma180: {str(self.ma_12h)} ma200: {str(self.ma_4h)}")
-        # self._tg_bot.safe_send_message(f"{self.symbol} spot: {str(price)} H12 ma180: {str(self.ma_12h)} H4 ma200: {str(self.ma_4h)}, _____{time.time()}")
-        # add_msg_to_queue(f"{self.symbol} spot: {str(price)} H4 ma200: {str(self.ma_4h)}, _____{time.time()}")
-
     def minute_update_500(self, price, update_ma_1d=False, update_ma_4=False):
-        # price = self._cg.get_price(ids=self.coin_id, vs_currencies='usd', include_last_updated_at=True,
-                                  # precision="full")
-        # price = np.float64(price[self.coin_id]["usd"])
         if update_ma_1d:
             self.list_1d = np.roll(self.list_1d, 1)
             self.list_1d[0] = price
@@ -243,6 +231,7 @@ class CoingeckoAlert(GetExchangeList):
             self.d1_init()
             self.h4_500_init()
         logging.info(f"{self.alert_type}_{self.symbol} coingecko init done")
+
     def minute_update(self, price):
         if self.last_update_thread:
             self.last_update_thread.join()
@@ -322,6 +311,7 @@ def close_all_threads(thread):
     thread.join()
     running = True
 
+
 if __name__ == '__main__':
     from smrti_quant_alerts.get_exchange_list import GetExchangeList
     cg = GetExchangeList("TEST")
@@ -332,4 +322,3 @@ if __name__ == '__main__':
     print("here")
     close_all_threads(t)
     print("done")
-

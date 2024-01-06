@@ -29,7 +29,7 @@ def error_handling(api: str = "binance", retry: int = 5, default_val: Optional[A
             for i in range(retry):
                 try:
                     response = fun(*args, **kwargs)
-                    if type(response) == Response:
+                    if isinstance(response, Response):
                         status_code = response.status_code
                         if status_code < 400:
                             return response

@@ -36,7 +36,7 @@ class CryptoComprehensiveApi(BinanceApi, CoingeckoApi):
             self, threshold: int = 3000000) -> Tuple[List[BinanceExchange], List[CoingeckoCoin]]:
         """
         Get all coins with 24h volume larger than threshold (in USD)
-        coin/usdt coin/eth coin/busd coin/btc exchanges on binance:
+        coin/usdt coin/eth coin/fdusd coin/btc exchanges on binance:
             [BinanceExchange, ...]
         if not on binance, get coin_id, and coin_name from coingeco:
             [CoingeckoCoin, ...]
@@ -52,7 +52,7 @@ class CryptoComprehensiveApi(BinanceApi, CoingeckoApi):
         coingecko_coins = []
         binance_exchanges = []
 
-        quotes = ['USDT', 'BUSD', 'BTC', 'ETH']
+        quotes = ['USDT', 'FDUSD', 'BTC', 'ETH']
 
         for page in range(pages):
             cur_coins_info = self._cg.get_coins_markets(
@@ -90,7 +90,7 @@ class CryptoComprehensiveApi(BinanceApi, CoingeckoApi):
             -> Tuple[List[BinanceExchange], List[CoingeckoCoin]]:
         """
         get the top <num> market cap
-        coin/usdt coin/eth coin/busd coin/btc exchanges on binance:
+        coin/usdt coin/eth coin/fdusd coin/btc exchanges on binance:
             [BinanceExchange, ...]
         if not on binance, get coin_id, and coin_name from coingeco:
             [CoingeckoCoin, ...]
@@ -125,13 +125,13 @@ class CryptoComprehensiveApi(BinanceApi, CoingeckoApi):
             if f"{symbol}USDT" not in self.active_binance_spot_exchanges_set and \
                     f"{symbol}BTC" not in self.active_binance_spot_exchanges_set and \
                     f"{symbol}ETH" not in self.active_binance_spot_exchanges_set and \
-                    f"{symbol}BUSD" not in self.active_binance_spot_exchanges_set:
+                    f"{symbol}FDUSD" not in self.active_binance_spot_exchanges_set:
                 coingeco_coins.append(CoingeckoCoin(coin.coin_id, symbol))
             else:
                 if f"{symbol}USDT" in self.active_binance_spot_exchanges_set:
                     binance_exchanges.append(BinanceExchange(symbol, "USDT"))
-                elif f"{symbol}BUSD" in self.active_binance_spot_exchanges_set:
-                    binance_exchanges.append(BinanceExchange(symbol, "BUSD"))
+                elif f"{symbol}FDUSD" in self.active_binance_spot_exchanges_set:
+                    binance_exchanges.append(BinanceExchange(symbol, "FDUSD"))
                 if f"{symbol}BTC" in self.active_binance_spot_exchanges_set:
                     binance_exchanges.append(BinanceExchange(symbol, "BTC"))
                 if f"{symbol}ETH" in self.active_binance_spot_exchanges_set:
@@ -188,10 +188,10 @@ class CryptoComprehensiveApi(BinanceApi, CoingeckoApi):
         coin_volume_increase_detail = sorted(coin_volume_increase_detail, key=lambda x: x[0], reverse=True)
         for volume_increase, symbol, coin_id in coin_volume_increase_detail:
             binance_exchange = False
-            for quote in ["USDT", "BUSD", "BTC", "ETH"]:
+            for quote in ["USDT", "FDUSD", "BTC", "ETH"]:
                 if BinanceExchange(symbol, quote) in self.active_binance_spot_exchanges_set:
                     binance_exchange = True
-                    if quote == "USDT" or quote == "BUSD":
+                    if quote == "USDT" or quote == "FDUSD":
                         binance_exchanges.append(BinanceExchange(symbol, quote))
                     break
             if not binance_exchange:

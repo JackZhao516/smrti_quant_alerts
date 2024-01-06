@@ -9,12 +9,10 @@ This repo includes several real-time alerts for crypto/stock trading, built with
 [Polygon.io](https://polygon.io/), and [Financial Modeling Prep](https://site.financialmodelingprep.com/) APIs. 
 Alerts are sent to [Telegram](https://telegram.org/) groups/channels.
 ## Next Steps
-* Use binance-connector for spot api calls. [*In progress*]
-* Utility function for using thread pool to run requests.
+* Improve test coverage. [![Coverage Status](https://coveralls.io/repos/github/JackZhao516/smrti_quant_alerts/badge.svg?branch=main)](https://coveralls.io/github/JackZhao516/smrti_quant_alerts?branch=main) [*In Progress*]
+* Write examples for each alert.
 * Enhance error handling.
 * Enhance scripts.
-* Cut out the telegram messages into functions and make them more customizable.
-* Improve test coverage.
 * Enhance documentation.
 * Setup CI/CD.
 * Setup Docker.

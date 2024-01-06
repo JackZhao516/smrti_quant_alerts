@@ -1,0 +1,23 @@
+{
+  "price_volume": {
+    "alert_type": "price_volume",
+    "alert_input_args": {
+      "alert_name": "price_volume",
+      "tg_types": ["TEST", "TEST", "TEST", "TEST"],
+      "alert_types": ["binance_price_15m", "binance_price_1h",
+        "binance_volume_15m", "binance_volume_1h"]
+    },
+    "alert_params": {
+      "15m_volume_usd": 500000.0,
+      "1h_volume_usd": 1000000.0,
+      "15m_price_change_percentage": 5.0,
+      "1h_price_change_percentage": 10.0
+    },
+    "run_time_input_args": {
+      "daily_times": "00:00",
+      "excluded_week_days": [],
+      "timezone": ""
+    },
+    "database_name": "price_volume"
+  }
+}

@@ -1,0 +1,23 @@
+{
+  "TelegramBot": {
+    "TOKEN": "",
+    "TELEGRAM_IDS": {
+      "CG_ALERT": "",
+      "CG_SUM": "",
+      "TEST": "",
+      "VOLUME_15M": "",
+      "VOLUME_1H": "",
+      "PRICE_15M": "",
+      "PRICE_1H": "",
+      "FUNDING_RATE": "",
+      "CG_MAR_CAP": "",
+      "CG_SUM_RAW": "",
+      "ALERT_VOLUME_THRESHOLD": "",
+      "ALTS": "",
+      "CG_PRICE_INCREASE_LUSHO": ""
+    }
+  },
+  "COINGECKO_API_KEY": "",
+  "FMP_API_KEY": "",
+  "POLYGON_IO_API_KEY": ""
+}

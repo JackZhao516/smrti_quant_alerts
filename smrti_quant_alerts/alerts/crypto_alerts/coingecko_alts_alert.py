@@ -42,8 +42,9 @@ class CGAltsAlert(BaseAlert, CoingeckoApi):
             data = self.get_coin_market_info(coin, ["total_volumes"], days=1)
             if not data or len(data["total_volumes"]) < 2:
                 continue
-            volume_double = data["total_volumes"][-2][-1] == 0.0 or \
-                            (data["total_volumes"][-1][-1] / data["total_volumes"][-2][-1]) >= 1.5
+            volume_double = \
+                data["total_volumes"][-2][-1] == 0.0 or \
+                (data["total_volumes"][-1][-1] / data["total_volumes"][-2][-1]) >= 1.5
             volume_over_10k = data["total_volumes"][-1][-1] >= 10000
 
             if volume_double and volume_over_10k:
