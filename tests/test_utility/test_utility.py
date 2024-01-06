@@ -11,7 +11,7 @@ class TestAlert:
     def __init__(self, **kwargs):
         pass
 
-    def run(self):
+    def run(self) -> None:
         pass
 
 
@@ -35,6 +35,7 @@ class TestUtility(unittest.TestCase):
                     self.assertEqual(cm.exception.code, 1)
 
     def test_run_alert(self) -> None:
+        Config()
         Config.SETTINGS = {"test": {"alert_input_args": {}, "run_time_input_args": {}}}
         with patch('smrti_quant_alerts.utility.run_task_at_daily_time', side_effect=lambda x: exit(1)):
             with self.assertRaises(SystemExit) as cm:

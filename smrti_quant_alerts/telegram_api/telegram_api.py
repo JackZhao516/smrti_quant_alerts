@@ -10,7 +10,7 @@ from smrti_quant_alerts.settings import Config
 
 
 class TelegramBot:
-    tokens = Config.TOKENS["TelegramBot"]
+    tokens = Config().TOKENS["TelegramBot"]
     TOKEN = tokens["TOKEN"]
     TELEGRAM_IDS = tokens["TELEGRAM_IDS"]
     PWD = os.path.join(Config.PROJECT_DIR, "runtime_data")

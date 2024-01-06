@@ -13,7 +13,7 @@ from smrti_quant_alerts.data_type import StockSymbol
 
 
 class StockApi:
-    FMP_API_KEY = Config.TOKENS["FMP_API_KEY"]
+    FMP_API_KEY = Config().TOKENS["FMP_API_KEY"]
     SP_500_SOURCE_URL = Config.API_ENDPOINTS["SP_500_SOURCE_URL"]
     FMP_API_URL = Config.API_ENDPOINTS["FMP_API_URL"]
 

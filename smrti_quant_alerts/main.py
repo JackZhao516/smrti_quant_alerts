@@ -32,7 +32,7 @@ def main():
     alert_type = configs.SETTINGS[alert_name]["alert_type"]
     alert_class = alert_type_to_alert_class[alert_type]
     if alert_type == "price_volume":
-        alert = alert_class(**Config.SETTINGS[alert_name]["alert_input_args"])
+        alert = alert_class(**configs.SETTINGS[alert_name]["alert_input_args"])
         alert.run()
     else:
         run_alert(alert_name, alert_class)

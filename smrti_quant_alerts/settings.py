@@ -18,26 +18,30 @@ class Config:
         "SP_500_SOURCE_URL": "https://en.wikipedia.org/wiki/List_of_S%26P_500_companies#S&P_500_component_stocks",
         "FMP_API_URL": "https://financialmodelingprep.com/api/v3/",
     }
+    IS_SETUP = False
 
     def __init__(self, verbose: bool = True) -> None:
-        self._read_configs_tokens()
-        self._validate_tokens(verbose=verbose)
-        self._validate_configs()
+        if not self.IS_SETUP:
+            self._read_configs_tokens()
+            self._validate_tokens(verbose=verbose)
+            self._validate_configs()
 
-    def _read_configs_tokens(self) -> None:
+    @classmethod
+    def _read_configs_tokens(cls) -> None:
         """
         read configs.json and token.json
         """
         for file in ["token.json", "configs.json"]:
-            if not os.path.isfile(os.path.join(self.PROJECT_DIR, file)):
+            if not os.path.isfile(os.path.join(cls.PROJECT_DIR, file)):
                 logging.error(f"{file} not found")
                 exit(1)
         try:
-            self.TOKENS = json.load(open(os.path.join(self.PROJECT_DIR, "token.json")))
-            self.SETTINGS = json.load(open(os.path.join(self.PROJECT_DIR, "configs.json")))
+            cls.TOKENS = json.load(open(os.path.join(cls.PROJECT_DIR, "token.json")))
+            cls.SETTINGS = json.load(open(os.path.join(cls.PROJECT_DIR, "configs.json")))
         except json.decoder.JSONDecodeError:
             logging.error("token.json/configs.json is not a valid json file")
             exit(1)
+        cls.IS_SETUP = True
 
     def _validate_tokens(self, verbose: bool = True) -> None:
         """

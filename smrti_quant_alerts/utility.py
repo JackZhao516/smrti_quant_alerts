@@ -45,7 +45,11 @@ def run_alert(alert_name: str, alert_class: Callable) -> None:
     :param alert_class: alert class
     """
     logging.info(f"{alert_name} start")
-    settings = Config.SETTINGS[alert_name]
+    print(Config.IS_SETUP)
+    print(Config.SETTINGS)
+    config = Config()
+
+    settings = config.SETTINGS[alert_name]
     alert = alert_class(**settings["alert_input_args"])
     run_task_at_daily_time(alert.run, **settings["run_time_input_args"])
     logging.info(f"{alert_name} finished")

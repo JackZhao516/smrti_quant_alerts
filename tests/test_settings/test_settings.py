@@ -25,7 +25,7 @@ class TestConfig(unittest.TestCase):
 
     def test_read_configs_tokens(self) -> None:
         config = Config()
-        config.PROJECT_DIR = PWD
+
         with patch('builtins.open',
                    side_effect=lambda file, mode='r': mock_open(read_data=dummy_token_str).return_value
                    if file == os.path.join(config.PROJECT_DIR, "token.json")
@@ -42,10 +42,11 @@ class TestConfig(unittest.TestCase):
                 config._read_configs_tokens()
                 self.assertEqual(cm.exception.code, 1)
 
-        config.PROJECT_DIR = "test"
+        tmp, Config.PROJECT_DIR = Config.PROJECT_DIR, "test"
         with self.assertRaises(SystemExit) as cm:
             config._read_configs_tokens()
             self.assertEqual(cm.exception.code, 1)
+        config.PROJECT_DIR = tmp
 
     def test_validate_tokens(self) -> None:
         config = Config()

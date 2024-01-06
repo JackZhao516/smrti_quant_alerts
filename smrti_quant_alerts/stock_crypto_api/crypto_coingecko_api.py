@@ -12,7 +12,7 @@ from .utility import read_exclude_coins_from_file
 
 
 class CoingeckoApi:
-    COINGECKO_API_KEY = Config.TOKENS["COINGECKO_API_KEY"]
+    COINGECKO_API_KEY = Config().TOKENS["COINGECKO_API_KEY"]
     PWD = Config.PROJECT_DIR
 
     def __init__(self) -> None:
