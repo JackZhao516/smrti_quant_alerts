@@ -162,6 +162,7 @@ class BinancePriceVolumeBase(ABC, BaseAlert, BinanceApi):
 
         daily_count = self._db_utils.get_count(alert_type=self._alert_type, count_type="daily").items()
         message_list = sorted(daily_count, key=lambda x: x[1][0], reverse=True)
+        message_str = ""
         for exchange, count in message_list:
             message_str += f"{exchange}: {count[0]}\n"
 
