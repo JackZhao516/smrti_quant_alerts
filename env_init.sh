@@ -12,4 +12,5 @@ fi
 python3 -m venv env
 source env/bin/activate
 pip install -r requirements.txt
+pip install binance-connector>=3.5.0 # Have to install this separately to avoid a dependency conflict
 python3 setup.py develop
