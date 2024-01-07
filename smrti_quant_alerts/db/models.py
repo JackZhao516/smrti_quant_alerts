@@ -27,11 +27,8 @@ class ExchangeCount(BaseModel):
 
 # -------------- spot_over_ma ----------------
 class LastCount(BaseModel):
-    trading_symbol = CharField()
+    trading_symbol = CharField(unique=True)
     symbol_type = CharField()
     alert_type = CharField()
-    count = IntegerField()
+    count = IntegerField(default=1)
     date = DateTimeField(default=time.time)
-
-    class Meta:
-        primary_key = CompositeKey('trading_symbol', 'alert_type')

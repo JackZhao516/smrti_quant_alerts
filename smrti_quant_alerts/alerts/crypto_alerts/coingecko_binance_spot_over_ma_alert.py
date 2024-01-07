@@ -67,8 +67,8 @@ class SpotOverMABase(ABC, CryptoComprehensiveApi):
                 newly_added.append(coin)
             else:
                 self._spot_over_ma[coin] = last_time_spot_over_ma[coin] + 1
-        db_utils.update_last_counts(self._spot_over_ma)
-        db_utils.write_last_counts(self._spot_over_ma, self.alert_type)
+
+        db_utils.update_last_count(list(self._spot_over_ma.keys()), self.alert_type)
         return newly_deleted, newly_added
 
     def run(self) -> Tuple[List[Tuple[TradingSymbol, int]], List[TradingSymbol], List[TradingSymbol]]:
@@ -324,7 +324,7 @@ class SpotOverMAAlert(BaseAlert, CryptoComprehensiveApi):
 
 if __name__ == "__main__":
     start_time = time()
-    alert_type = "alert_100"
+    alert_type = "sequential"
 
     kwargs = {"alert_name": "alert_100", "timeframe": 4, "window": 200,
               "tg_type": "TEST", "alert_type": alert_type, "alert_coins_info": True}

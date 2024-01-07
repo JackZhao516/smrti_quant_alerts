@@ -1,6 +1,5 @@
 import time
-from typing import Union, Type, Dict, Optional, Set, List, Tuple
-from threading import RLock
+from typing import Union, Type, Dict, Optional, List, Tuple
 
 
 from smrti_quant_alerts.db.database import database_runtime, init_database
@@ -27,7 +26,7 @@ class PriceVolumeDBUtils:
                      threshold_time: int, count_type: str = "daily") -> int:
         """
         update daily/monthly count only if new alert is larger than <threshold_time> seconds
-        later than the previous count
+        later than the previous count. If there is no previous count, create one. Return the current count.
 
         :param exchange: BinanceExchange
         :param alert_type: alert type
@@ -100,31 +99,25 @@ class PriceVolumeDBUtils:
 # -------------- spot_over_ma ----------------
 
 class SpotOverMaDBUtils:
-    spot_over_ma_lock = RLock()
-
-    @classmethod
-    def remove_older_count(cls, start_timestamp: Union[int, float]) -> None:
+    @staticmethod
+    def remove_older_count(start_timestamp: Union[int, float]) -> None:
         """
         remove older count
         :param start_timestamp: start timestamp
         """
-        cls.spot_over_ma_lock.acquire()
         with database_runtime.atomic():
             LastCount.delete().where(LastCount.date < start_timestamp).execute()
-        cls.spot_over_ma_lock.release()
 
-    @classmethod
-    def get_last_count(cls, symbol_type: Optional[Type[TradingSymbol]] = None,
-                       alert_type: Optional[str] = None) -> Dict[TradingSymbol, int]:
+    @staticmethod
+    def get_last_count(symbol_type: Optional[Type[TradingSymbol]] = None, alert_type: Optional[str] = None) -> Dict[TradingSymbol, int]:
         """
-        get all last count
+        get all last count or by symbol type
         :param symbol_type: symbol type
         :param alert_type: alert type
 
         :return: {TradingSymbol: <count>}
         """
         with database_runtime.atomic():
-            cls.spot_over_ma_lock.acquire()
             if symbol_type and alert_type:
                 last_counts = LastCount.select().where(
                     (LastCount.symbol_type == symbol_type.type()) & (LastCount.alert_type == alert_type)).dicts()
@@ -134,8 +127,6 @@ class SpotOverMaDBUtils:
                 last_counts = LastCount.select().where(LastCount.alert_type == alert_type).dicts()
             else:
                 last_counts = LastCount.select().dicts()
-
-            cls.spot_over_ma_lock.release()
 
             res = {}
             for i in last_counts:
@@ -148,34 +139,19 @@ class SpotOverMaDBUtils:
             return res
 
     @classmethod
-    def update_last_counts(
-            cls, last_counts: Union[Dict[TradingSymbol, int], Set[TradingSymbol], List[TradingSymbol]]) -> None:
+    def update_last_count(cls, last_counts: List[TradingSymbol], alert_type: str) -> None:
         """
-        update last count
-        :param last_counts: last counts dict {TradingSymbol: count}
-        """
-        if isinstance(last_counts, dict):
-            last_counts = last_counts.keys()
-        last_counts_list = list(last_counts)
-        last_counts_list = [i.str() for i in last_counts_list]
-        cls.spot_over_ma_lock.acquire()
-        query = LastCount.update(count=LastCount.count + 1, date=time.time()).where(
-            LastCount.trading_symbol.in_(last_counts_list))
-        query.execute()
-        cls.spot_over_ma_lock.release()
+        write/update last count for exchanges, only for the first time
 
-    @classmethod
-    def write_last_counts(cls, last_counts: Dict[TradingSymbol, int], alert_type: str) -> None:
-        """
-        write last count, only for the first time
         :param last_counts: last counts dict {TradingSymbol: count}
         :param alert_type: alert type
         """
-        cls.spot_over_ma_lock.acquire()
-        last_counts_existed = cls.get_last_count()
-        last_counts = {k: v for k, v in last_counts.items() if k not in last_counts_existed}
-        last_counts = [{"trading_symbol": k.str(), "count": v,
-                        "alert_type": alert_type, "symbol_type": k.type()}
-                       for k, v in last_counts.items()]
-        LastCount.insert_many(last_counts).execute()
-        cls.spot_over_ma_lock.release()
+        last_counts_list = [i.str() for i in last_counts]
+        with database_runtime.atomic("EXCLUSIVE"):
+            LastCount.update(count=LastCount.count + 1, alert_type=alert_type, date=time.time()).where(
+                LastCount.trading_symbol.in_(last_counts_list)).execute()
+            last_counts_existed = cls.get_last_count()
+            last_counts = [e for e in last_counts if e not in last_counts_existed]
+            last_counts = [{"trading_symbol": e.str(), "symbol_type": e.type(), "alert_type": alert_type}
+                           for e in last_counts]
+            LastCount.insert_many(last_counts).execute()
