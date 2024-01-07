@@ -98,7 +98,7 @@ class TelegramBot:
         time.sleep(0.1)
 
     @error_handling("telegram", default_val=None)
-    def send_file(self, file_path: str, output_file_name: str) -> None:
+    def send_file(self, file_path: str, output_file_name: str) -> Any:
         """
         send file to telegram group
 
@@ -109,10 +109,10 @@ class TelegramBot:
                   f'sendDocument?'
         files = {'document': open(file_path, 'rb')}
         data = {'chat_id': self.telegram_chat_id, 'caption': output_file_name, 'parse_mode': 'HTML'}
-        requests.post(api_url, data=data, files=files, stream=True, timeout=1000)
+        return requests.post(api_url, data=data, files=files, stream=True, timeout=1000)
 
     @error_handling("telegram", default_val=None)
-    def send_data_as_csv_file(self, output_file_name: str, headers: List[str], data: List[List[Any]]) -> None:
+    def send_data_as_csv_file(self, output_file_name: str, headers: List[str], data: List[List[Any]]) -> Any:
         """
         send data as csv file to telegram group
 
@@ -125,11 +125,7 @@ class TelegramBot:
             writer = csv.writer(csv_file)
             writer.writerow(headers)
             writer.writerows(data)
-        self.send_file(target_file_path, output_file_name)
+        res = self.send_file(target_file_path, output_file_name)
         if os.path.exists(target_file_path):
             os.remove(target_file_path)
-
-
-if __name__ == "__main__":
-    tg_bot = TelegramBot("TEST", daemon=True)
-    tg_bot.send_message("test", blue_text=True)
+        return res
