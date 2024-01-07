@@ -12,7 +12,6 @@ Alerts are sent to [Telegram](https://telegram.org/) groups/channels.
 * Improve test coverage. [![Coverage Status](https://coveralls.io/repos/github/JackZhao516/smrti_quant_alerts/badge.svg?branch=main)](https://coveralls.io/github/JackZhao516/smrti_quant_alerts?branch=main) [*In Progress*]
 * Write examples for each alert.
 * Enhance error handling.
-* Enhance scripts.
 * Enhance documentation.
 * Setup CI/CD.
 * Setup Docker.

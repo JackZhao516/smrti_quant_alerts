@@ -8,5 +8,4 @@ printf "\n\n### Running pytest ###\n"
 pytest tests/* --cov smrti_quant_alerts --cov-report term-missing --disable-warnings --cov-fail-under=60
 
 # clean up
-
-rm -rf .coverage*
+rm -rf .coverage* .pytest_cache
