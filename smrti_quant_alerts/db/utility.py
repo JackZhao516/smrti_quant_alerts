@@ -11,7 +11,7 @@ from smrti_quant_alerts.data_type import TradingSymbol, get_class, BinanceExchan
 
 def init_database_runtime(db_name: str) -> None:
     database_runtime.initialize(init_database(db_name))
-    database_runtime.create_tables([LastCount, ExchangeCount])
+    database_runtime.create_tables([LastCount, ExchangeCount], safe=True)
 
 
 def close_database() -> None:
@@ -39,12 +39,14 @@ class PriceVolumeDBUtils:
             count = PriceVolumeDBUtils.get_count(alert_type, exchange, count_type)
             if count:
                 count, date = count[exchange]
+
                 if date < time.time() - threshold_time:
                     # update count
                     query = ExchangeCount.update(count=count + 1, date=time.time()).where(
                         (ExchangeCount.exchange == exchange.exchange) &
                         (ExchangeCount.alert_type == alert_type) &
-                        (ExchangeCount.count_type == count_type))
+                        (ExchangeCount.count_type == count_type) &
+                        (ExchangeCount.date < time.time() - threshold_time))
                     query.execute()
                     count += 1
                 return count
@@ -91,12 +93,12 @@ class PriceVolumeDBUtils:
         :param alert_type: alert_type
         :param count_type: "daily" or "monthly"
         """
-        with database_runtime.atomic():
+        with database_runtime.atomic("EXCLUSIVE"):
             ExchangeCount.delete().where((ExchangeCount.alert_type == alert_type) &
                                          (ExchangeCount.count_type == count_type)).execute()
 
-
 # -------------- spot_over_ma ----------------
+
 
 class SpotOverMaDBUtils:
     @staticmethod
@@ -109,7 +111,8 @@ class SpotOverMaDBUtils:
             LastCount.delete().where(LastCount.date < start_timestamp).execute()
 
     @staticmethod
-    def get_last_count(symbol_type: Optional[Type[TradingSymbol]] = None, alert_type: Optional[str] = None) -> Dict[TradingSymbol, int]:
+    def get_last_count(symbol_type: Optional[Type[TradingSymbol]] = None,
+                       alert_type: Optional[str] = None) -> Dict[TradingSymbol, int]:
         """
         get all last count or by symbol type
         :param symbol_type: symbol type
@@ -138,8 +141,8 @@ class SpotOverMaDBUtils:
 
             return res
 
-    @classmethod
-    def update_last_count(cls, last_counts: List[TradingSymbol], alert_type: str) -> None:
+    @staticmethod
+    def update_last_count(last_counts: List[TradingSymbol], alert_type: str) -> None:
         """
         write/update last count for exchanges, only for the first time
 
@@ -150,7 +153,7 @@ class SpotOverMaDBUtils:
         with database_runtime.atomic("EXCLUSIVE"):
             LastCount.update(count=LastCount.count + 1, alert_type=alert_type, date=time.time()).where(
                 LastCount.trading_symbol.in_(last_counts_list)).execute()
-            last_counts_existed = cls.get_last_count()
+            last_counts_existed = SpotOverMaDBUtils.get_last_count()
             last_counts = [e for e in last_counts if e not in last_counts_existed]
             last_counts = [{"trading_symbol": e.str(), "symbol_type": e.type(), "alert_type": alert_type}
                            for e in last_counts]

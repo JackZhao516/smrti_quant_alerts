@@ -16,9 +16,9 @@ class TestDatabase(unittest.TestCase):
             pass
 
     def test_init_database(self) -> None:
-        self.delete_dir()
         tmp, Config.PROJECT_DIR = Config.PROJECT_DIR, self.PWD
-        with patch('peewee.SqliteDatabase', side_effect=lambda x, **kwargs: exit(1)):
+        self.delete_dir()
+        with patch('playhouse.pool.PooledSqliteDatabase', side_effect=lambda x, **kwargs: exit(1)):
             with self.assertRaises(SystemExit) as cm:
                 init_database_runtime("test.db")
                 self.assertEqual(cm.exception.code, 1)

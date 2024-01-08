@@ -36,8 +36,8 @@ class TestConfig:
 
 
 class TestDBUtility(unittest.TestCase):
-    def test_init_database_runtime(self):
-        with patch('peewee.SqliteDatabase', side_effect=lambda x, **kwargs: exit(1)):
+    def test_init_database_runtime(self) -> None:
+        with patch('playhouse.pool.PooledSqliteDatabase', side_effect=lambda x, **kwargs: exit(1)):
             with self.assertRaises(SystemExit) as cm:
                 init_database_runtime("test.db")
                 self.assertEqual(cm.exception.code, 1)
