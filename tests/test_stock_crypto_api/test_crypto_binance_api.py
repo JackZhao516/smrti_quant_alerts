@@ -24,6 +24,7 @@ class TestCryptoBinanceApi(unittest.TestCase):
 
     def test_get_exclude_coins(self) -> None:
         Config.PROJECT_DIR = os.path.dirname(os.path.abspath(__file__))
+        BinanceExchange.symbol_base_quote_map = {}
         with mock.patch.object(BinanceApi, 'get_all_binance_exchanges',
                                return_value=[BinanceExchange("BTC", "ETH"), BinanceExchange("BTC", "USDT"),
                                              BinanceExchange("TEST", "TEST"), CoingeckoCoin("tether", "USDT"),
