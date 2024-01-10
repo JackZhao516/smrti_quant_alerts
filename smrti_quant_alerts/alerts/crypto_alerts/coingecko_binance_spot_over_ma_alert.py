@@ -225,7 +225,7 @@ class SpotOverMAAlert(BaseAlert, CryptoComprehensiveApi):
                     num=300, daily_volume_threshold=1000000, weekly_volume_threshold=7000000)
         elif alert_type == "meme_alert":
             self._binance_exchanges, self._coingecko_coins = \
-                self.get_2023_coins_with_daily_volume_threshold(threshold=3000000)
+                self.get_coins_with_daily_volume_threshold_later_than_2023(threshold=3000000)
 
     def _alert_spot_cross_ma_by_alert_type(
             self, exclude_coins: Union[List[TradingSymbol], Set[TradingSymbol], None] = None,

@@ -16,6 +16,8 @@ def remove_database() -> None:
     """
     try:
         os.remove(os.path.join(Config.PROJECT_DIR, "runtime_database", "test.db"))
+        os.remove(os.path.join(Config.PROJECT_DIR, "runtime_database", "test.db-shm"))
+        os.remove(os.path.join(Config.PROJECT_DIR, "runtime_database", "test.db-wal"))
     except OSError:
         pass
 

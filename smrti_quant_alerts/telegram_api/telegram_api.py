@@ -15,9 +15,6 @@ class TelegramBot:
     TELEGRAM_IDS = tokens["TELEGRAM_IDS"]
     PWD = os.path.join(Config.PROJECT_DIR, "runtime_data")
 
-    if not os.path.exists(PWD):
-        os.mkdir(PWD)
-
     def __init__(self, tg_type: str = "CG_ALERT", daemon: bool = True) -> None:
         """
         TelegramBot class for sending message to telegram group via bot
@@ -120,6 +117,8 @@ class TelegramBot:
         :param headers: headers of the csv file
         :param data: data of the csv file
         """
+        if not os.path.exists(self.PWD):
+            os.mkdir(self.PWD)
         target_file_path = os.path.join(self.PWD, output_file_name)
         with open(target_file_path, "w", newline="", encoding="utf-8") as csv_file:
             writer = csv.writer(csv_file)

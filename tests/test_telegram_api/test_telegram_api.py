@@ -8,14 +8,15 @@ from smrti_quant_alerts.settings import Config
 
 
 class TestTelegramBot(unittest.TestCase):
-    try:
-        os.rmdir(os.path.join(Config.PROJECT_DIR, "runtime_data"))
-    except OSError:
-        pass
+    def setUp(self) -> None:
+        Config.PROJECT_DIR = os.path.dirname(os.path.abspath(__file__))
+        try:
+            os.rmdir(TelegramBot.PWD)
+        except OSError:
+            pass
 
     def test_release_msg_from_queue(self) -> None:
         telegram_bot = TelegramBot(daemon=False)
-
         telegram_bot.msg_queue = [["test", True], ["test1", False], ["test2", True]]
         start = time.time()
         with patch('requests.get', side_effect=lambda x, timeout: {"ok": True}):
@@ -53,6 +54,5 @@ class TestTelegramBot(unittest.TestCase):
         with patch.object(TelegramBot, 'send_file',
                           side_effect=lambda x, y: open(x, "rb").read()):
             telegram_bot = TelegramBot(daemon=False)
-            telegram_bot.PWD = os.path.dirname(os.path.abspath(__file__))
             res = telegram_bot.send_data_as_csv_file("test.csv", ["test1", "test2"], [["test3", "test4"]])
             self.assertEqual(res, b'test1,test2\r\ntest3,test4\r\n')

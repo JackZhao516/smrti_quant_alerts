@@ -7,8 +7,8 @@ import numpy as np
 
 from smrti_quant_alerts.exception import error_handling
 from smrti_quant_alerts.data_type import BinanceExchange, CoingeckoCoin, TradingSymbol
-from .crypto_binance_api import BinanceApi
-from .crypto_coingecko_api import CoingeckoApi
+from smrti_quant_alerts.stock_crypto_api.crypto_binance_api import BinanceApi
+from smrti_quant_alerts.stock_crypto_api.crypto_coingecko_api import CoingeckoApi
 
 
 class CryptoComprehensiveApi(BinanceApi, CoingeckoApi):
@@ -32,7 +32,7 @@ class CryptoComprehensiveApi(BinanceApi, CoingeckoApi):
         return exclude_coins
 
     @error_handling("coingecko", default_val=([], []))
-    def get_2023_coins_with_daily_volume_threshold(
+    def get_coins_with_daily_volume_threshold_later_than_2023(
             self, threshold: int = 3000000) -> Tuple[List[BinanceExchange], List[CoingeckoCoin]]:
         """
         Get all coins with 24h volume larger than threshold (in USD)
@@ -84,6 +84,7 @@ class CryptoComprehensiveApi(BinanceApi, CoingeckoApi):
 
         return binance_exchanges, coingecko_coins
 
+    @error_handling("coingecko", default_val=([], []))
     def get_top_market_cap_coins_with_volume_threshold(
             self, num: int = 300, daily_volume_threshold: Optional[int] = None,
             weekly_volume_threshold: Optional[int] = None) \
@@ -115,7 +116,7 @@ class CryptoComprehensiveApi(BinanceApi, CoingeckoApi):
             if weekly_volume_threshold or daily_volume_threshold:
                 # get weekly volume
                 data = self.get_coin_market_info(coin, ["total_volumes"], days=7, interval='daily')
-                weekly_volume = np.sum(np.array(data.get('total_volumes', [])))
+                weekly_volume = np.sum(np.array(data.get('total_volumes', [0, 0])))
                 daily_volume = data.get('total_volumes', [[0, 0]])[-1][1]
                 if weekly_volume_threshold and weekly_volume < weekly_volume_threshold or \
                         daily_volume_threshold and daily_volume < daily_volume_threshold:
@@ -166,7 +167,7 @@ class CryptoComprehensiveApi(BinanceApi, CoingeckoApi):
         coin_volume_increase_detail = []
         coingeco_coins, binance_exchanges = [], []
 
-        for i, coin in enumerate(market_list):
+        def filter_coin(coin):
             symbol = coin.coin_symbol
             coin_id = coin.coin_id
             # add alt/btc, alt/eth exchanges
@@ -179,11 +180,15 @@ class CryptoComprehensiveApi(BinanceApi, CoingeckoApi):
 
             data = np.array(data['total_volumes'])
             if np.sum(data[:7, 1]) == 0:
-                continue
+                return
             volume_increase = np.sum(data[7:, 1]) / np.sum(data[:7, 1])
 
             if volume_increase >= volume_threshold:
                 coin_volume_increase_detail.append([volume_increase, symbol, coin_id])
+
+        pool = ThreadPool(6)
+        pool.map(filter_coin, market_list)
+        pool.close()
 
         coin_volume_increase_detail = sorted(coin_volume_increase_detail, key=lambda x: x[0], reverse=True)
         for volume_increase, symbol, coin_id in coin_volume_increase_detail:

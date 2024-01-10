@@ -94,23 +94,6 @@ class BinanceApi:
                 binance_exchanges.append(BinanceExchange(exchange['baseAsset'], exchange['quoteAsset']))
         return binance_exchanges
 
-    # @error_handling("binance", default_val=[])
-    # def get_popular_quote_binance_spot_exchanges(self) -> List[BinanceExchange]:
-    #     """
-    #     BTC, ETH, USDT, FDUSD spot binance exchanges
-    #
-    #     :return: [BinanceExchange]
-    #     """
-    #     self._update_active_binance_spot_exchanges()
-    #     binance_exchanges = []
-    #
-    #     # choose BTC, ETH, USDT, FDUSD exchanges
-    #     for exchange in self.active_binance_spot_exchanges:
-    #         if exchange.quote_symbol in {"BTC", "ETH", "USDT", "FDUSD"}:
-    #             binance_exchanges.append(exchange)
-    #
-    #     return binance_exchanges
-
     @error_handling("binance", default_val=Decimal(0))
     def get_future_exchange_funding_rate(self, exchange: Optional[BinanceExchange]) -> Decimal:
         """
