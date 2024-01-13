@@ -179,9 +179,7 @@ class CryptoComprehensiveApi(BinanceApi, CoingeckoApi):
             data = self.get_coin_market_info(coin, ["total_volumes"], days=13, interval='daily')
 
             data = np.array(data['total_volumes'])
-            if np.sum(data[:7, 1]) == 0:
-                return
-            volume_increase = np.sum(data[7:, 1]) / np.sum(data[:7, 1])
+            volume_increase = 100 if np.sum(data[:7, 1]) == 0 else np.sum(data[7:, 1]) / np.sum(data[:7, 1])
 
             if volume_increase >= volume_threshold:
                 coin_volume_increase_detail.append([volume_increase, symbol, coin_id])
