@@ -24,4 +24,3 @@ class TestUtility(unittest.TestCase):
         Config.PROJECT_DIR = os.path.dirname(__file__)
         exclude_coins = read_exclude_coins_from_file()
         self.assertEqual(exclude_coins, {"TESTTEST", "TEST1", "BTC", "USDT"})
-

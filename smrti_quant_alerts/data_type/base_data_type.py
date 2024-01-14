@@ -77,7 +77,7 @@ class TradingSymbol:
 
     @staticmethod
     def get_symbol_object(symbol: str) -> Optional[TradingSymbol]:
-        pass
+        raise NotImplementedError
 
     @classmethod
     def type(cls) -> str:

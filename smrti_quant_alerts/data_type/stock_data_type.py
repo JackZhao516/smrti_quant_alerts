@@ -31,10 +31,6 @@ class StockSymbol(TradingSymbol):
     def ticker(self) -> str:
         return self._symbol
 
-    @ticker.setter
-    def ticker(self, value: str) -> None:
-        self._symbol = value.upper()
-
     @property
     def ticker_alias(self) -> str:
         if "." in self._symbol:

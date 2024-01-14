@@ -28,10 +28,6 @@ class BinanceExchange(TradingSymbol):
     def exchange(self) -> str:
         return self._symbol
 
-    @exchange.setter
-    def exchange(self, value: str) -> None:
-        self._symbol = value.upper()
-
     @staticmethod
     def get_symbol_object(symbol: str) -> Optional[BinanceExchange]:
         if symbol.upper() in BinanceExchange.symbol_base_quote_map:
@@ -53,10 +49,6 @@ class CoingeckoCoin(TradingSymbol):
     @property
     def coin_symbol(self) -> str:
         return self._symbol
-
-    @coin_symbol.setter
-    def coin_symbol(self, value: str) -> None:
-        self._symbol = value.upper()
 
     @staticmethod
     def get_symbol_object(symbol: str) -> Optional[CoingeckoCoin]:
