@@ -11,4 +11,4 @@ pytest tests/* --cov smrti_quant_alerts --cov-report term-missing --disable-warn
 
 # clean up
 sleep 2
-rm -rf .pytest_cache tests/_trial_temp/ .coverage*
+rm -rf .pytest_cache tests/_trial_temp/ .coverage .coverage.*

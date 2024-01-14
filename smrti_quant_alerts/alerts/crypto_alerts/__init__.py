@@ -1,6 +1,6 @@
 from .coingecko_alts_alert import CGAltsAlert
 from .coingecko_price_increase_alert import CoingeckoPriceIncreaseAlert
-from .binance_bi_hourly_future_funding_rate_alert import FutureFundingRate
+from .binance_future_funding_rate_alert import FutureFundingRate
 from .binance_price_volume_alert import BinancePriceVolumeAlert
 from .coingecko_market_cap_alert import CoingeckoMarketCapAlert
 from .coingecko_binance_spot_over_ma_alert import SpotOverMAAlert

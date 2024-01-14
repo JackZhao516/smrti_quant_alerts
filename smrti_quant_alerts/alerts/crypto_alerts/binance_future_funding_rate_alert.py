@@ -45,5 +45,4 @@ class FutureFundingRate(BaseAlert, BinanceApi):
 
 
 if __name__ == '__main__':
-    alert = FutureFundingRate(tg_type="TEST")
-    alert.run()
+    FutureFundingRate(tg_type="TEST").run()
