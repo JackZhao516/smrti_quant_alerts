@@ -1,5 +1,4 @@
 import datetime
-import pytz
 from typing import List, Dict, Set, Union, Tuple, Optional
 from collections import defaultdict
 
@@ -10,6 +9,7 @@ from polygon import RESTClient
 from smrti_quant_alerts.exception import error_handling
 from smrti_quant_alerts.settings import Config
 from smrti_quant_alerts.data_type import StockSymbol
+from smrti_quant_alerts.stock_crypto_api.utility import get_datetime_now
 
 
 class StockApi:
@@ -61,6 +61,8 @@ class StockApi:
         Get stock price with given date
 
         :param date: date in the format of YYYY-MM-DD
+
+        :return: date, {StockSymbol: price, ...}
         """
         grouped = []
         while not grouped:
@@ -96,20 +98,14 @@ class StockApi:
 
         # transform the timeframe_list to number of days
         timeframe_dict = {
-            "1D": 1,
-            "5D": 5,
-            "1M": 30,
-            "3M": 90,
-            "6M": 180,
-            "1Y": 365,
-            "3Y": 365 * 3,
-            "5Y": 365 * 5,
+            "1D": 1, "5D": 5, "1M": 30, "3M": 90, "6M": 180, "1Y": 365, "3Y": 365 * 3, "5Y": 365 * 5,
         }
 
-        us_eastern = pytz.timezone('US/Eastern')
         # get end date in the format of YYYY-MM-DD
-        end_date = datetime.datetime.now(tz=us_eastern).strftime("%Y-%m-%d")
+        end_date = get_datetime_now().strftime("%Y-%m-%d")
         end_date, end_stock_price = self._get_stocks_close_price_with_given_date(end_date, adjusted)
+        if not end_date:
+            return {}
 
         # calculate the price change percentage
         stock_price_change = defaultdict(dict)
@@ -117,6 +113,7 @@ class StockApi:
             days = timeframe_dict[timeframe]
             start_date = (datetime.datetime.strptime(end_date, "%Y-%m-%d") -
                           datetime.timedelta(days=days)).strftime("%Y-%m-%d")
+
             _, start_stock_price = self._get_stocks_close_price_with_given_date(start_date, adjusted)
 
             for stock in stock_list:

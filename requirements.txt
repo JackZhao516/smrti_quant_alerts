@@ -4,7 +4,6 @@ numpy
 pycoingecko==3.1.0
 requests
 pytz
-responses
 pandas
 lxml
 peewee
