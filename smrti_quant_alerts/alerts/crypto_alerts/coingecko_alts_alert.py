@@ -16,8 +16,8 @@ class CGAltsAlert(BaseAlert, CoingeckoApi):
 
     def run(self) -> None:
         """
-        Alert daily at noon, 12:00
-        Alts coin: price change >= 50% in 24 hours
+        Alts coin: Market Cap 500 - 3000
+                   price change >= 50% in 24 hours
                    Volume change >= 50% in 24 hours, Volume >= 10k in USD
                    Market Cap >= 1M
         """
@@ -25,9 +25,9 @@ class CGAltsAlert(BaseAlert, CoingeckoApi):
         self._alts_coins = self.get_top_n_market_cap_coins(3000)[500:]
         market_info = self.get_coins_market_info(
             self._alts_coins, ["market_cap", "price_change_percentage_24h"])
-
-        if not self._alts_coins or not market_info:
+        if not market_info or not self._alts_coins:
             return
+
         # first filter: price change >= 50% in 24 hours and market cap >= 1M
         market_info_filtered = []
         for coin_info in market_info:
@@ -58,5 +58,4 @@ class CGAltsAlert(BaseAlert, CoingeckoApi):
 
 
 if __name__ == "__main__":
-    alts_alert = CGAltsAlert(tg_type="TEST")
-    alts_alert.run()
+    CGAltsAlert(tg_type="TEST").run()
