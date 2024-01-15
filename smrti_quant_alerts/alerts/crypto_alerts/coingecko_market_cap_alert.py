@@ -37,10 +37,9 @@ class CoingeckoMarketCapAlert(BaseAlert, CoingeckoApi):
 
             if cur_set != new_set:
                 deleted_list = list(cur_set - new_set)
-                added = new_set - cur_set
-                for i, a in enumerate(new_list):
-                    if a in added:
-                        added_list.append(a)
+                for i, coin in enumerate(new_list):
+                    if coin not in cur_set:
+                        added_list.append(coin)
                 self._top_n_list[n] = new_list
             self._tg_bot.send_message(f"Top {n} Market Cap Report: \n"
                                       f"Deleted: {deleted_list}\n"

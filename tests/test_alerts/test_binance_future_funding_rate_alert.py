@@ -3,13 +3,11 @@ from unittest.mock import patch
 
 from smrti_quant_alerts.alerts import FutureFundingRate
 from smrti_quant_alerts.data_type import BinanceExchange
-from tests import MockTelegramBot
 
 
 class TestFutureFundingRate(unittest.TestCase):
     def setUp(self) -> None:
         self.alert = FutureFundingRate(rate_threshold=0.001, tg_type="TEST")
-        self.alert._tg_bot = MockTelegramBot()
 
     def test_exchange_funding_rate_over_threshold(self) -> None:
         with patch.object(FutureFundingRate, 'get_future_exchange_funding_rate', return_value=0.0002):
