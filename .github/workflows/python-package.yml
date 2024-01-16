@@ -30,7 +30,7 @@ jobs:
         pip install -r requirements.txt
         pip install binance-connector==3.5.0
         python3 setup.py develop
-        pip install flake8, coveralls
+        pip install flake8 coveralls
     - name: Lint with flake8
       run: |
         # stop the build if there are Python syntax errors or undefined names
