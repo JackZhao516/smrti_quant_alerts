@@ -41,5 +41,5 @@ jobs:
       run: |
         pytest tests/* --cov smrti_quant_alerts --cov-report term-missing --disable-warnings --cov-fail-under=60
         coveralls
-        sleep 2
+        sleep 1
         rm -rf .pytest_cache tests/_trial_temp/ .coverage .coverage.*
