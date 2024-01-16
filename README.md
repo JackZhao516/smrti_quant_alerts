@@ -3,13 +3,14 @@
 
 [![License](https://img.shields.io/badge/license-MIT-green)](https://github.com/JackZhao516/smrti_quant_alerts/blob/main/LICENSE)
 ![smrti_quant_alert Python Versions](https://img.shields.io/pypi/pyversions/python-bitget?logo=pypi)
+[![Coverage Status](https://coveralls.io/repos/github/JackZhao516/smrti_quant_alerts/badge.svg?branch=main)](https://coveralls.io/github/JackZhao516/smrti_quant_alerts?branch=main)
 
 This repo includes several real-time alerts for crypto/stock trading, built with 
 [CoinGecko](https://www.coingecko.com/), [Binance](https://www.binance.com/en), 
 [Polygon.io](https://polygon.io/), and [Financial Modeling Prep](https://site.financialmodelingprep.com/) APIs. 
 Alerts are sent to [Telegram](https://telegram.org/) groups/channels.
 ## Next Steps
-* Improve test coverage. [![Coverage Status](https://coveralls.io/repos/github/JackZhao516/smrti_quant_alerts/badge.svg?branch=main)](https://coveralls.io/github/JackZhao516/smrti_quant_alerts?branch=main) [*In Progress*]
+* Improve test coverage. [*In Progress*]
 * Write examples for each alert.
 * Enhance error handling.
 * Enhance documentation.
