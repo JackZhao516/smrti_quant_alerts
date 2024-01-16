@@ -19,7 +19,6 @@ setup(
         "urllib3>=1.26.9,<2.0.0",
         "pycodestyle",
         "pytest",
-        "pytest-cov",
-        "coveralls"
+        "pytest-cov"
     ],
 )

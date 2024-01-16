@@ -1,4 +1,3 @@
-import responses
 import unittest
 import time
 from unittest import mock
