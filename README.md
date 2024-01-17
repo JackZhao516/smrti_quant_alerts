@@ -3,16 +3,21 @@
 
 [![License](https://img.shields.io/badge/license-MIT-green)](https://github.com/JackZhao516/smrti_quant_alerts/blob/main/LICENSE)
 ![smrti_quant_alert Python Versions](https://img.shields.io/pypi/pyversions/python-bitget?logo=pypi)
-[![Coverage Status](https://coveralls.io/repos/github/JackZhao516/smrti_quant_alerts/badge.png?branch=main)](https://coveralls.io/github/JackZhao516/smrti_quant_alerts?branch=main)
+[![Coverage Status](https://coveralls.io/repos/github/JackZhao516/smrti_quant_alerts/badge.svg?branch=main)](https://coveralls.io/github/JackZhao516/smrti_quant_alerts?branch=main)
 
 This repo includes several real-time alerts for crypto/stock trading, built with 
 [CoinGecko](https://www.coingecko.com/), [Binance](https://www.binance.com/en), 
 [Polygon.io](https://polygon.io/), and [Financial Modeling Prep](https://site.financialmodelingprep.com/) APIs. 
 Alerts are sent to [Telegram](https://telegram.org/) groups/channels.
+
+## BONUS
+* Contact telegram user ``@zaozen_quant`` to get a trial of all the alerts for 1 month.
+  * You don't need to set up anything, just join the telegram group/channel and you will receive alerts.
+  * If you like the alerts, I can help you set up your own alerts.
+
 ## Next Steps
 * Improve test coverage. [*In Progress*]
 * Write examples for each alert.
-* Enhance error handling.
 * Enhance documentation.
 * Setup Docker.
 * Add a gui for setting up/running alerts.
@@ -35,16 +40,15 @@ Alerts are sent to [Telegram](https://telegram.org/) groups/channels.
 * Run on server in areas where [Binance](https://www.binance.com/en) and 
   [CoinGecko](https://www.coingecko.com/) apis are not banned.
 ## Install
-    pip install -r requirements.txt
-    python setup.py develop
+    ./env_init.sh
 ## Usage
 
 > 1. Change your API KEY and your Telegram Group ids in ``token.json``
 
 > 2. Run ``./start.sh <alert_name>``
-> alert_names are set in ``settings.json``.
+> alert_names are set in ``configs.json``.
 
-> 3. Available alert types: ``market_cap``, ``price_volume``, ``sequential``, 
+> 3. Available ``alert_type``: ``market_cap``, ``price_volume``, ``sequential``, 
 > ``alts``, ``alert_100``, ``alert_300``, ``alert_500``, ``funding_rate``, 
 > ``meme_alert``, ``stock_alert``
 
