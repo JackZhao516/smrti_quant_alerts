@@ -47,7 +47,7 @@ class TestPriceIncreaseAlert(unittest.TestCase):
     def test_run(self) -> None:
         coin1, coin2, coin3 = CoingeckoCoin("test1", "TEST1"), CoingeckoCoin("test2", "TEST2"), \
             CoingeckoCoin("test3", "TEST3")
-        alert = CoingeckoPriceIncreaseAlert((0, 3), 3, "14d", "TEST")
+        alert = CoingeckoPriceIncreaseAlert((0, 3), 3, "14d", False, "TEST")
         with patch.object(alert._tg_bot, "send_message") as mock_send_message:
             with patch.object(CoingeckoPriceIncreaseAlert, "get_top_n_market_cap_coins", return_value=[]):
                 alert.run()

@@ -4,11 +4,13 @@ from typing import Union, Sequence, List, Dict, Any
 from smrti_quant_alerts.alerts.base_alert import BaseAlert
 from smrti_quant_alerts.stock_crypto_api import CoingeckoApi
 from smrti_quant_alerts.data_type import CoingeckoCoin
+from smrti_quant_alerts.alerts.crypto_alerts.utility import send_coins_info_to_telegram
 
 
 class CoingeckoPriceIncreaseAlert(BaseAlert, CoingeckoApi):
     def __init__(self, top_range: Union[Sequence[int], Sequence[Sequence[int]]] = (0, 500),
-                 top_n: int = 100, timeframe: str = "14d", tg_type: str = "CG_PRICE_INCREASE") -> None:
+                 top_n: int = 100, timeframe: str = "14d", coin_info: bool = True,
+                 tg_type: str = "CG_PRICE_INCREASE") -> None:
         """
         Alert for the list of <top_range> market cap coins with
         the biggest price increase in the last self._timeframe days
@@ -17,6 +19,7 @@ class CoingeckoPriceIncreaseAlert(BaseAlert, CoingeckoApi):
                           in the format of (start, end), or [(start, end), ...]
         :param top_n: top n coins to send alert for
         :param timeframe: timeframe string, e.g. "14d", "30d", "3m"
+        :param  coin_info: whether send the coin info csv file to tg or not
         :param tg_type: telegram type
 
         """
@@ -26,6 +29,7 @@ class CoingeckoPriceIncreaseAlert(BaseAlert, CoingeckoApi):
         self._top_ranges = top_range if isinstance(top_range[0], Sequence) else [top_range]
         self._top_n = top_n
         self._timeframe = timeframe.lower()
+        self._coin_info = coin_info
 
     def get_coins_price_change_percentage(self, coins: List[CoingeckoCoin]) -> List[Dict[str, Any]]:
         """
@@ -70,6 +74,7 @@ class CoingeckoPriceIncreaseAlert(BaseAlert, CoingeckoApi):
         the biggest price increase in the last self._timeframe days
 
         """
+        top_n_set = set()
         for top_range in self._top_ranges:
             start, end = top_range
             top_n_list = self.get_top_n_market_cap_coins(n=end)
@@ -82,16 +87,25 @@ class CoingeckoPriceIncreaseAlert(BaseAlert, CoingeckoApi):
 
             top_n_list.sort(key=lambda x: x[price_change_attribute], reverse=True)
             top_n_list = top_n_list[:self._top_n]
+            top_n_str = []
 
-            top_n_list = [f"{x['coingecko_coin']}: {round(x[price_change_attribute], 2)}%"
-                          for x in top_n_list if x[price_change_attribute] > 0]
+            for coin in top_n_list:
+                if coin[price_change_attribute] <= 0:
+                    break
+                top_n_set.add(coin['coingecko_coin'])
+                top_n_str.append(f"{coin['coingecko_coin']}: {round(coin[price_change_attribute], 2)}%")
+
+            # top_n_list = [f"{x['coingecko_coin']}: {round(x[price_change_attribute], 2)}%"
+            #               for x in top_n_list if x[price_change_attribute] > 0]
             self._tg_bot.send_message(f"Top {self._top_n} coins in the top {start} - {end} Market Cap Coins "
                                       f"with the biggest price increase in "
-                                      f"the last {self._timeframe.upper()} timeframe: {top_n_list}")
+                                      f"the last {self._timeframe.upper()} timeframe: {top_n_str}")
+        if self._coin_info:
+            send_coins_info_to_telegram(top_n_set, self._tg_bot, f"price_increase_{self._timeframe}")
 
 
 if __name__ == '__main__':
     start = time.time()
-    CoingeckoPriceIncreaseAlert(top_range=[(0, 50), (50, 100), (100, 300), (300, 1000)], top_n=10,
+    CoingeckoPriceIncreaseAlert(top_range=[(0, 300), (300, 500), (500, 1000)], top_n=40,
                                 timeframe="3m", tg_type="TEST").run()
     print(time.time() - start)

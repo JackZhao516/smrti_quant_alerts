@@ -11,6 +11,7 @@ from smrti_quant_alerts.alerts.base_alert import BaseAlert
 from smrti_quant_alerts.stock_crypto_api import CryptoComprehensiveApi
 from smrti_quant_alerts.data_type import CoingeckoCoin, BinanceExchange, TradingSymbol
 from smrti_quant_alerts.db import init_database_runtime, close_database, SpotOverMaDBUtils
+from smrti_quant_alerts.alerts.crypto_alerts.utility import send_coins_info_to_telegram
 
 db_utils = SpotOverMaDBUtils()
 
@@ -183,27 +184,27 @@ class SpotOverMAAlert(BaseAlert, CryptoComprehensiveApi):
         self._coingecko_coins = []
         self._binance_exchanges = []
 
-    def _send_coins_info_to_telegram(self, coins: Union[List[TradingSymbol], Set[TradingSymbol]]) -> None:
-        """
-        alert coins info
-
-        :param coins: coins
-        """
-        if coins:
-            coins = sorted(coins)
-
-            file_name = f"coins_info_{uuid.uuid4()}.csv"
-            headers = ["symbol", "name", "website", "description"]
-            data = []
-            for i, coin in enumerate(coins):
-                if isinstance(coin, BinanceExchange):
-                    coins[i] = CoingeckoCoin.get_symbol_object(coin.base_symbol)
-            coins = set(coins)
-            for coin in coins:
-                info = self.get_coin_info(coin)
-                data.append([info["symbol"], info["name"],
-                             info["website"], info["description"]])
-            self._tg_bot.send_data_as_csv_file(file_name, headers, data)
+    # def _send_coins_info_to_telegram(self, coins: Union[List[TradingSymbol], Set[TradingSymbol]]) -> None:
+    #     """
+    #     alert coins info
+    #
+    #     :param coins: coins
+    #     """
+    #     if coins:
+    #         coins = sorted(coins)
+    #
+    #         file_name = f"coins_info_{uuid.uuid4()}.csv"
+    #         headers = ["symbol", "name", "website", "description"]
+    #         data = []
+    #         for i, coin in enumerate(coins):
+    #             if isinstance(coin, BinanceExchange):
+    #                 coins[i] = CoingeckoCoin.get_symbol_object(coin.base_symbol)
+    #         coins = set(coins)
+    #         for coin in coins:
+    #             info = self.get_coin_info(coin)
+    #             data.append([info["symbol"], info["name"],
+    #                          info["website"], info["description"]])
+    #         self._tg_bot.send_data_as_csv_file(file_name, headers, data)
 
     def _get_target_coins_by_alert_type(self, alert_type: str = "alert_300") -> None:
         """
@@ -319,7 +320,7 @@ class SpotOverMAAlert(BaseAlert, CryptoComprehensiveApi):
         close_database()
 
         if self._alert_coins_info:
-            self._send_coins_info_to_telegram(alert_coins)
+            send_coins_info_to_telegram(alert_coins, self._tg_bot)
 
 
 if __name__ == "__main__":
