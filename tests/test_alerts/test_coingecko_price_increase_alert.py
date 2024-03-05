@@ -8,7 +8,7 @@ from smrti_quant_alerts.data_type import CoingeckoCoin
 class TestPriceIncreaseAlert(unittest.TestCase):
     def test_get_coins_price_change_percentage(self) -> None:
         test_coin = CoingeckoCoin("test", "TEST")
-        alert = CoingeckoPriceIncreaseAlert([0, 2], 2, "14d", "TEST")
+        alert = CoingeckoPriceIncreaseAlert([0, 2], 2, "14d", False, "TEST")
 
         return_value = [{"coingecko_coin": test_coin,
                          "price_change_percentage_14d_in_currency": 10}]
@@ -30,7 +30,7 @@ class TestPriceIncreaseAlert(unittest.TestCase):
         with patch.object(CoingeckoPriceIncreaseAlert, "get_coin_history_hourly_close_price",
                           return_value=return_value) as mock_get_price:
             for timeframe, days in zip(["5d", "3m", "2y"], [5, 90, 730]):
-                alert = CoingeckoPriceIncreaseAlert([0, 1], 1, timeframe, "TEST")
+                alert = CoingeckoPriceIncreaseAlert([0, 1], 1, timeframe, False, "TEST")
                 res = alert.get_coins_price_change_percentage([test_coin])
                 mock_get_price.assert_called_once_with(test_coin, days=days)
                 mock_get_price.reset_mock()
@@ -39,7 +39,7 @@ class TestPriceIncreaseAlert(unittest.TestCase):
 
         with patch.object(CoingeckoPriceIncreaseAlert, "get_coin_history_hourly_close_price",
                           return_value=[100, 0]):
-            alert = CoingeckoPriceIncreaseAlert([0, 1], 1, "4d", "TEST")
+            alert = CoingeckoPriceIncreaseAlert([0, 1], 1, "4d", False, "TEST")
             res = alert.get_coins_price_change_percentage([test_coin])
             self.assertEqual(res, [{"coingecko_coin": test_coin,
                                     "price_change_percentage_4d_in_currency": 0}])
