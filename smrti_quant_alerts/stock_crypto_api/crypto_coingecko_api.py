@@ -125,17 +125,20 @@ class CoingeckoApi:
         return market_info
 
     @error_handling("coingecko",
-                    default_val={"symbol": "", "name": "", "description": "", "website": "", "genesis_date": ""})
+                    default_val={"symbol": "", "name": "", "description": "",
+                                 "website": "", "genesis_date": "", "market_cap_rank": ""})
     def get_coin_info(self, coingecko_coin: Optional[CoingeckoCoin] = None) -> Dict[str, Any]:
         """
         get coin info from coingecko
 
         :param coingecko_coin: CoingeckoCoin
 
-        :return: {"symbol": .., "name": .., "description": .. , "website:": ..}
+        :return: {"symbol": .., "name": .., "description": .. , "website:": ..,
+                  "genesis_date": .., "market_cap_rank": ..}
         """
         if not coingecko_coin:
-            return {"symbol": "", "name": "", "description": "", "website": "", "genesis_date": ""}
+            return {"symbol": "", "name": "", "description": "", "website": "",
+                    "genesis_date": "", "market_cap_rank": ""}
         coin_info = self._cg.get_coin_by_id(id=coingecko_coin.coin_id, localization='false',
                                             tickers='false', market_data='false',
                                             community_data='false', developer_data='false',
@@ -146,7 +149,8 @@ class CoingeckoApi:
         links = "; ".join(links) if links else ""
         return {"symbol": coingecko_coin.coin_symbol, "name": coin_info.get("name", ""),
                 "description": coin_info.get("description", "").get("en", ""),
-                "website": links, "genesis_date": coin_info.get("genesis_date", "")}
+                "website": links, "genesis_date": coin_info.get("genesis_date", ""),
+                "market_cap_rank": coin_info.get("market_cap_rank", "")}
 
     @error_handling("coingecko", default_val={})
     def get_coin_market_info(self, coingecko_coin: Optional[CoingeckoCoin] = None,

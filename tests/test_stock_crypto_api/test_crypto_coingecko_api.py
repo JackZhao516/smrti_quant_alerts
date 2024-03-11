@@ -117,20 +117,23 @@ class TestCryptoCoingeckoApi(unittest.TestCase):
             "name": "Bitcoin",
             "links": {"homepage": ["https://bitcoin.org/"]},
             "description": {"en": "Bitcoin (BTC) is a cryptocurrency ."},
-            "genesis_date": "2009-01-03"
+            "genesis_date": "2009-01-03",
+            "market_cap_rank": 10
         }):
             self.assertEqual(self.coingecko_api.get_coin_info(CoingeckoCoin("bitcoin", "BTC")),
                              {"symbol": CoingeckoCoin("bitcoin", "BTC"), "name": "Bitcoin",
                               "description": "Bitcoin (BTC) is a cryptocurrency .",
-                              "website": "https://bitcoin.org/", "genesis_date": "2009-01-03"})
+                              "website": "https://bitcoin.org/", "genesis_date": "2009-01-03",
+                              "market_cap_rank": 10})
 
             self.assertEqual(self.coingecko_api.get_coin_info(), {"symbol": "", "name": "", "description": "",
-                                                                  "website": "", "genesis_date": ""})
+                                                                  "website": "", "genesis_date": "",
+                                                                  "market_cap_rank": ""})
 
         with mock.patch("pycoingecko.CoinGeckoAPI.get_coin_by_id", return_value=Exception):
             self.assertEqual(self.coingecko_api.get_coin_info(CoingeckoCoin("bitcoin", "BTC")), {
                 "symbol": "", "name": "", "description": "",
-                "website": "", "genesis_date": ""
+                "website": "", "genesis_date": "", "market_cap_rank": ""
             })
 
     def test_get_coin_market_info(self) -> None:

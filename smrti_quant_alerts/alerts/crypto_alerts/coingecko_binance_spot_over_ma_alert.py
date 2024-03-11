@@ -1,6 +1,5 @@
 import logging
 import statistics
-import uuid
 from collections import defaultdict
 from time import sleep, time
 from multiprocessing.pool import ThreadPool
@@ -183,28 +182,6 @@ class SpotOverMAAlert(BaseAlert, CryptoComprehensiveApi):
 
         self._coingecko_coins = []
         self._binance_exchanges = []
-
-    # def _send_coins_info_to_telegram(self, coins: Union[List[TradingSymbol], Set[TradingSymbol]]) -> None:
-    #     """
-    #     alert coins info
-    #
-    #     :param coins: coins
-    #     """
-    #     if coins:
-    #         coins = sorted(coins)
-    #
-    #         file_name = f"coins_info_{uuid.uuid4()}.csv"
-    #         headers = ["symbol", "name", "website", "description"]
-    #         data = []
-    #         for i, coin in enumerate(coins):
-    #             if isinstance(coin, BinanceExchange):
-    #                 coins[i] = CoingeckoCoin.get_symbol_object(coin.base_symbol)
-    #         coins = set(coins)
-    #         for coin in coins:
-    #             info = self.get_coin_info(coin)
-    #             data.append([info["symbol"], info["name"],
-    #                          info["website"], info["description"]])
-    #         self._tg_bot.send_data_as_csv_file(file_name, headers, data)
 
     def _get_target_coins_by_alert_type(self, alert_type: str = "alert_300") -> None:
         """
