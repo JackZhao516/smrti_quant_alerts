@@ -18,7 +18,7 @@ def send_coins_info_to_telegram(coins: Union[List[TradingSymbol], Set[TradingSym
     if coins:
         coins = sorted(coins)
 
-        file_name = f"{file_name}coins_info_{uuid.uuid4()}.csv"
+        file_name = f"{file_name}_coins_info_{uuid.uuid4()}.csv"
         headers = ["symbol", "name", "website", "description"]
         data = []
         for i, coin in enumerate(coins):
