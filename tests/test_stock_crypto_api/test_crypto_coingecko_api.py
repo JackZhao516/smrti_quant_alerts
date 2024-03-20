@@ -136,6 +136,20 @@ class TestCryptoCoingeckoApi(unittest.TestCase):
                 "website": "", "genesis_date": "", "market_cap_rank": ""
             })
 
+    def test_get_coins_chain_info(self) -> None:
+        with mock.patch("pycoingecko.CoinGeckoAPI.get_coins_list", return_value=[
+            {"id": "zyrri", "symbol": "zyr", "name": "Zyrri", "platforms": {}},
+            {"id": "zyx", "symbol": "zyx", "name": "ZYX",
+             "platforms": {
+              "ethereum": "0xf974b5f9ac9c6632fee8b76c61b0242ce69c839d",
+              "arbitrum-one": "0x377c6e37633e390aef9afb4f5e0b16689351eed4",
+              "binance-smart-chain": "0x377c6e37633e390aef9afb4f5e0b16689351eed4"}}]):
+            self.assertEqual(self.coingecko_api.get_coins_chain_info(), {})
+            self.assertEqual(self.coingecko_api.get_coins_chain_info([CoingeckoCoin("zyrri", "Zyrri")]),
+                             {CoingeckoCoin("zyrri", "Zyrri"): ""})
+            self.assertEqual(self.coingecko_api.get_coins_chain_info([CoingeckoCoin("zyx", "zyx")]),
+                             {CoingeckoCoin("zyx", "zyx"): "ethereum, arbitrum-one, binance-smart-chain"})
+
     def test_get_coin_market_info(self) -> None:
         with mock.patch("pycoingecko.CoinGeckoAPI.get_coin_market_chart_by_id", return_value={
             "prices": [[1613846400000, 10000], [1613932800000, 20000], [1614019200000, 30000]],

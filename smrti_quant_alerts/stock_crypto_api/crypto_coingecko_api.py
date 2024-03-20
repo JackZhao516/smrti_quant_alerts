@@ -8,7 +8,7 @@ from pycoingecko import CoinGeckoAPI
 from smrti_quant_alerts.exception import error_handling
 from smrti_quant_alerts.settings import Config
 from smrti_quant_alerts.data_type import CoingeckoCoin, TradingSymbol, BinanceExchange
-from .utility import read_exclude_coins_from_file
+from smrti_quant_alerts.stock_crypto_api.utility import read_exclude_coins_from_file
 
 
 class CoingeckoApi:
@@ -93,6 +93,24 @@ class CoingeckoApi:
                 seen.add(market['id'])
 
         return coingecko_coins[:n]
+
+    @error_handling("coingecko", default_val={})
+    def get_coins_chain_info(self, coingecko_coins: Union[List[CoingeckoCoin], Set[CoingeckoCoin]]) \
+            -> Dict[CoingeckoCoin, str]:
+        """
+        get coin chain name information
+        :param coingecko_coins: [CoingeckoCoin, ...]
+        """
+        res, coin_chains = {}, {}
+        if not coingecko_coins:
+            return res
+        coins_chain_info = self._cg.get_coins_list(include_platform=True)
+        for coin in coins_chain_info:
+            if coin["platforms"]:
+                coin_chains[CoingeckoCoin(coin["id"], coin["symbol"])] = ", ".join(coin["platforms"].keys())
+        for coin in coingecko_coins:
+            res[coin] = coin_chains.get(coin, "")
+        return res
 
     @error_handling("coingecko", default_val=[])
     def get_coins_market_info(self, coingecko_coins: Union[List[CoingeckoCoin], Set[CoingeckoCoin]],

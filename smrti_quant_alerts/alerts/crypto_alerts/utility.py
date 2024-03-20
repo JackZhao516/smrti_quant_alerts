@@ -19,15 +19,16 @@ def send_coins_info_to_telegram(coins: Union[List[TradingSymbol], Set[TradingSym
         coins = sorted(coins)
 
         file_name = f"{file_name}_coins_info_{uuid.uuid4()}.csv"
-        headers = ["symbol", "name", "website", "description", "market cap rank"]
+        headers = ["symbol", "name", "website", "description", "market cap rank", "chains"]
         data = []
         for i, coin in enumerate(coins):
             if isinstance(coin, BinanceExchange):
                 coins[i] = CoingeckoCoin.get_symbol_object(coin.base_symbol)
         coins = sorted(set(coins))
         cg = CoingeckoApi()
+        chain_info_dict = cg.get_coins_chain_info(coins)
         for coin in coins:
             info = cg.get_coin_info(coin)
             data.append([info["symbol"], info["name"], info["website"],
-                         info["description"], info["market_cap_rank"]])
+                         info["description"], info["market_cap_rank"], chain_info_dict[coin]])
         tg_bot.send_data_as_csv_file(file_name, headers, data)
