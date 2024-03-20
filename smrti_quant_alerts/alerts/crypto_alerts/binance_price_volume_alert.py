@@ -42,7 +42,7 @@ class BinancePriceVolumeBase(ABC, BaseAlert, BinanceApi):
 
         # websocket client
         self._websocket_client = SpotWebsocketStreamClient(on_message=self._handle_tick_message,
-                                                           is_combined=True, timeout=1000)
+                                                           is_combined=True, timeout=2000)
 
     # ------alert helper functions-------
     def _exchanges_to_subscription_stream_names(self, exchanges: Iterable[BinanceExchange]) -> List[str]:
