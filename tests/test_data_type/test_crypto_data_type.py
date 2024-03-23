@@ -27,8 +27,10 @@ class TestCoingeckoCoin(unittest.TestCase):
     def test_coin_symbol(self) -> None:
         coin = CoingeckoCoin("bitcoin", "BTC")
         self.assertEqual(coin.coin_symbol, "BTC")
+        self.assertNotEqual(coin, CoingeckoCoin("test", "BTC"))
 
     def test_get_symbol_object(self) -> None:
+        CoingeckoCoin("bitcoin", "BTC")
         coin = CoingeckoCoin.get_symbol_object("BTC")
         self.assertEqual(coin, CoingeckoCoin("bitcoin", "BTC"))
         self.assertIsNone(CoingeckoCoin.get_symbol_object("ETH"))

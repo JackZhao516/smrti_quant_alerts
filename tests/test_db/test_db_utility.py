@@ -29,6 +29,8 @@ class TestConfig:
     def __enter__(self):
         remove_database()
         init_database_runtime("test.db")
+        PriceVolumeDBUtils.reset_count("test_alert", "daily")
+        PriceVolumeDBUtils.reset_count("test_alert", "monthly")
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
@@ -112,10 +114,10 @@ class TestPriceVolumeDBUtils(unittest.TestCase):
         with TestConfig() as _:
             def update_count() -> None:
                 for _ in range(100):
-                    PriceVolumeDBUtils.update_count(BinanceExchange("test", "test"), "test_alert", 0, "daily")
-                    PriceVolumeDBUtils.update_count(BinanceExchange("test1", "test"), "test_alert", 10000, "monthly")
-                    PriceVolumeDBUtils.update_count(BinanceExchange("test1", "test"), "test_alert", 0, "monthly")
-                    PriceVolumeDBUtils.update_count(BinanceExchange("test3", "test"), "test_alert", 10000, "monthly")
+                    PriceVolumeDBUtils.update_count(BinanceExchange("test", "test1"), "test_alert", 0, "daily")
+                    PriceVolumeDBUtils.update_count(BinanceExchange("test2", "test3"), "test_alert", 10000, "monthly")
+                    PriceVolumeDBUtils.update_count(BinanceExchange("test2", "test3"), "test_alert", 0, "monthly")
+                    PriceVolumeDBUtils.update_count(BinanceExchange("test4", "test5"), "test_alert", 10000, "monthly")
 
             threads = []
             for _ in range(10):
@@ -126,10 +128,10 @@ class TestPriceVolumeDBUtils(unittest.TestCase):
                 thread.join()
 
             count = PriceVolumeDBUtils.get_count("test_alert", None, "daily")
-            self.assertEqual(self.convert_timestamp_to_zero(count), {BinanceExchange("test", "test"): (1000, 0)})
+            self.assertEqual(self.convert_timestamp_to_zero(count), {BinanceExchange("test", "test1"): (1000, 0)})
             count = PriceVolumeDBUtils.get_count("test_alert", None, "monthly")
-            self.assertEqual(self.convert_timestamp_to_zero(count), {BinanceExchange("test1", "test"): (1001, 0),
-                                                                     BinanceExchange("test3", "test"): (1, 0)})
+            self.assertEqual(self.convert_timestamp_to_zero(count), {BinanceExchange("test2", "test3"): (1001, 0),
+                                                                     BinanceExchange("test4", "test5"): (1, 0)})
 
 
 class TestSpotOverMaDBUtils(unittest.TestCase):

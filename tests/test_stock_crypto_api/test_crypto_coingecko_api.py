@@ -144,7 +144,7 @@ class TestCryptoCoingeckoApi(unittest.TestCase):
               "ethereum": "0xf974b5f9ac9c6632fee8b76c61b0242ce69c839d",
               "arbitrum-one": "0x377c6e37633e390aef9afb4f5e0b16689351eed4",
               "binance-smart-chain": "0x377c6e37633e390aef9afb4f5e0b16689351eed4"}}]):
-            self.assertEqual(self.coingecko_api.get_coins_chain_info(), {})
+            self.assertEqual(self.coingecko_api.get_coins_chain_info([]), {})
             self.assertEqual(self.coingecko_api.get_coins_chain_info([CoingeckoCoin("zyrri", "Zyrri")]),
                              {CoingeckoCoin("zyrri", "Zyrri"): ""})
             self.assertEqual(self.coingecko_api.get_coins_chain_info([CoingeckoCoin("zyx", "zyx")]),

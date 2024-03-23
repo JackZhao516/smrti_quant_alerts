@@ -75,7 +75,7 @@ class StockAlert(BaseAlert, StockApi):
                        stock.gics_sub_industry, stock.location,
                        stock.founded_time, stock.is_sp500, stock.is_nasdaq]
                       for stock in top_stocks]
-        self._tg_bot.send_data_as_csv_file(file_name, header=header, data=stock_info)
+        self._tg_bot.send_data_as_csv_file(file_name, headers=header, data=stock_info)
 
 
 if __name__ == '__main__':

@@ -35,7 +35,7 @@ class TestFutureFundingRate(unittest.TestCase):
                                                           "['TEST1: 24.1%', 'TEST2: -23.23%']")
                 mock_send_file.assert_called()
                 mock_send_file.assert_called_once_with(
-                    ANY, header=["Symbol", "Name", "GICS Sector", "Sub Sector", "Headquarter Location",
-                                 "Founded Year/IPO Date", "is SP500", "is Nasdaq"],
+                    ANY, headers=["Symbol", "Name", "GICS Sector", "Sub Sector", "Headquarter Location",
+                                  "Founded Year/IPO Date", "is SP500", "is Nasdaq"],
                     data=[["TEST1", "test1", "t", "t", "t", "2000", True, False],
                           ["TEST2", "test2", "t", "t", "t", "2000", False, True]])

@@ -1,5 +1,5 @@
 from __future__ import annotations
-from typing import Optional
+from typing import Optional, Union
 
 from .base_data_type import TradingSymbol, Tick
 
@@ -44,7 +44,8 @@ class CoingeckoCoin(TradingSymbol):
 
         self.coin_id = coin_id
         super().__init__(coin_symbol)
-        self.symbol_id_map[coin_symbol] = self.coin_id
+        if coin_symbol not in self.symbol_id_map:
+            self.symbol_id_map[coin_symbol] = self.coin_id
 
     @property
     def coin_symbol(self) -> str:
@@ -56,3 +57,13 @@ class CoingeckoCoin(TradingSymbol):
             coin_id = CoingeckoCoin.symbol_id_map[symbol.upper()]
             return CoingeckoCoin(coin_id, symbol)
         return None
+
+    def __eq__(self, other: Union[str, CoingeckoCoin]) -> bool:
+        if isinstance(other, CoingeckoCoin):
+            return self._symbol == other._symbol and self.coin_id == other.coin_id
+        elif isinstance(other, str):
+            return self._symbol == other.upper()
+        return False
+
+    def __hash__(self) -> int:
+        return hash(self._symbol + self.coin_id)
