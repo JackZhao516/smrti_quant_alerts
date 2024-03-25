@@ -34,7 +34,7 @@ class CoingeckoApi:
         if input_exclude_coins:
             for coin in input_exclude_coins:
                 if isinstance(coin, BinanceExchange):
-                    coin = CoingeckoCoin.get_symbol_object(coin.base_symbol)
+                    coin = CoingeckoCoin.get_symbol_object(coin.base_symbol, "binance")
                     if coin:
                         exclude_coins.add(coin)
                 elif isinstance(coin, CoingeckoCoin):
@@ -44,13 +44,16 @@ class CoingeckoApi:
         exclude_coin_symbols = read_exclude_coins_from_file()
 
         for coin in exclude_coin_symbols:
-            coingecok_coin = CoingeckoCoin.get_symbol_object(coin)
-            if coingecok_coin:
+            coingecok_coin = CoingeckoCoin.get_symbol_object(coin, "other")
+            if isinstance(coingecok_coin, list):
+                exclude_coins.update(coingecok_coin)
+            elif coingecok_coin:
                 exclude_coins.add(coingecok_coin)
             else:
                 binance_exchange = BinanceExchange.get_symbol_object(coin)
                 if binance_exchange:
-                    coingecok_coin = CoingeckoCoin.get_symbol_object(binance_exchange.base_symbol)
+                    coingecok_coin = \
+                        CoingeckoCoin.get_symbol_object(binance_exchange.base_symbol, "binance")
                     if coingecok_coin:
                         exclude_coins.add(coingecok_coin)
         return exclude_coins

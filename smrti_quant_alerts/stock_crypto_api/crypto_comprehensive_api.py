@@ -15,6 +15,7 @@ class CryptoComprehensiveApi(BinanceApi, CoingeckoApi):
     def __init__(self) -> None:
         BinanceApi.__init__(self)
         CoingeckoApi.__init__(self)
+        self._match_binance_exchange_to_coingecko_coins()
 
     def get_exclude_coins(
             self, input_exclude_coins: Union[List[TradingSymbol], Set[TradingSymbol], None] = None) \
@@ -30,6 +31,23 @@ class CryptoComprehensiveApi(BinanceApi, CoingeckoApi):
         exclude_coins.update(BinanceApi.get_exclude_coins(self, input_exclude_coins))
         exclude_coins.update(CoingeckoApi.get_exclude_coins(self, input_exclude_coins))
         return exclude_coins
+
+    @error_handling("coingecko", default_val=None)
+    def _match_binance_exchange_to_coingecko_coins(self) -> None:
+        """
+        Call if want to use Coingecko and Binance Api together
+        """
+        page = 0
+        while True:
+            exchanges = self._cg.get_exchanges_tickers_by_id(
+                "binance", coin_ids="bitcoin,first-digital-usd,tether,usd-coin,ethereum",
+                page=page).get("tickers", [])
+            if not exchanges:
+                return
+
+            for exchange in exchanges:
+                BinanceExchange.add_base_coin_id_pair_to_dict(exchange["base"], exchange["coin_id"])
+            page += 1
 
     @error_handling("coingecko", default_val=([], []))
     def get_coins_with_daily_volume_threshold_later_than_2023(

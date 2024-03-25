@@ -11,7 +11,10 @@ from smrti_quant_alerts.data_type import BinanceExchange, CoingeckoCoin
 
 class TestCryptoComprehensiveApi(unittest.TestCase):
     def setUp(self) -> None:
-        self.crypto_comprehensive_api = CryptoComprehensiveApi()
+        with mock.patch("smrti_quant_alerts.stock_crypto_api.CryptoComprehensiveApi."
+                        "_match_binance_exchange_to_coingecko_coins",
+                        side_effect=lambda: print("test")):
+            self.crypto_comprehensive_api = CryptoComprehensiveApi()
 
     def test_get_exclude_coins(self) -> None:
         with mock.patch("smrti_quant_alerts.stock_crypto_api.BinanceApi.get_exclude_coins",

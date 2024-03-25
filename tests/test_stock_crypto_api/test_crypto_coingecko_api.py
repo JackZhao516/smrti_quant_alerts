@@ -2,6 +2,7 @@ import os
 import unittest
 from unittest import mock
 from decimal import Decimal
+from collections import defaultdict
 
 
 from smrti_quant_alerts.stock_crypto_api import CoingeckoApi
@@ -15,15 +16,17 @@ class TestCryptoCoingeckoApi(unittest.TestCase):
 
     def test_get_exclude_coins(self) -> None:
         Config.PROJECT_DIR = os.path.dirname(os.path.abspath(__file__))
-        CoingeckoCoin.symbol_id_map = {}
+        CoingeckoCoin.symbol_id_map = defaultdict(set)
         with mock.patch.object(CoingeckoApi, 'get_all_coingecko_coins',
                                return_value=[CoingeckoCoin("bitcoin", "BTC"), CoingeckoCoin("tether", "USDT"),
                                              CoingeckoCoin("test", "TEST"), CoingeckoCoin("alt", "ALT"),
                                              BinanceExchange("TEST", "TEST")]):
+            BinanceExchange.symbol_base_coingecko_id_map["TEST"] = "test"
             exclude_coins = self.coingecko_api.get_exclude_coins([])
             self.assertEqual(exclude_coins, {CoingeckoCoin("bitcoin", "BTC"), CoingeckoCoin("tether", "USDT"),
                                              CoingeckoCoin("test", "TEST")})
 
+            BinanceExchange.symbol_base_coingecko_id_map["ALT"] = "alt"
             exclude_coins = self.coingecko_api.get_exclude_coins([BinanceExchange("ALT", "USDT")])
             self.assertEqual(exclude_coins, {CoingeckoCoin("bitcoin", "BTC"), CoingeckoCoin("tether", "USDT"),
                                              CoingeckoCoin("test", "TEST"), CoingeckoCoin("alt", "ALT")})

@@ -166,14 +166,14 @@ class SpotOverMaDBUtils:
         :param last_counts: last counts dict {TradingSymbol: count}
         :param alert_type: alert type
         """
-        last_counts_list = [i.str() for i in last_counts]
+        last_counts_list = [i.db_repr() for i in last_counts]
         with database_runtime.atomic("EXCLUSIVE"):
             cls.db_lock.acquire()
             LastCount.update(count=LastCount.count + 1, alert_type=alert_type, date=time.time()).where(
                 LastCount.trading_symbol.in_(last_counts_list)).execute()
             last_counts_existed = SpotOverMaDBUtils.get_last_count()
             last_counts = [e for e in last_counts if e not in last_counts_existed]
-            last_counts = [{"trading_symbol": e.str(), "symbol_type": e.type(), "alert_type": alert_type}
+            last_counts = [{"trading_symbol": e.db_repr(), "symbol_type": e.type(), "alert_type": alert_type}
                            for e in last_counts]
             LastCount.insert_many(last_counts).execute()
             cls.db_lock.release()

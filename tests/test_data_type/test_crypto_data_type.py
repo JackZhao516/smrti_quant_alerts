@@ -1,4 +1,5 @@
 import unittest
+from collections import defaultdict
 
 from smrti_quant_alerts.data_type import BinanceExchange, CoingeckoCoin, ExchangeTick, TradingSymbol
 
@@ -25,12 +26,14 @@ class TestBinanceExchange(unittest.TestCase):
 
 class TestCoingeckoCoin(unittest.TestCase):
     def test_coin_symbol(self) -> None:
+        CoingeckoCoin.symbol_id_map = defaultdict(set)
         coin = CoingeckoCoin("bitcoin", "BTC")
         self.assertEqual(coin.coin_symbol, "BTC")
         self.assertNotEqual(coin, CoingeckoCoin("test", "BTC"))
 
     def test_get_symbol_object(self) -> None:
+        CoingeckoCoin.symbol_id_map = defaultdict(set)
         CoingeckoCoin("bitcoin", "BTC")
-        coin = CoingeckoCoin.get_symbol_object("BTC")
+        coin = CoingeckoCoin.get_symbol_object("BTC", "other")
         self.assertEqual(coin, CoingeckoCoin("bitcoin", "BTC"))
-        self.assertIsNone(CoingeckoCoin.get_symbol_object("ETH"))
+        self.assertIsNone(CoingeckoCoin.get_symbol_object("ETH", "other"))

@@ -1,5 +1,5 @@
 from __future__ import annotations
-from typing import Union, Optional
+from typing import Union, Optional, List
 from dataclasses import dataclass
 
 
@@ -75,8 +75,11 @@ class TradingSymbol:
     def str(self) -> str:
         return self._symbol
 
+    def db_repr(self) -> str:
+        return self._symbol
+
     @staticmethod
-    def get_symbol_object(symbol: str) -> Optional[TradingSymbol]:
+    def get_symbol_object(symbol: str) -> Union[Optional[TradingSymbol], List[TradingSymbol]]:
         raise NotImplementedError
 
     @classmethod

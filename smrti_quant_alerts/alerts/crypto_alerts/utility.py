@@ -23,7 +23,7 @@ def send_coins_info_to_telegram(coins: Union[List[TradingSymbol], Set[TradingSym
         data = []
         for i, coin in enumerate(coins):
             if isinstance(coin, BinanceExchange):
-                coins[i] = CoingeckoCoin.get_symbol_object(coin.base_symbol)
+                coins[i] = CoingeckoCoin.get_symbol_object(coin.base_symbol, "binance")
         coins = sorted(set(coins))
         cg = CoingeckoApi()
         chain_info_dict = cg.get_coins_chain_info(coins)
