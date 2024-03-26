@@ -27,6 +27,18 @@ class TestCryptoComprehensiveApi(unittest.TestCase):
                                                  BinanceExchange("USDT", "BTC"), BinanceExchange("TEST", "TEST"),
                                                  CoingeckoCoin("tether", "USDT")})
 
+    def test_match_binance_exchange_to_coingecko_coins(self) -> None:
+        BinanceExchange.symbol_base_coingecko_id_map = {}
+        with mock.patch("pycoingecko.CoinGeckoAPI.get_exchanges_tickers_by_id", return_value=[]):
+            self.crypto_comprehensive_api._match_binance_exchange_to_coingecko_coins()
+            self.assertEqual(BinanceExchange.symbol_base_coingecko_id_map, {})
+
+        return_value = {0: {"tickers": [{"base": "BTC", "coin_id": "bitcoin"}]}, 1: {}}
+        with mock.patch("pycoingecko.CoinGeckoAPI.get_exchanges_tickers_by_id",
+                        side_effect=lambda id, coin_ids, page: return_value[page]):
+            self.crypto_comprehensive_api._match_binance_exchange_to_coingecko_coins()
+            self.assertEqual(BinanceExchange.symbol_base_coingecko_id_map, {"BTC": "bitcoin"})
+
     def test_get_coins_with_daily_volume_threshold_later_than_2023(self) -> None:
         with mock.patch.object(CryptoComprehensiveApi, 'get_all_coingecko_coins',
                                return_value=[CoingeckoCoin("alt", "ALT")]):

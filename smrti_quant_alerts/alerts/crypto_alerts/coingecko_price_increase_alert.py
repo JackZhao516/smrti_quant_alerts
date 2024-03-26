@@ -95,8 +95,6 @@ class CoingeckoPriceIncreaseAlert(BaseAlert, CoingeckoApi):
                 top_n_set.add(coin['coingecko_coin'])
                 top_n_str.append(f"{coin['coingecko_coin']}: {round(coin[price_change_attribute], 2)}%")
 
-            # top_n_list = [f"{x['coingecko_coin']}: {round(x[price_change_attribute], 2)}%"
-            #               for x in top_n_list if x[price_change_attribute] > 0]
             self._tg_bot.send_message(f"Top {self._top_n} coins in the top {start} - {end} Market Cap Coins "
                                       f"with the biggest price increase in "
                                       f"the last {self._timeframe.upper()} timeframe: {top_n_str}")

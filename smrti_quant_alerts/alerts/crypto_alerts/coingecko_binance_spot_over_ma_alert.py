@@ -297,7 +297,7 @@ class SpotOverMAAlert(BaseAlert, CryptoComprehensiveApi):
         close_database()
 
         if self._alert_coins_info:
-            send_coins_info_to_telegram(alert_coins, self._tg_bot)
+            send_coins_info_to_telegram(alert_coins, self._tg_bot, self._alert_type)
 
 
 if __name__ == "__main__":

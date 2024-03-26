@@ -61,7 +61,8 @@ class CoingeckoCoin(TradingSymbol):
         return self._symbol
 
     @staticmethod
-    def get_symbol_object(symbol: str, source: str = "database") -> Union[Optional[CoingeckoCoin], List[CoingeckoCoin]]:
+    def get_symbol_object(symbol: str, source: str = "database") \
+            -> Union[Optional[CoingeckoCoin], List[CoingeckoCoin]]:
         if source == "database":
             # in database, symbol is stored as "<symbol>&&<coin_id>"
             pos = symbol.index("&&")

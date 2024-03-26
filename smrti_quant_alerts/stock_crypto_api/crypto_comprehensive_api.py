@@ -40,7 +40,7 @@ class CryptoComprehensiveApi(BinanceApi, CoingeckoApi):
         page = 0
         while True:
             exchanges = self._cg.get_exchanges_tickers_by_id(
-                "binance", coin_ids="bitcoin,first-digital-usd,tether,usd-coin,ethereum",
+                id="binance", coin_ids="bitcoin,first-digital-usd,tether,usd-coin,ethereum",
                 page=page).get("tickers", [])
             if not exchanges:
                 return

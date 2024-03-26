@@ -20,20 +20,24 @@ class TestCryptoCoingeckoApi(unittest.TestCase):
         with mock.patch.object(CoingeckoApi, 'get_all_coingecko_coins',
                                return_value=[CoingeckoCoin("bitcoin", "BTC"), CoingeckoCoin("tether", "USDT"),
                                              CoingeckoCoin("test", "TEST"), CoingeckoCoin("alt", "ALT"),
-                                             BinanceExchange("TEST", "TEST")]):
+                                             BinanceExchange("TEST", "TEST"), CoingeckoCoin("test1", "TEST1"),
+                                             CoingeckoCoin("test2", "TEST1")]):
             BinanceExchange.symbol_base_coingecko_id_map["TEST"] = "test"
             exclude_coins = self.coingecko_api.get_exclude_coins([])
             self.assertEqual(exclude_coins, {CoingeckoCoin("bitcoin", "BTC"), CoingeckoCoin("tether", "USDT"),
-                                             CoingeckoCoin("test", "TEST")})
+                                             CoingeckoCoin("test", "TEST"), CoingeckoCoin("test1", "TEST1"),
+                                             CoingeckoCoin("test2", "TEST1")})
 
             BinanceExchange.symbol_base_coingecko_id_map["ALT"] = "alt"
             exclude_coins = self.coingecko_api.get_exclude_coins([BinanceExchange("ALT", "USDT")])
             self.assertEqual(exclude_coins, {CoingeckoCoin("bitcoin", "BTC"), CoingeckoCoin("tether", "USDT"),
-                                             CoingeckoCoin("test", "TEST"), CoingeckoCoin("alt", "ALT")})
+                                             CoingeckoCoin("test", "TEST"), CoingeckoCoin("alt", "ALT"),
+                                             CoingeckoCoin("test1", "TEST1"), CoingeckoCoin("test2", "TEST1")})
 
             exclude_coins = self.coingecko_api.get_exclude_coins([CoingeckoCoin("alt", "ALT")])
             self.assertEqual(exclude_coins, {CoingeckoCoin("bitcoin", "BTC"), CoingeckoCoin("tether", "USDT"),
-                                             CoingeckoCoin("test", "TEST"), CoingeckoCoin("alt", "ALT")})
+                                             CoingeckoCoin("test", "TEST"), CoingeckoCoin("alt", "ALT"),
+                                             CoingeckoCoin("test1", "TEST1"), CoingeckoCoin("test2", "TEST1")})
 
     def test_get_all_coingecko_coins(self) -> None:
         with mock.patch("pycoingecko.CoinGeckoAPI.get_coins_list", return_value=[{

@@ -23,6 +23,10 @@ class TestBinanceExchange(unittest.TestCase):
         self.assertEqual(exchange, BinanceExchange("BTC", "USDT"))
         self.assertIsNone(BinanceExchange.get_symbol_object("BTCUSD"))
 
+    def test_add_base_coin_id_pair_to_dict(self) -> None:
+        BinanceExchange.add_base_coin_id_pair_to_dict("BTC", "bitcoin")
+        self.assertEqual(BinanceExchange.symbol_base_coingecko_id_map["BTC"], "bitcoin")
+
 
 class TestCoingeckoCoin(unittest.TestCase):
     def test_coin_symbol(self) -> None:
@@ -37,3 +41,11 @@ class TestCoingeckoCoin(unittest.TestCase):
         coin = CoingeckoCoin.get_symbol_object("BTC", "other")
         self.assertEqual(coin, CoingeckoCoin("bitcoin", "BTC"))
         self.assertIsNone(CoingeckoCoin.get_symbol_object("ETH", "other"))
+
+        CoingeckoCoin("bitcoin1", "BTC")
+        coin = CoingeckoCoin.get_symbol_object("BTC", "other")
+        self.assertEqual(set(coin), {CoingeckoCoin("bitcoin1", "BTC"), CoingeckoCoin("bitcoin", "BTC")})
+
+    def test_equal(self) -> None:
+        self.assertTrue(CoingeckoCoin("bitcoin", "BTC") == "BTC")
+        self.assertFalse(CoingeckoCoin("bitcoin", "BTC") == "BTC1")

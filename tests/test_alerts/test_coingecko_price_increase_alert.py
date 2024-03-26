@@ -3,6 +3,7 @@ from unittest.mock import patch
 
 from smrti_quant_alerts.alerts import CoingeckoPriceIncreaseAlert
 from smrti_quant_alerts.data_type import CoingeckoCoin
+from smrti_quant_alerts.alerts.crypto_alerts.utility import send_coins_info_to_telegram
 
 
 class TestPriceIncreaseAlert(unittest.TestCase):
@@ -62,7 +63,12 @@ class TestPriceIncreaseAlert(unittest.TestCase):
                                                  "price_change_percentage_14d_in_currency": 12.098},
                                                 {"coingecko_coin": coin3,
                                                  "price_change_percentage_14d_in_currency": -10.013}]):
-                    alert.run()
-                    mock_send_message.assert_called_once_with("Top 3 coins in the top 0 - 3 Market Cap Coins "
-                                                              "with the biggest price increase in the last 14D "
-                                                              "timeframe: ['TEST1: 23.87%', 'TEST2: 12.1%']")
+                    with patch("smrti_quant_alerts.alerts.crypto_alerts."
+                               "coingecko_price_increase_alert.send_coins_info_to_telegram",
+                               return_value=[]) as mock_send_csv:
+                        alert._coin_info = True
+                        alert.run()
+                        mock_send_message.assert_called_once_with("Top 3 coins in the top 0 - 3 Market Cap Coins "
+                                                                  "with the biggest price increase in the last 14D "
+                                                                  "timeframe: ['TEST1: 23.87%', 'TEST2: 12.1%']")
+                        mock_send_csv.assert_called()
