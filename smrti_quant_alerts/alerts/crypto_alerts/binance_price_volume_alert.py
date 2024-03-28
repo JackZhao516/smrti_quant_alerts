@@ -32,7 +32,7 @@ class BinancePriceVolumeBase(ABC, BaseAlert, BinanceApi):
         self._alert_threshold = None
 
         # data
-        self._exchanges = self.get_all_spot_exchanges_in_usdt_fdusd_btc()
+        self._exchanges = self.get_all_spot_exchanges_in_usdt_fdusd_btc()[:200]
         self._monthly_start_timestamp = 0.0
         self._current_timestamp = 0.0
 
