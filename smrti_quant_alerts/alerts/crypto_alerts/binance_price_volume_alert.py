@@ -192,6 +192,20 @@ class BinancePriceVolumeBase(ABC, BaseAlert, BinanceApi):
 
             self._exchanges += list(exchange_diff)
 
+    def _auto_restart_websocket(self):
+        """
+        auto restart websocket every 5 second when websocket is not alive
+        """
+        while True:
+            if self._websocket_client.socket_manager.is_alive():
+                time.sleep(5)
+            else:
+                self._websocket_client = SpotWebsocketStreamClient(on_message=self._handle_tick_message,
+                                                                   is_combined=True, timeout=2000)
+                exchange_strs = self._exchanges_to_subscription_stream_names(self._exchanges)
+                self._websocket_client.subscribe(exchange_strs)
+                logging.warning(f"Restarted websocket for {self._alert_type}")
+
     # ----------main functions-----------
     def run(self) -> None:
         """
@@ -209,6 +223,7 @@ class BinancePriceVolumeBase(ABC, BaseAlert, BinanceApi):
             threading.Thread(target=run_task_at_daily_time,
                              args=(self._auto_subscribe_new_exchanges,
                                    [f"{str(h).zfill(2)}:05" for h in range(24)])),
+            threading.Thread(target=self._auto_restart_websocket),
         ]
         for service in services:
             service.start()
