@@ -19,7 +19,7 @@
   },
   "COINGECKO_API_KEY": "",
   "FMP_API_KEY": "",
-  "POLYGON_IO_API_KEY": "",
+  "EODHD_API_KEY": "",
   "GMAIL": {
     "SENDER_EMAIL": "<gmail address>",
     "PASSWORD": "<gmail password>",

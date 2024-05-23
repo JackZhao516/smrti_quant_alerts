@@ -17,7 +17,7 @@ class Config:
     API_ENDPOINTS = {
         "SP_500_SOURCE_URL": "https://en.wikipedia.org/wiki/List_of_S%26P_500_companies#S&P_500_component_stocks",
         "FMP_API_URL": "https://financialmodelingprep.com/api/v3/",
-        "IEX_CLOUD_API_URL": "https://api.iex.cloud/v1/data/core/"
+        "EODHD_API_URL": "https://eodhd.com/api/"
     }
     IS_SETUP = False
 
@@ -60,8 +60,8 @@ class Config:
             logging.error("token.json does not contain "
                           "TELEGRAMBOT.TOKEN or TELEGRAMBOT.TELEGRAM_IDS")
             exit(1)
-        if "FMP_API_KEY" not in self.TOKENS or "IEX_CLOUD_API_KEY" not in self.TOKENS:
-            logging.warning('token.json does not contain FMP_API_KEY/IEX_CLOUD_API_KEY '
+        if "FMP_API_KEY" not in self.TOKENS or "EODHD_API_KEY" not in self.TOKENS:
+            logging.warning('token.json does not contain FMP_API_KEY/EODHD_API_KEY '
                             'cannot run "stock_alert"')
 
         if "GMAIL" not in self.TOKENS:
@@ -105,7 +105,7 @@ class Config:
                 self._validate_individual_configs([], ["top_range", "top_n", "timeframe", "tg_type"],
                                                   alert_setting, alert_name)
             elif alert_type == "stock_alert":
-                self._validate_individual_configs([], ["adjusted", "tg_type", "timeframe_list"],
+                self._validate_individual_configs([], ["tg_type", "timeframe_list", "email"],
                                                   alert_setting, alert_name)
             elif alert_type == "alts_alert":
                 self._validate_individual_configs([], ["tg_type"],

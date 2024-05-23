@@ -25,7 +25,8 @@ class StockSymbol(TradingSymbol):
         if nasdaq:
             StockSymbol.nasdaq_set.add(self._symbol)
 
-        self.symbol_info_map[self._symbol] = self
+        if self.has_stock_info:
+            self.symbol_info_map[self._symbol] = self
 
     @property
     def ticker(self) -> str:
