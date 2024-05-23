@@ -5,7 +5,7 @@ from smrti_quant_alerts.alerts import CoingeckoMarketCapAlert, BinancePriceVolum
     CGAltsAlert, SpotOverMAAlert, FutureFundingRate, StockAlert, CoingeckoPriceIncreaseAlert
 from smrti_quant_alerts.utility import run_alert
 
-configs = Config()
+configs = Config(True)
 
 alert_type_to_alert_class = {
     "market_cap": CoingeckoMarketCapAlert,

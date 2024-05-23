@@ -1,18 +1,18 @@
 import time
-from typing import Union, Type, Dict, Optional, List, Tuple
+from typing import Union, Type, Dict, Optional, List, Tuple, Iterable, Set
 from threading import RLock
 
 
 from smrti_quant_alerts.db.database import database_runtime, init_database
-from smrti_quant_alerts.db.models import LastCount, ExchangeCount
-from smrti_quant_alerts.data_type import TradingSymbol, get_class, BinanceExchange
+from smrti_quant_alerts.db.models import LastCount, ExchangeCount, StockAlertCount
+from smrti_quant_alerts.data_type import TradingSymbol, get_class, BinanceExchange, StockSymbol
 
 # ------------ general utilities -------------
 
 
 def init_database_runtime(db_name: str) -> None:
     database_runtime.initialize(init_database(db_name))
-    database_runtime.create_tables([LastCount, ExchangeCount], safe=True)
+    database_runtime.create_tables([LastCount, ExchangeCount, StockAlertCount], safe=True)
 
 
 def close_database() -> None:
@@ -177,3 +177,30 @@ class SpotOverMaDBUtils:
                            for e in last_counts]
             LastCount.insert_many(last_counts).execute()
             cls.db_lock.release()
+
+
+class StockAlertDBUtils:
+    @staticmethod
+    def get_stocks() -> Set[StockSymbol]:
+        """
+        get all stocks
+        """
+        with database_runtime.atomic():
+            return {StockSymbol.get_symbol_object(i.stock_symbol) for i in StockAlertCount.select()}
+
+    @staticmethod
+    def add_stocks(stock_symbols: Iterable[StockSymbol]) -> None:
+        """
+        add stock symbols to the database
+        :param stock_symbols: list of stock symbols
+        """
+        with database_runtime.atomic():
+            StockAlertCount.insert_many([{"stock_symbol": i.ticker} for i in stock_symbols]).execute()
+
+    @staticmethod
+    def reset_stocks() -> None:
+        """
+        reset all stocks
+        """
+        with database_runtime.atomic():
+            StockAlertCount.delete().execute()

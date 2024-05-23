@@ -32,3 +32,8 @@ class LastCount(BaseModel):
     alert_type = CharField()
     count = IntegerField(default=1)
     date = DateTimeField(default=time.time)
+
+
+# -------------- stock_alert ----------------
+class StockAlertCount(BaseModel):
+    stock_symbol = CharField()

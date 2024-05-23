@@ -17,10 +17,11 @@ class Config:
     API_ENDPOINTS = {
         "SP_500_SOURCE_URL": "https://en.wikipedia.org/wiki/List_of_S%26P_500_companies#S&P_500_component_stocks",
         "FMP_API_URL": "https://financialmodelingprep.com/api/v3/",
+        "IEX_CLOUD_API_URL": "https://api.iex.cloud/v1/data/core/"
     }
     IS_SETUP = False
 
-    def __init__(self, verbose: bool = True) -> None:
+    def __init__(self, verbose: bool = False) -> None:
         if not self.IS_SETUP:
             self._read_configs_tokens()
             self._validate_tokens(verbose=verbose)
@@ -49,19 +50,22 @@ class Config:
 
         :param verbose: print warning or not
         """
-        necessary_keys = ["TelegramBot", "COINGECKO_API_KEY"]
+        necessary_keys = ["TELEGRAMBOT", "COINGECKO_API_KEY"]
         for key in necessary_keys:
             if key not in self.TOKENS:
                 logging.error(f'token.json does not contain "{key}"')
                 exit(1)
-        if "TOKEN" not in self.TOKENS["TelegramBot"] or \
-                "TELEGRAM_IDS" not in self.TOKENS["TelegramBot"]:
+        if "TOKEN" not in self.TOKENS["TELEGRAMBOT"] or \
+                "TELEGRAM_IDS" not in self.TOKENS["TELEGRAMBOT"]:
             logging.error("token.json does not contain "
-                          "TelegramBot.TOKEN or TelegramBot.TELEGRAM_IDS")
+                          "TELEGRAMBOT.TOKEN or TELEGRAMBOT.TELEGRAM_IDS")
             exit(1)
-        if "FMP_API_KEY" not in self.TOKENS or "POLYGON_IO_API_KEY" not in self.TOKENS:
-            logging.warning('token.json does not contain FMP_API_KEY/POLYGON_IO_API_KEY '
+        if "FMP_API_KEY" not in self.TOKENS or "IEX_CLOUD_API_KEY" not in self.TOKENS:
+            logging.warning('token.json does not contain FMP_API_KEY/IEX_CLOUD_API_KEY '
                             'cannot run "stock_alert"')
+
+        if "GMAIL" not in self.TOKENS:
+            logging.warning('token.json does not contain GMAIL cannot send email')
 
         if verbose:
             logging.warning('"TELEGRAM_IDS" in token.json:\n'

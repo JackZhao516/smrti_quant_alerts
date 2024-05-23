@@ -279,7 +279,7 @@ class SpotOverMAAlert(BaseAlert, CryptoComprehensiveApi):
 
     def run(self) -> None:
         """
-        run the aler
+        run the alert
         """
         self.get_all_coingecko_coins()
         self.get_all_binance_exchanges()

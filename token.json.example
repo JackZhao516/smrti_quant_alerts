@@ -20,5 +20,10 @@
   },
   "COINGECKO_API_KEY": "<API Token>",
   "FMP_API_KEY": "<API Token>",
-  "POLYGON_IO_API_KEY": "<API Token>"
+  "IEX_CLOUD_API_KEY": "<API Token>",
+  "GMAIL": {
+    "SENDER_EMAIL": "<gmail address>",
+    "PASSWORD": "<gmail password>",
+    "RECEIVER_EMAIL": "<email address>"
+  }
 }

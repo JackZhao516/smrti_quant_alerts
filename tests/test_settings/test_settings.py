@@ -56,15 +56,15 @@ class TestConfig(unittest.TestCase):
         config.TOKENS = dummy_token_json
 
         test_tokens = [
-            {"TelegramBot": {}},
-            {"TelegramBot": {"TOKEN": {}}, "COINGECKO_API_KEY": "test"}
+            {"TELEGRAMBOT": {}},
+            {"TELEGRAMBOT": {"TOKEN": {}}, "COINGECKO_API_KEY": "test"}
         ]
         for test_token in test_tokens:
             config.TOKENS = test_token
             with self.assertRaises(SystemExit) as cm:
                 config._validate_tokens(verbose=True)
                 self.assertEqual(cm.exception.code, 1)
-        config.TOKENS = {"TelegramBot": {"TOKEN": "test", "TELEGRAM_IDS": ["test"]},
+        config.TOKENS = {"TELEGRAMBOT": {"TOKEN": "test", "TELEGRAM_IDS": ["test"]},
                          "COINGECKO_API_KEY": "test"}
 
         with patch("logging.warning") as mock_warning:
