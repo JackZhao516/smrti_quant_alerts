@@ -150,8 +150,6 @@ class StockAlert(BaseAlert, StockApi):
 if __name__ == '__main__':
     start = time.time()
     stock_alert = StockAlert("stock_alert", tg_type="TEST", email=True,
-                             # timeframe_list=["5D"])
-
                              timeframe_list=["1m", "3m", "6m", "1y", "3y", "5y", "10y"])
     stock_alert.run()
     print(f"Time taken: {round(time.time() - start, 2)} seconds")

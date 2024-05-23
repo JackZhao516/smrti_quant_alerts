@@ -34,7 +34,8 @@ class TestStockApi(unittest.TestCase):
 
     def test_get_nasdaq_list(self) -> None:
         with mock.patch("requests.get", return_value=mock.Mock(json=lambda: [{"symbol": "AAPL", "name": "Apple Inc.",
-                                                                              "exchangeShortName": "NASDAQ"}])):
+                                                                              "exchangeShortName": "NASDAQ",
+                                                                              "type": "stock"}])):
             stock_list = self.stock_api.get_nasdaq_list()
             self.assertEqual(stock_list, [StockSymbol("AAPL", "Apple Inc.", nasdaq=True)])
 
@@ -85,7 +86,7 @@ class TestStockApi(unittest.TestCase):
         stock_list = [StockSymbol("AAPL", "Apple Inc.", "Information Technology",
                                   "Technology Hardware", "Cupertino, California",
                                   "320193", "1977", sp500=True),
-                      StockSymbol("MSF-T", sp500=True)]
+                      StockSymbol("MSFT", sp500=True)]
 
         def has_same_info(left: StockSymbol, right: StockSymbol) -> bool:
             return left.security_name == right.security_name and left.gics_sector == right.gics_sector and \
