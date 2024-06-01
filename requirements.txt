@@ -1,3 +1,4 @@
+setuptools
 binance-futures-connector>=4.0.0
 binance-connector>=3.5.0
 numpy
