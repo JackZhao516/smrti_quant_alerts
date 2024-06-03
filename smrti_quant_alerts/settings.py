@@ -6,8 +6,8 @@ from typing import Dict, Any, List
 import pytz
 import datetime
 
-# from binance.lib.utils import config_logging
-# config_logging(logging, logging.WARNING)
+from binance.lib.utils import config_logging
+config_logging(logging, logging.WARNING)
 
 
 class Config:

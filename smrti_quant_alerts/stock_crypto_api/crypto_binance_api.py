@@ -1,18 +1,14 @@
 import time
-import logging
 from decimal import Decimal
 from typing import List, Union, Set, Optional
 
 from binance.spot import Spot
 from binance.um_futures import UMFutures
-from binance.lib.utils import config_logging
 
 from smrti_quant_alerts.exception import error_handling
 from smrti_quant_alerts.settings import Config
 from smrti_quant_alerts.data_type import BinanceExchange, CoingeckoCoin, TradingSymbol
 from smrti_quant_alerts.stock_crypto_api.utility import read_exclude_coins_from_file
-
-config_logging(logging, logging.WARNING)
 
 
 class BinanceApi:
