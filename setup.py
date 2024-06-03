@@ -15,8 +15,9 @@ setup(
         "pandas",
         "lxml",
         "peewee",
-        "polygon-api-client",
         "urllib3>=1.26.9,<2.0.0",
+        "openai",
+        "fpdf2==2.7.9",
         "pycodestyle",
         "pytest",
         "pytest-cov"

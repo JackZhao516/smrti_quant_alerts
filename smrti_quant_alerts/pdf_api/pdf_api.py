@@ -46,7 +46,6 @@ class PDFApi:
             prev_line = ""
             with open(self._tmp_file_name, "r", encoding="utf-8") as f:
                 for line in f:
-                    print(line == "\n", prev_line == "\n")
                     if line == "\n" and prev_line != "\n":
                         prev_line = line
                         continue
