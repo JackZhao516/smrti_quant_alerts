@@ -1,10 +1,12 @@
 import sys
+import logging
 
 from smrti_quant_alerts.settings import Config
 from smrti_quant_alerts.alerts import CoingeckoMarketCapAlert, BinancePriceVolumeAlert, \
     CGAltsAlert, SpotOverMAAlert, FutureFundingRate, StockAlert, CoingeckoPriceIncreaseAlert
 from smrti_quant_alerts.utility import run_alert
 
+logging.warning("alert system started")
 configs = Config(True)
 
 alert_type_to_alert_class = {
