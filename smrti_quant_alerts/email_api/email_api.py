@@ -2,6 +2,8 @@ import smtplib
 import ssl
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
+from email.mime.application import MIMEApplication
+from typing import Iterable
 
 from smrti_quant_alerts.settings import Config
 from smrti_quant_alerts.exception import error_handling
@@ -18,13 +20,15 @@ class EmailApi:
         self.password = self.email_tokens["PASSWORD"] if not password else password
 
     @error_handling("email", default_val=None)
-    def send_email(self, subject: str, body: str, csv_file_name: str = None) -> None:
+    def send_email(self, subject: str, body: str, csv_file_name: str = None,
+                   pdf_file_name: Iterable[str] = None) -> None:
         """
         send email with message and csv file
 
         :param subject: email subject
         :param body: email body
         :param csv_file_name: csv file path
+        :param pdf_file_name: pdf file path
         """
         if not self.sender_email or not self.receiver_email or not self.password:
             return
@@ -40,6 +44,13 @@ class EmailApi:
                 attachment = MIMEText(fp.read(), _subtype="text/csv")
             attachment.add_header("Content-Disposition", "attachment", filename=csv_file_name)
             message.attach(attachment)
+
+        if pdf_file_name:
+            for file_name in pdf_file_name:
+                with open(file_name, "rb") as fp:
+                    attachment = MIMEApplication(fp.read(), _subtype="pdf")
+                attachment.add_header("Content-Disposition", "attachment", filename=file_name)
+                message.attach(attachment)
 
         context = ssl.create_default_context()
         with smtplib.SMTP_SSL(self.smtp_server, self.port, context=context) as server:

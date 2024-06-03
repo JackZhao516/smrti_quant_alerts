@@ -9,27 +9,35 @@ from smrti_quant_alerts.email_api import EmailApi
 from smrti_quant_alerts.data_type import StockSymbol
 from smrti_quant_alerts.stock_crypto_api import StockApi
 from smrti_quant_alerts.alerts.base_alert import BaseAlert
+from smrti_quant_alerts.llm_api import PerplexityAPI
+from smrti_quant_alerts.pdf_api import PDFApi
 from smrti_quant_alerts.db import init_database_runtime, close_database, StockAlertDBUtils
 
 
 class StockAlert(BaseAlert, StockApi):
     def __init__(self, alert_name: str, tg_type: str = "TEST",
                  timeframe_list: Optional[List[str]] = None,
-                 email: bool = True) -> None:
+                 email: bool = True, ai_analysis: bool = False) -> None:
         """
         StockAlert class for sending
         :param alert_name: alert name
         :param tg_type: telegram type
         :param timeframe_list: list of timeframe
         :param email: whether to send email
+        :param ai_analysis: whether to use ai analysis
         """
         BaseAlert.__init__(self, tg_type=tg_type)
         StockApi.__init__(self)
         self._alert_name = alert_name
         self._timeframe_list = [timeframe.upper() for timeframe in timeframe_list] \
             if timeframe_list else ["1D", "5D", "1M", "3M", "6M", "1Y", "3Y", "5Y"]
+
         self._send_email = email
         self._email_api = EmailApi()
+
+        self._ai_analysis = ai_analysis
+        self._ai_api = PerplexityAPI()
+        self._pdf_api = PDFApi(f"ai_analysis_{uuid.uuid4()}.pdf")
 
     def send_stocks_info_as_csv(self, stocks: List[StockSymbol],
                                 is_newly_added_dict: Dict[StockSymbol, bool], email_message: str) -> None:
@@ -40,7 +48,7 @@ class StockAlert(BaseAlert, StockApi):
         :param is_newly_added_dict: {StockSymbol: is_newly_added, ...}
         :param email_message: email message
         """
-        file_name = f"stock_alert_{uuid.uuid4()}.csv"
+        csv_file_name = f"stock_alert_{uuid.uuid4()}.csv"
         header = ["Symbol", "Name", "GICS Sector", "Sub Sector", "Headquarter Location",
                   "Founded Year/IPO Date", "is SP500", "is Nasdaq", "Is Newly Added"]
         stock_info = [[stock.ticker, stock.security_name, stock.gics_sector,
@@ -48,15 +56,35 @@ class StockAlert(BaseAlert, StockApi):
                        stock.founded_time, stock.is_sp500, stock.is_nasdaq, is_newly_added_dict[stock]]
                       for stock in stocks]
 
-        self._tg_bot.send_data_as_csv_file(file_name, headers=header, data=stock_info)
+        self._tg_bot.send_data_as_csv_file(csv_file_name, headers=header, data=stock_info)
+        pdf_files = []
+        if self._ai_analysis:
+            newly_added_stocks = [stock for stock in stocks if is_newly_added_dict[stock]]
+            pdf_files.append(self.get_stocks_ai_analysis(newly_added_stocks))
+            self._tg_bot.send_file(pdf_files[0], "Stock AI Analysis.pdf")
+
         if self._send_email:
-            with open(file_name, "w", newline="", encoding="utf-8") as csv_file:
+            with open(csv_file_name, "w", newline="", encoding="utf-8") as csv_file:
                 writer = csv.writer(csv_file)
                 writer.writerow(header)
                 writer.writerows(stock_info)
-            self._email_api.send_email("Weekly Stock Alert", email_message, file_name)
-            if os.path.exists(file_name):
-                os.remove(file_name)
+            self._email_api.send_email("Weekly Stock Alert", email_message, csv_file_name, pdf_files)
+            if os.path.exists(csv_file_name):
+                os.remove(csv_file_name)
+        self._pdf_api.delete_pdf()
+
+    def get_stocks_ai_analysis(self, stocks: List[StockSymbol]) -> str:
+        """
+        Send stock ai analysis
+
+        :param stocks: [StockSymbol, ...]
+        :return: saved pdf file name
+        """
+        for stock in stocks:
+            stock_increase_reason = self._ai_api.get_stock_increase_reason(stock).strip().split("\n")
+            self._pdf_api.append_stock_info(stock, stock_increase_reason)
+        self._pdf_api.save_pdf()
+        return self._pdf_api.file_name
 
     def get_sorted_price_increased_stocks(self) -> Dict[str, List[Tuple[StockSymbol, Decimal]]]:
         """
@@ -67,14 +95,22 @@ class StockAlert(BaseAlert, StockApi):
         :return: { time_frame: [(StockSymbol, price_increase_percentage), ...] }
 
         """
-        stock_price_change = self.get_all_stock_price_change_percentage(self._timeframe_list)
+        retry = True  # make sure the stock api returns non-zero price change
+        while retry:
+            stock_price_change = self.get_all_stock_price_change_percentage(self._timeframe_list)
 
-        top_stocks = {}
-        for timeframe in self._timeframe_list:
-            top_stocks[timeframe] = sorted(stock_price_change.items(),
-                                           key=lambda x: x[1][timeframe], reverse=True)
-            top_stocks[timeframe] = [(stock, price_change[timeframe])
-                                     for stock, price_change in top_stocks[timeframe]]
+            top_stocks = {}
+            for timeframe in self._timeframe_list:
+                top_stocks[timeframe] = sorted(stock_price_change.items(),
+                                               key=lambda x: x[1][timeframe], reverse=True)
+
+                top_stocks[timeframe] = [(stock, price_change[timeframe])
+                                         for stock, price_change in top_stocks[timeframe]]
+                retry = False
+                if top_stocks[timeframe][0][1] == Decimal(0):
+                    retry = True
+                    break
+
         return top_stocks
 
     def get_top_n_non_etf_stocks(self, n: int, top_stocks: Dict[str, List[Tuple[StockSymbol, Decimal]]]) \
@@ -99,8 +135,12 @@ class StockAlert(BaseAlert, StockApi):
                 stocks_price_increase = sp500_nasdaq_stocks[i:i + 40]
                 stocks = {stock: percentage for stock, percentage in stocks_price_increase}
                 stock_info = self.get_stock_info(stocks.keys())
+                for stock in stock_info:
+                    if not stock.security_name:
+                        print(f"Stock {stock.ticker} does not have security name")
                 cur_top_stocks.extend([(stock, stocks[stock]) for stock in stock_info
-                                       if " ETF" not in stock.security_name])
+                                       if stock.security_name and " ETF" not in stock.security_name
+                                       or not stock.security_name])
                 if len(cur_top_stocks) >= n:
                     break
             top_stocks[timeframe] = cur_top_stocks[:n]
@@ -108,11 +148,11 @@ class StockAlert(BaseAlert, StockApi):
 
     def run(self) -> None:
         """
-        This function is used to send daily report of top 20 stocks with the highest price increase
+        This function is used to send daily report of top 50 stocks with the highest price increase
         """
         database_name = f"{self.CONFIG.SETTINGS[self._alert_name]['database_name']}.db"
         init_database_runtime(database_name)
-        n = 20
+        n = 50
         top_stocks = self.get_sorted_price_increased_stocks()
         top_n_stocks = self.get_top_n_non_etf_stocks(n, top_stocks)
 
@@ -150,6 +190,7 @@ class StockAlert(BaseAlert, StockApi):
 if __name__ == '__main__':
     start = time.time()
     stock_alert = StockAlert("stock_alert", tg_type="TEST", email=True,
-                             timeframe_list=["1m", "3m", "6m", "1y", "3y", "5y", "10y"])
+                             # timeframe_list=["10Y"], ai_analysis=True)
+                             timeframe_list=["1m", "3m", "6m", "1y", "3y", "5y", "10y"], ai_analysis=True)
     stock_alert.run()
     print(f"Time taken: {round(time.time() - start, 2)} seconds")

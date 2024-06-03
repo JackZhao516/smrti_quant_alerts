@@ -17,7 +17,8 @@ class Config:
     API_ENDPOINTS = {
         "SP_500_SOURCE_URL": "https://en.wikipedia.org/wiki/List_of_S%26P_500_companies#S&P_500_component_stocks",
         "FMP_API_URL": "https://financialmodelingprep.com/api/v3/",
-        "EODHD_API_URL": "https://eodhd.com/api/"
+        "EODHD_API_URL": "https://eodhd.com/api/",
+        "PERPLEXITY_API_URL": "https://api.perplexity.ai"
     }
     IS_SETUP = False
 
@@ -63,6 +64,10 @@ class Config:
         if "FMP_API_KEY" not in self.TOKENS or "EODHD_API_KEY" not in self.TOKENS:
             logging.warning('token.json does not contain FMP_API_KEY/EODHD_API_KEY '
                             'cannot run "stock_alert"')
+
+        if "PERPLEXITY_API_KEY" not in self.TOKENS:
+            logging.warning('token.json does not contain PERPLEXITY_API_KEY '
+                            'cannot run "ai_analysis" for stock_alert')
 
         if "GMAIL" not in self.TOKENS:
             logging.warning('token.json does not contain GMAIL cannot send email')
