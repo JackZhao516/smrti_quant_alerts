@@ -4,6 +4,7 @@ import csv
 import os
 from decimal import Decimal
 from typing import List, Dict, Tuple, Optional
+from collections import defaultdict
 
 from smrti_quant_alerts.email_api import EmailApi
 from smrti_quant_alerts.data_type import StockSymbol
@@ -39,28 +40,30 @@ class StockAlert(BaseAlert, StockApi):
         self._ai_api = PerplexityAPI()
         self._pdf_api = PDFApi(f"ai_analysis_{uuid.uuid4()}.pdf")
 
-    def send_stocks_info_as_csv(self, stocks: List[StockSymbol],
-                                is_newly_added_dict: Dict[StockSymbol, bool], email_message: str) -> None:
+    def send_stocks_info_as_csv(self, is_newly_added_dict: Dict[StockSymbol, bool],
+                                stock_timeframes: Dict[StockSymbol, List[str]], email_message: str) -> None:
         """
         Send stock info as csv file
 
         :param stocks: [StockSymbol, ...]
         :param is_newly_added_dict: {StockSymbol: is_newly_added, ...}
+        :param stock_timeframes: {StockSymbol: [timeframe, ...]}
         :param email_message: email message
         """
         csv_file_name = f"stock_alert_{uuid.uuid4()}.csv"
         header = ["Symbol", "Name", "GICS Sector", "Sub Sector", "Headquarter Location",
-                  "Founded Year/IPO Date", "is SP500", "is Nasdaq", "Is Newly Added"]
+                  "Founded Year/IPO Date", "is SP500", "is Nasdaq", "Is Newly Added", "Timeframe Alerted"]
+        stocks = sorted(is_newly_added_dict.keys(), key=lambda x: x.ticker)
         stock_info = [[stock.ticker, stock.security_name, stock.gics_sector,
                        stock.gics_sub_industry, stock.location,
-                       stock.founded_time, stock.is_sp500, stock.is_nasdaq, is_newly_added_dict[stock]]
-                      for stock in stocks]
+                       stock.founded_time, stock.is_sp500, stock.is_nasdaq, is_newly_added_dict[stock],
+                       stock_timeframes[stock]] for stock in stocks]
 
         self._tg_bot.send_data_as_csv_file(csv_file_name, headers=header, data=stock_info)
         pdf_files = []
         if self._ai_analysis:
             newly_added_stocks = [stock for stock in stocks if is_newly_added_dict[stock]]
-            pdf_files.append(self.get_stocks_ai_analysis(newly_added_stocks))
+            pdf_files.append(self.get_stocks_ai_analysis(newly_added_stocks, stock_timeframes))
             self._tg_bot.send_file(pdf_files[0], "Stock AI Analysis.pdf")
 
         if self._send_email:
@@ -73,15 +76,17 @@ class StockAlert(BaseAlert, StockApi):
                 os.remove(csv_file_name)
         self._pdf_api.delete_pdf()
 
-    def get_stocks_ai_analysis(self, stocks: List[StockSymbol]) -> str:
+    def get_stocks_ai_analysis(self, stocks: List[StockSymbol], stock_timeframes: Dict[StockSymbol, List[str]]) -> str:
         """
         Send stock ai analysis
 
         :param stocks: [StockSymbol, ...]
+        :param stock_timeframes: {StockSymbol: [timeframe, ...]}
         :return: saved pdf file name
         """
         for stock in stocks:
-            stock_increase_reason = self._ai_api.get_stock_increase_reason(stock).strip().split("\n")
+            stock_increase_reason = self._ai_api.\
+                get_stock_increase_reason(stock, stock_timeframes[stock]).strip().split("\n")
             self._pdf_api.append_stock_info(stock, stock_increase_reason)
         self._pdf_api.save_pdf()
         return self._pdf_api.file_name
@@ -156,7 +161,8 @@ class StockAlert(BaseAlert, StockApi):
         top_stocks = self.get_sorted_price_increased_stocks()
         top_n_stocks = self.get_top_n_non_etf_stocks(n, top_stocks)
 
-        top_stocks_dict = {}
+        is_newly_added_stock = {}
+        stock_timeframes = defaultdict(list)
 
         last_stocks = StockAlertDBUtils.get_stocks()
         email_msg = ""
@@ -165,11 +171,12 @@ class StockAlert(BaseAlert, StockApi):
             cur_top_stocks = []
             for stock, price_increase in top_n_stocks[timeframe]:
                 stock_str = f"{stock.ticker}: {round(price_increase, 2)}%"
-                top_stocks_dict[stock] = False
+                is_newly_added_stock[stock] = False
                 if stock.ticker not in last_stocks:
                     stock_str = f"{stock_str} (New)"
-                    top_stocks_dict[stock] = True
+                    is_newly_added_stock[stock] = True
                 cur_top_stocks.append(stock_str)
+                stock_timeframes[stock].append(timeframe)
             msg = f"Top {n} stocks from SP500 and Nasdaq with the " \
                   f"highest price increase with timeframe {timeframe}: \n" \
                   "Stock: Price Change Percentage\n" \
@@ -178,19 +185,18 @@ class StockAlert(BaseAlert, StockApi):
             email_msg += msg + "\n\n"
 
         StockAlertDBUtils.reset_stocks()
-        StockAlertDBUtils.add_stocks(top_stocks_dict.keys())
+        StockAlertDBUtils.add_stocks(is_newly_added_stock.keys())
 
         time.sleep(10)
         # save stock info to csv file
-        top_stocks = sorted(top_stocks_dict.keys(), key=lambda x: x.ticker)
-        self.send_stocks_info_as_csv(top_stocks, top_stocks_dict, email_msg)
+        self.send_stocks_info_as_csv(is_newly_added_stock, stock_timeframes, email_msg)
         close_database()
 
 
 if __name__ == '__main__':
     start = time.time()
     stock_alert = StockAlert("stock_alert", tg_type="TEST", email=True,
-                             # timeframe_list=["10Y"], ai_analysis=True)
-                             timeframe_list=["1m", "3m", "6m", "1y", "3y", "5y", "10y"], ai_analysis=True)
+                             timeframe_list=["10Y"], ai_analysis=True)
+                             # timeframe_list=["1m", "3m", "6m", "1y", "3y", "5y", "10y"], ai_analysis=True)
     stock_alert.run()
     print(f"Time taken: {round(time.time() - start, 2)} seconds")

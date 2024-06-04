@@ -1,4 +1,4 @@
-from typing import Iterable, List
+from typing import List
 from time import time, sleep
 
 from openai import OpenAI
@@ -35,12 +35,37 @@ class PerplexityAPI:
             res.append({"role": "user", "content": user_message})
         return res
 
+    @staticmethod
+    def _get_max_timeframe(timeframe: List[str]) -> str:
+        """
+        get max timeframe
+
+        :param timeframe: list of timeframe
+        :return: max timeframe
+        """
+        if not timeframe:
+            return ""
+        years = [timeframe[i] for i in range(len(timeframe)) if "Y" in timeframe[i].upper()]
+        if years:
+            return max(years)
+        months = [timeframe[i] for i in range(len(timeframe)) if "M" in timeframe[i].upper()]
+        if months:
+            return max(months)
+        days = [timeframe[i] for i in range(len(timeframe)) if "D" in timeframe[i].upper()]
+        if days:
+            return max(days)
+        hours = [timeframe[i] for i in range(len(timeframe)) if "H" in timeframe[i].upper()]
+        if hours:
+            return max(hours)
+        return timeframe[0]
+
     @error_handling("perplexity", default_val="")
-    def get_stock_increase_reason(self, company_stock_code: StockSymbol) -> str:
+    def get_stock_increase_reason(self, company_stock_code: StockSymbol, timeframe: List[str]) -> str:
         """
         get stock increase reason
 
         :param company_stock_code: company stock code
+        :param timeframe: timeframe list
         :return: stock increase reason
         """
         if self._current_count % self._rate_limit_per_minute == 0:
@@ -55,7 +80,8 @@ class PerplexityAPI:
             f"please do analysis on the companies with stock code {company_stock_code}."
             "Then answer the following questions: ",
             f"what is the company with stock code {company_stock_code}? "
-            f"Why did {company_stock_code} stock appreciate so much since (time period) ago?"
+            f"Why did {company_stock_code} stock appreciate so much since "
+            f"{self._get_max_timeframe(timeframe)} timeframe ago?"
         )
         response = self._perplexity_client.chat.completions.create(
             model=self._model,
