@@ -16,7 +16,7 @@ class EmailApi:
         self.port = 465  # For SSL
         self.smtp_server = "smtp.gmail.com"
         self.sender_email = self.email_tokens["SENDER_EMAIL"] if not sender_email else sender_email
-        self.receiver_email = self.email_tokens["RECEIVER_EMAIL"] if not receiver_email else receiver_email
+        self.receiver_emails = self.email_tokens["RECEIVER_EMAIL"] if not receiver_email else receiver_email
         self.password = self.email_tokens["PASSWORD"] if not password else password
 
     @error_handling("email", default_val=None)
@@ -30,13 +30,13 @@ class EmailApi:
         :param csv_file_name: csv file path
         :param pdf_file_name: pdf file path
         """
-        if not self.sender_email or not self.receiver_email or not self.password:
+        if not self.sender_email or not self.receiver_emails or not self.password:
             return
 
         message = MIMEMultipart("alternative")
         message["Subject"] = subject
         message["From"] = self.sender_email
-        message["To"] = self.receiver_email
+        message["To"] = ','.join(self.receiver_emails)
         message.attach(MIMEText(body, "plain"))
 
         if csv_file_name:
@@ -55,4 +55,4 @@ class EmailApi:
         context = ssl.create_default_context()
         with smtplib.SMTP_SSL(self.smtp_server, self.port, context=context) as server:
             server.login(self.sender_email, self.password)
-            server.sendmail(self.sender_email, self.receiver_email, message.as_string())
+            server.sendmail(self.sender_email, self.receiver_emails, message.as_string())

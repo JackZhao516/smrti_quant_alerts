@@ -25,6 +25,6 @@
   "GMAIL": {
     "SENDER_EMAIL": "<gmail address>",
     "PASSWORD": "<gmail password>",
-    "RECEIVER_EMAIL": "<email address>"
+    "RECEIVER_EMAIL": ["<email address>", "<email address>"]
   }
 }
