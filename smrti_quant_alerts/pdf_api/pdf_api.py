@@ -17,6 +17,15 @@ class PDFApi:
     def file_name(self) -> str:
         return self._file_name
 
+    def append_text(self, text: str) -> None:
+        """
+        Append text to pdf
+
+        :param text: text
+        """
+        with open(self._tmp_file_name, "a", encoding="utf-8") as f:
+            f.write(f"\n\n\n\n{text}\n\n\n\n\n\n")
+
     def append_stock_info(self, stock: StockSymbol, info: Iterable[str]) -> None:
         """
         Append stock info to pdf

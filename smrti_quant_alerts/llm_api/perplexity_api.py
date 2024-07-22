@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Union
 from time import time, sleep
 
 from openai import OpenAI
@@ -60,7 +60,7 @@ class PerplexityAPI:
         return timeframe[0]
 
     @error_handling("perplexity", default_val="")
-    def get_stock_increase_reason(self, company_stock_code: StockSymbol, timeframe: List[str]) -> str:
+    def get_stock_increase_reason(self, company_stock_code: StockSymbol, timeframe: Union[List[str], str]) -> str:
         """
         get stock increase reason
 
@@ -73,6 +73,7 @@ class PerplexityAPI:
             self._last_request_time = time()
             self._current_count = 0
         self._current_count += 1
+        timeframe = [timeframe] if isinstance(timeframe, str) else timeframe
 
         message = self.build_chat_message(
             "You are an artificial intelligence trading market analyst. "
