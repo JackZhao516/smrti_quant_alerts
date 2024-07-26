@@ -20,7 +20,7 @@ class TestConfig(unittest.TestCase):
         Config.PROJECT_DIR = PWD
 
     def test_config_basics(self) -> None:
-        config = Config()
+        config = Config(verbose=True)
         self.assertTrue(config.PROJECT_DIR)
         self.assertIsInstance(config.SETTINGS, dict)
         self.assertIsInstance(config.TOKENS, dict)
