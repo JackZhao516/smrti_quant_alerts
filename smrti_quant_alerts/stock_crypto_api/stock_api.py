@@ -1,6 +1,5 @@
 import datetime
-import time
-from typing import List, Dict, Set, Optional, Iterable
+from typing import List, Dict, Union, Optional, Iterable, Tuple
 from decimal import Decimal
 from collections import defaultdict
 
@@ -64,13 +63,31 @@ class StockApi:
 
         return sorted(stock_list, key=lambda x: x.ticker)
 
-    @error_handling("eodhd", default_val={})
-    def get_all_stock_price_by_day_delta(self, day_delta: int = 0) -> Dict[StockSymbol, Decimal]:
+    @error_handling("financialmodelingprep", default_val=[])
+    def get_nyse_list(self) -> List[StockSymbol]:
+        """
+        Get all stocks in NASDAQ 100
+
+        :return: [StockSymbol, ...]
+        """
+        api_url = f"{self.FMP_API_URL}available-traded/list?apikey={self.FMP_API_KEY}"
+        response = requests.get(api_url, timeout=5)
+        response = response.json()
+
+        stock_list = [StockSymbol(stock["symbol"], stock["name"], nasdaq=True) for stock in response
+                      if stock["exchangeShortName"] and stock["exchangeShortName"].upper() == "NYSE"
+                      and stock["type"] and stock["type"] == "stock"]
+
+        return sorted(stock_list, key=lambda x: x.ticker)
+
+    @error_handling("eodhd", default_val=({}, {}))
+    def get_all_stock_price_volume_by_day_delta(self, day_delta: int = 0) \
+            -> Tuple[Dict[StockSymbol, Decimal], Dict[StockSymbol, Decimal]]:
         """
         Get all stock prices for the <day_delta> day from today
 
         :param day_delta: int
-        :return: {StockSymbol: price}
+        :return: {StockSymbol: price}, {StockSymbol: volume}
         """
         today = get_datetime_now()
         target_date = today - datetime.timedelta(days=day_delta)
@@ -86,13 +103,15 @@ class StockApi:
             response = requests.get(url, timeout=50)
             target_date -= datetime.timedelta(days=1)
 
-        res = {}
+        prices = {}
+        volumes = {}
         for stock in response.json():
             if stock.get("code") and stock.get("adjusted_close") and \
                     stock.get("adjusted_close") > 0 and stock.get("volume") > 0 and \
                     stock.get("date") == target_date_str and stock.get("exchange_short_name") == "US":
-                res[StockSymbol(stock["code"].upper())] = Decimal(stock["adjusted_close"])
-        return res
+                prices[StockSymbol(stock["code"].upper())] = Decimal(stock["adjusted_close"])
+                volumes[StockSymbol(stock["code"].upper())] = Decimal(stock["volume"])
+        return prices, volumes
 
     def get_all_stock_price_change_percentage(
             self, timeframe_list: Optional[List[str]] = None) \
@@ -113,10 +132,12 @@ class StockApi:
 
         res = defaultdict(dict)
 
-        today_price_dict = self.get_all_stock_price_by_day_delta(1)
+        today_price_dict, _ = self.get_all_stock_price_volume_by_day_delta(1)
         history_price_dicts = {}
+
         for i, timeframe_delta in enumerate(timeframe_deltas):
-            history_price_dicts[timeframe_list[i]] = self.get_all_stock_price_by_day_delta(timeframe_delta)
+            history_price_dicts[timeframe_list[i]], _ = \
+                self.get_all_stock_price_volume_by_day_delta(timeframe_delta)
 
         # post processing
         for stock, today_price in today_price_dict.items():
@@ -167,11 +188,37 @@ class StockApi:
 
         return result
 
+    @error_handling("eodhd", default_val={})
+    def get_top_market_cap_stocks(self, top_n: int = 100) -> List[List[Union[Decimal, StockSymbol]]]:
+        """
+        Get top market cap stocks
 
-if __name__ == "__main__":
-    stock_api = StockApi()
-    stock_list = stock_api.get_sp_500_list()[:10]
-    print(stock_list)
+        :param top_n: int
 
-    stock_list = stock_api.get_stock_info(stock_list)
-    print(stock_list)
+        :return: [StockSymbol: market_cap]
+        """
+        res = []
+        n = top_n
+        last_market_cap = 10 ** 20
+        while (n // 1000) + 1 and n > 0:
+            cur_market_cap = 0
+            offset = 0
+
+            n = n - 1 if n % 1000 == 0 else n
+            while n % 1000:
+                api_url = f"{self.EODHD_API_URL}screener?api_token={self.EODHD_API_KEY}" \
+                          f"&sort=market_capitalization.desc&filters=" \
+                          f'[["market_capitalization","<",{last_market_cap}],' \
+                          f'["exchange","=","us"]]&limit=100&offset={offset}'
+                offset += 100 if n % 100 == 0 else n % 100
+                response = requests.get(api_url, timeout=10)
+                response = response.json().get("data", [])
+
+                for stock in response:
+                    if stock.get("code") and stock.get("market_capitalization"):
+                        res.append([StockSymbol(stock["code"].upper()), Decimal(stock["market_capitalization"])])
+                        cur_market_cap = stock["market_capitalization"]
+                n = max(0, top_n - len(res))
+            last_market_cap = cur_market_cap
+
+        return res[:top_n]
