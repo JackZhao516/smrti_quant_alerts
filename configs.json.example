@@ -45,7 +45,8 @@
       "alert_time": "<match with the daily time parameter in run_time_input_args>",
       "timeframe_list": ["1d", "5d", "1M", "3M", "6M", "1y", "3y", "5y"],
       "tg_type": "STOCK",
-      "email": true/false
+      "email": true/false,
+      "ai_analysis": true/false
     },
     "alert_params": {},
     "run_time_input_args": {

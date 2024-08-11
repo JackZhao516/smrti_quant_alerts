@@ -6,11 +6,13 @@ from .base_data_type import TradingSymbol
 class StockSymbol(TradingSymbol):
     nasdaq_set = set()
     sp500_set = set()
+    nyse_set = set()
     symbol_info_map = {}
 
     def __init__(self, symbol: str, security_name: str = "", gics_sector: str = "",
                  gics_sub_industry: str = "", location: str = "", cik: str = "",
-                 founded_time: str = "", sp500: bool = False, nasdaq: bool = False) -> None:
+                 founded_time: str = "", sp500: bool = False, nasdaq: bool = False,
+                 nyse: bool = False) -> None:
         super().__init__(symbol.upper())
 
         self.security_name = security_name
@@ -24,6 +26,8 @@ class StockSymbol(TradingSymbol):
             StockSymbol.sp500_set.add(self._symbol)
         if nasdaq:
             StockSymbol.nasdaq_set.add(self._symbol)
+        if nyse:
+            StockSymbol.nyse_set.add(self._symbol)
 
         if self.has_stock_info:
             self.symbol_info_map[self._symbol] = self
@@ -47,6 +51,10 @@ class StockSymbol(TradingSymbol):
     @property
     def is_nasdaq(self) -> bool:
         return self._symbol in StockSymbol.nasdaq_set
+
+    @property
+    def is_nyse(self) -> bool:
+        return self._symbol in StockSymbol.nyse_set
 
     @property
     def has_stock_info(self) -> bool:

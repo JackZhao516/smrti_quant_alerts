@@ -25,6 +25,12 @@ class TestStockSymbol(unittest.TestCase):
         symbol = StockSymbol("AAPL", nasdaq=True)
         self.assertTrue(symbol.is_nasdaq)
 
+    def test_is_nyse(self) -> None:
+        symbol = StockSymbol("AAPL")
+        self.assertFalse(symbol.is_nyse)
+        symbol = StockSymbol("AAPL", nyse=True)
+        self.assertTrue(symbol.is_nyse)
+
     def test_has_stock_info(self) -> None:
         symbol = StockSymbol("AAPL")
         self.assertFalse(symbol.has_stock_info)

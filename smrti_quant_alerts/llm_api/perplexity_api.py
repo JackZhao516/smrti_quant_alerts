@@ -1,7 +1,7 @@
 from typing import List, Union
 from time import time, sleep
 
-from openai import OpenAI
+import openai
 
 from smrti_quant_alerts.settings import Config
 from smrti_quant_alerts.exception import error_handling
@@ -15,8 +15,8 @@ class PerplexityAPI:
 
     def __init__(self) -> None:
         config = Config()
-        self._perplexity_client = OpenAI(api_key=config.TOKENS["PERPLEXITY_API_KEY"],
-                                         base_url=config.API_ENDPOINTS["PERPLEXITY_API_URL"])
+        self._perplexity_client = openai.OpenAI(api_key=config.TOKENS["PERPLEXITY_API_KEY"],
+                                                base_url=config.API_ENDPOINTS["PERPLEXITY_API_URL"])
         self._model = "llama-3-sonar-large-32k-online"
 
     @staticmethod
