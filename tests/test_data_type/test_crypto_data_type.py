@@ -49,3 +49,4 @@ class TestCoingeckoCoin(unittest.TestCase):
     def test_equal(self) -> None:
         self.assertTrue(CoingeckoCoin("bitcoin", "BTC") == "BTC")
         self.assertFalse(CoingeckoCoin("bitcoin", "BTC") == "BTC1")
+        self.assertFalse(CoingeckoCoin("bitcoin", "BTC") == 0)

@@ -121,10 +121,10 @@ class TestStockApi(unittest.TestCase):
     def test_get_top_market_cap_stocks(self) -> None:
         with mock.patch("requests.get",
                         return_value=mock.Mock(json=lambda: {"data": [{"code": "AAPL", "name": "Apple Inc.",
-                                                              "market_capitalization": 2000},
-                                                             {"code": "MSFT", "name": "Microsoft",
-                                                              "market_capitalization": 1500},
-                                                             {"code": "AMZN", "name": "Amazon",
-                                                              "market_capitalization": 1000}]})):
+                                                                       "market_capitalization": 2000},
+                                                                      {"code": "MSFT", "name": "Microsoft",
+                                                                       "market_capitalization": 1500},
+                                                                      {"code": "AMZN", "name": "Amazon",
+                                                                       "market_capitalization": 1000}]})):
             stock_list = self.stock_api.get_top_market_cap_stocks(2)
             self.assertEqual(stock_list, [[StockSymbol("AAPL"), 2000], [StockSymbol("MSFT"), 1500]])

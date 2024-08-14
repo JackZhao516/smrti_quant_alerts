@@ -5,8 +5,9 @@ import time
 from unittest.mock import patch
 from typing import Dict, Tuple
 
-from smrti_quant_alerts.db import init_database_runtime, PriceVolumeDBUtils, SpotOverMaDBUtils, close_database
-from smrti_quant_alerts.data_type import BinanceExchange, CoingeckoCoin, TradingSymbol
+from smrti_quant_alerts.db import init_database_runtime, PriceVolumeDBUtils, \
+    SpotOverMaDBUtils, StockAlertDBUtils, close_database
+from smrti_quant_alerts.data_type import BinanceExchange, CoingeckoCoin, TradingSymbol, StockSymbol
 from smrti_quant_alerts.settings import Config
 
 
@@ -31,6 +32,7 @@ class TestConfig:
         init_database_runtime("test.db")
         PriceVolumeDBUtils.reset_count("test_alert", "daily")
         PriceVolumeDBUtils.reset_count("test_alert", "monthly")
+        StockAlertDBUtils.reset_stocks()
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
@@ -196,3 +198,29 @@ class TestSpotOverMaDBUtils(unittest.TestCase):
             SpotOverMaDBUtils.remove_older_count(time.time())
             count = SpotOverMaDBUtils.get_last_count()
             self.assertEqual(count, {})
+
+
+class TestStockAlertDBUtils(unittest.TestCase):
+    def test_get_add_stocks(self) -> None:
+        with TestConfig() as _:
+            StockAlertDBUtils.add_stocks([StockSymbol("AAPL"), StockSymbol("TSLA")])
+            stocks = StockAlertDBUtils.get_stocks()
+            self.assertEqual(stocks, {StockSymbol("AAPL"), StockSymbol("TSLA")})
+
+            StockAlertDBUtils.add_stocks([StockSymbol("AAPL"), StockSymbol("TSLA"), StockSymbol("AAPL")])
+            stocks = StockAlertDBUtils.get_stocks()
+            self.assertEqual(stocks, {StockSymbol("AAPL"), StockSymbol("TSLA")})
+
+            StockAlertDBUtils.add_stocks([StockSymbol("GOOG")])
+            stocks = StockAlertDBUtils.get_stocks()
+            self.assertEqual(stocks, {StockSymbol("AAPL"), StockSymbol("TSLA"), StockSymbol("GOOG")})
+
+    def test_reset_stocks(self) -> None:
+        with TestConfig() as _:
+            StockAlertDBUtils.add_stocks([StockSymbol("AAPL"), StockSymbol("TSLA")])
+            stocks = StockAlertDBUtils.get_stocks()
+            self.assertEqual(stocks, {StockSymbol("AAPL"), StockSymbol("TSLA")})
+
+            StockAlertDBUtils.reset_stocks()
+            stocks = StockAlertDBUtils.get_stocks()
+            self.assertEqual(stocks, set())

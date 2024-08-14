@@ -52,7 +52,7 @@ class TestConfig(unittest.TestCase):
         config.PROJECT_DIR = tmp
 
     def test_validate_tokens(self) -> None:
-        config = Config()
+        config = Config(verbose=True)
         config.TOKENS = dummy_token_json
 
         test_tokens = [
@@ -72,7 +72,7 @@ class TestConfig(unittest.TestCase):
             mock_warning.assert_called()
 
     def test_validate_configs(self) -> None:
-        config = Config()
+        config = Config(verbose=True)
         config.SETTINGS = json.load(open(os.path.join(PWD, "configs.json")))
         second_key = list(config.SETTINGS.keys())[1]
         del config.SETTINGS[second_key]["alert_params"]
