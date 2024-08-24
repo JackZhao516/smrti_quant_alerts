@@ -1,4 +1,5 @@
 import datetime
+from multiprocessing.pool import ThreadPool
 from typing import List, Dict, Union, Optional, Iterable, Tuple
 from decimal import Decimal
 from collections import defaultdict
@@ -194,7 +195,6 @@ class StockApi:
         Get top market cap stocks
 
         :param top_n: int
-
         :return: [StockSymbol: market_cap]
         """
         res = []
@@ -222,3 +222,46 @@ class StockApi:
             last_market_cap = cur_market_cap
 
         return res[:top_n]
+
+    def get_semi_year_stocks_stats(self, stock_list: List[StockSymbol]) -> Dict[StockSymbol, Dict[str, Decimal]]:
+        """
+        Get stock free cash flow, net income, free cash flow margin
+
+        :param stock_list: [StockSymbol, ...]
+        :return: {StockSymbol: {"free_cash_flow": Decimal, "net_income": Decimal,
+                  "free_cash_flow_margin": Decimal}}
+        """
+        res = defaultdict(dict)
+
+        @error_handling("financialmodelingprep", default_val=None)
+        def get_semi_year_stock_stats(stock: StockSymbol) -> None:
+            api_url = f"{self.FMP_API_URL}/income-statement/{stock.ticker}?" \
+                      f"period=quarter&limit=2&apikey={self.FMP_API_KEY}"
+            response = requests.get(api_url, timeout=10).json()
+            if not response:
+                return
+            revenue, net_income = Decimal(0), Decimal(0)
+
+            for quarter in response:
+                revenue += Decimal(quarter.get("revenue", 0))
+                net_income += Decimal(quarter.get("netIncome", 0))
+
+            api_url = f"{self.FMP_API_URL}/cash-flow-statement/{stock.ticker}?" \
+                      f"period=quarter&limit=2&apikey={self.FMP_API_KEY}"
+            response = requests.get(api_url, timeout=10).json()
+            if not response:
+                return
+            free_cash_flow = Decimal(0)
+            for quarter in response:
+                free_cash_flow += Decimal(quarter.get("freeCashFlow", 0))
+
+            free_cash_flow_margin = free_cash_flow / revenue if revenue else Decimal(0)
+            res[stock] = {"free_cash_flow": free_cash_flow, "net_income": net_income,
+                          "free_cash_flow_margin": free_cash_flow_margin}
+
+        pool = ThreadPool(4)
+        pool.map(get_semi_year_stock_stats, stock_list)
+        pool.close()
+        pool.join()
+
+        return res

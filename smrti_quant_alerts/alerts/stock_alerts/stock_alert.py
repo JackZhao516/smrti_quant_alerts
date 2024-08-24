@@ -60,8 +60,10 @@ class StockAlert(BaseAlert, StockApi):
         csv_file_name = f"stock_alert_{uuid.uuid4()}.csv"
         header = ["Symbol", "Name", "GICS Sector", "Sub Sector", "Headquarter Location",
                   "Founded Year/IPO Date", "Is SP500", "Is Nasdaq", "Is NYSE",
-                  "Is Newly Added", "Timeframe Alerted", "One Day Volume"]
+                  "Is Newly Added", "Timeframe Alerted", "Free Cash Flow", "Net Income",
+                  "Free Cash Flow Margin", "One Day Volume"]
         stocks = sorted(is_newly_added_dict.keys(), key=lambda x: x.ticker)
+        stock_stats = self.get_semi_year_stocks_stats(stocks)
         stock_timeframes = defaultdict(list)
         for timeframe, timeframe_stocks in timeframe_stocks_dict.items():
             for stock in timeframe_stocks:
@@ -70,12 +72,14 @@ class StockAlert(BaseAlert, StockApi):
                        stock.gics_sub_industry, stock.location, stock.founded_time,
                        stock.is_sp500, stock.is_nasdaq, stock.is_nyse,
                        is_newly_added_dict[stock], stock_timeframes[stock],
+                       stock_stats[stock]["free_cash_flow"], stock_stats[stock]["net_income"],
+                       stock_stats[stock]["free_cash_flow_margin"],
                        self._daily_volume[stock]] for stock in stocks]
 
         self._tg_bot.send_data_as_csv_file(csv_file_name, headers=header, data=stock_info)
         pdf_files = []
         if self._ai_analysis:
-            pdf_files.append(self.get_stocks_ai_analysis(timeframe_stocks_dict, is_newly_added_dict))
+            pdf_files.append(self.get_stocks_ai_analysis(timeframe_stocks_dict, is_newly_added_dict, stock_stats))
             self._tg_bot.send_file(pdf_files[0], "Stock AI Analysis.pdf")
 
         if self._send_email:
@@ -91,20 +95,24 @@ class StockAlert(BaseAlert, StockApi):
         self._pdf_api.delete_pdf()
 
     def get_stocks_ai_analysis(self, timeframe_stocks_dict: Dict[str, List[StockSymbol]],
-                               is_newly_added_dict: Dict[StockSymbol, bool]) -> str:
+                               is_newly_added_dict: Dict[StockSymbol, bool],
+                               stock_stats: Dict[StockSymbol, Dict[str, Decimal]]) -> str:
         """
         Send stock ai analysis
 
         :param timeframe_stocks_dict: {timeframe: [StockSymbol, ...]}, in the descending order of price increase
         :param is_newly_added_dict: {StockSymbol: is_newly_added, ...}
+        :param stock_stats: {StockSymbol: {stat_name: stat_value, ...}}
         :return: saved pdf file name
         """
         for timeframe, stocks in timeframe_stocks_dict.items():
             self._pdf_api.append_text(f"Timeframe {timeframe}:")
             for stock in stocks:
                 if is_newly_added_dict[stock]:
-                    stock_increase_reason = self._ai_api. \
-                        get_stock_increase_reason(stock, timeframe).strip().split("\n")
+                    stock_increase_reason = \
+                        ["Stock Stats: " + ", ".join([f"{k}: {round(v, 4)}" for k, v in stock_stats[stock].items()])]
+                    stock_increase_reason.extend(self._ai_api.
+                                                 get_stock_increase_reason(stock, timeframe).strip().split("\n"))
                     self._pdf_api.append_stock_info(stock, stock_increase_reason)
         self._pdf_api.save_pdf()
         return self._pdf_api.file_name
@@ -219,8 +227,8 @@ class StockAlert(BaseAlert, StockApi):
 if __name__ == '__main__':
     start = time.time()
     stock_alert = StockAlert("stock_alert", tg_type="TEST", email=True,
-                             # timeframe_list=["1m"],
-                             timeframe_list=["1m", "3m", "6m", "1y", "3y", "5y", "10y"],
+                             timeframe_list=["1m"],
+                             #timeframe_list=["1m", "3m", "6m", "1y", "3y", "5y", "10y"],
                              ai_analysis=True, daily_volume_threshold=500000)
     stock_alert.run()
     print(f"Time taken: {round(time.time() - start, 2)} seconds")
