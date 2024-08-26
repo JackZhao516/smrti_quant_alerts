@@ -1,4 +1,5 @@
 import datetime
+from functools import reduce
 from multiprocessing.pool import ThreadPool
 from typing import List, Dict, Union, Optional, Iterable, Tuple
 from decimal import Decimal
@@ -223,7 +224,7 @@ class StockApi:
 
         return res[:top_n]
 
-    def get_semi_year_stocks_stats(self, stock_list: List[StockSymbol]) -> Dict[StockSymbol, Dict[str, Decimal]]:
+    def get_semi_year_stocks_stats(self, stock_list: List[StockSymbol]) -> Dict[StockSymbol, Dict[str, str]]:
         """
         Get stock free cash flow, net income, free cash flow margin
 
@@ -240,28 +241,73 @@ class StockApi:
             response = requests.get(api_url, timeout=10).json()
             if not response:
                 return
-            revenue, net_income = Decimal(0), Decimal(0)
+            revenue, net_income = 0, 0
 
             for quarter in response:
-                revenue += Decimal(quarter.get("revenue", 0))
-                net_income += Decimal(quarter.get("netIncome", 0))
+                revenue += quarter.get("revenue", 0)
+                net_income += quarter.get("netIncome", 0)
 
             api_url = f"{self.FMP_API_URL}/cash-flow-statement/{stock.ticker}?" \
                       f"period=quarter&limit=2&apikey={self.FMP_API_KEY}"
             response = requests.get(api_url, timeout=10).json()
             if not response:
                 return
-            free_cash_flow = Decimal(0)
+            free_cash_flow = 0
             for quarter in response:
-                free_cash_flow += Decimal(quarter.get("freeCashFlow", 0))
+                free_cash_flow += quarter.get("freeCashFlow", 0)
 
-            free_cash_flow_margin = free_cash_flow / revenue if revenue else Decimal(0)
-            res[stock] = {"free_cash_flow": free_cash_flow, "net_income": net_income,
-                          "free_cash_flow_margin": free_cash_flow_margin}
+            free_cash_flow_margin = free_cash_flow / revenue if revenue else 0
+            res[stock] = {"free_cash_flow": f"{round(free_cash_flow, 4)}", "net_income": f"{round(net_income, 4)}",
+                          "free_cash_flow_margin": f"{round(free_cash_flow_margin, 4)}"}
 
-        pool = ThreadPool(4)
+        pool = ThreadPool(8)
         pool.map(get_semi_year_stock_stats, stock_list)
         pool.close()
         pool.join()
 
         return res
+
+    def get_stocks_revenue_cagr(self, stock_list: List[StockSymbol]) -> Dict[StockSymbol, Dict[str, str]]:
+        """
+        Get revenue CAGR
+
+        :param stock_list: [StockSymbol, ...]
+        :return: {StockSymbol: {"revenue_1y_cagr": str, "revenue_3y_cagr": str, "revenue_5y_cagr": str}}
+        """
+        res = defaultdict(dict)
+
+        @error_handling("financialmodelingprep", default_val=None)
+        def get_stock_revenue_cagr(stock: StockSymbol) -> None:
+            api_url = f"{self.FMP_API_URL}/income-statement/{stock.ticker}?" \
+                      f"period=quarter&limit=24&apikey={self.FMP_API_KEY}"
+            response = requests.get(api_url, timeout=10).json()
+            res[stock] = {f"revenue_{i}y_cagr": "0%" for i in [1, 3, 5]}
+            if not response:
+                return
+            revenue_this_year = reduce(lambda a, b: a + b,
+                                       [quarter.get("revenue", 0) for quarter in response[:4]])
+            if revenue_this_year:
+                for i in [1, 3, 5]:
+                    quarter_revenue = [quarter.get("revenue", 0) for quarter in response[i * 4:(i + 1) * 4]]
+                    revenue = reduce(lambda a, b: a + b, quarter_revenue) if quarter_revenue else 0
+                    if revenue == -revenue_this_year:
+                        break
+
+                    if revenue != 0:
+                        division = (revenue_this_year / revenue) ** (1 / i)
+                        if not isinstance(division, complex):
+                            cagr_in_percentage = round(100 * (division - 1), 3)
+                            res[stock][f"revenue_{i}y_cagr"] = f"{cagr_in_percentage}%"
+
+        pool = ThreadPool(8)
+        pool.map(get_stock_revenue_cagr, stock_list)
+        pool.close()
+        pool.join()
+
+        return res
+
+
+if __name__ == "__main__":
+    stock_api = StockApi()
+    revenue_cagr = stock_api.get_stocks_revenue_cagr(stock_list=[StockSymbol("CING")])
+    print(revenue_cagr)

@@ -61,9 +61,15 @@ class StockAlert(BaseAlert, StockApi):
         header = ["Symbol", "Name", "GICS Sector", "Sub Sector", "Headquarter Location",
                   "Founded Year/IPO Date", "Is SP500", "Is Nasdaq", "Is NYSE",
                   "Is Newly Added", "Timeframe Alerted", "Free Cash Flow", "Net Income",
-                  "Free Cash Flow Margin", "One Day Volume"]
+                  "Free Cash Flow Margin", "Revenue 1Y CAGR", "Revenue 3Y CAGR",
+                  "Revenue 5Y CAGR", "One Day Volume"]
         stocks = sorted(is_newly_added_dict.keys(), key=lambda x: x.ticker)
         stock_stats = self.get_semi_year_stocks_stats(stocks)
+        stock_revenue_cagr = self.get_stocks_revenue_cagr(stocks)
+
+        for k, v in stock_stats.items():
+            stock_stats[k].update(stock_revenue_cagr[k])
+
         stock_timeframes = defaultdict(list)
         for timeframe, timeframe_stocks in timeframe_stocks_dict.items():
             for stock in timeframe_stocks:
@@ -73,7 +79,8 @@ class StockAlert(BaseAlert, StockApi):
                        stock.is_sp500, stock.is_nasdaq, stock.is_nyse,
                        is_newly_added_dict[stock], stock_timeframes[stock],
                        stock_stats[stock]["free_cash_flow"], stock_stats[stock]["net_income"],
-                       stock_stats[stock]["free_cash_flow_margin"],
+                       stock_stats[stock]["free_cash_flow_margin"], stock_revenue_cagr[stock]["revenue_1y_cagr"],
+                       stock_revenue_cagr[stock]["revenue_3y_cagr"], stock_revenue_cagr[stock]["revenue_5y_cagr"],
                        self._daily_volume[stock]] for stock in stocks]
 
         self._tg_bot.send_data_as_csv_file(csv_file_name, headers=header, data=stock_info)
@@ -96,7 +103,7 @@ class StockAlert(BaseAlert, StockApi):
 
     def get_stocks_ai_analysis(self, timeframe_stocks_dict: Dict[str, List[StockSymbol]],
                                is_newly_added_dict: Dict[StockSymbol, bool],
-                               stock_stats: Dict[StockSymbol, Dict[str, Decimal]]) -> str:
+                               stock_stats: Dict[StockSymbol, Dict[str, str]]) -> str:
         """
         Send stock ai analysis
 
@@ -110,7 +117,7 @@ class StockAlert(BaseAlert, StockApi):
             for stock in stocks:
                 if is_newly_added_dict[stock]:
                     stock_increase_reason = \
-                        ["Stock Stats: " + ", ".join([f"{k}: {round(v, 4)}" for k, v in stock_stats[stock].items()])]
+                        ["Stock Stats: " + ", ".join([f"{k}: {v}" for k, v in stock_stats[stock].items()])]
                     stock_increase_reason.extend(self._ai_api.
                                                  get_stock_increase_reason(stock, timeframe).strip().split("\n"))
                     self._pdf_api.append_stock_info(stock, stock_increase_reason)
