@@ -17,7 +17,7 @@ class PerplexityAPI:
         config = Config()
         self._perplexity_client = openai.OpenAI(api_key=config.TOKENS["PERPLEXITY_API_KEY"],
                                                 base_url=config.API_ENDPOINTS["PERPLEXITY_API_URL"])
-        self._model = "llama-3-sonar-large-32k-online"
+        self._model = "llama-3.1-sonar-large-128k-online"
 
     @staticmethod
     def build_chat_message(system_message: str, user_message: str) -> list:
