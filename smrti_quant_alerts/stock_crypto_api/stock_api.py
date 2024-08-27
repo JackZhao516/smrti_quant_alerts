@@ -236,6 +236,8 @@ class StockApi:
 
         @error_handling("financialmodelingprep", default_val=None)
         def get_semi_year_stock_stats(stock: StockSymbol) -> None:
+            res[stock] = {"free_cash_flow": "0", "net_income": "0",
+                          "free_cash_flow_margin": "0"}
             api_url = f"{self.FMP_API_URL}/income-statement/{stock.ticker}?" \
                       f"period=quarter&limit=2&apikey={self.FMP_API_KEY}"
             response = requests.get(api_url, timeout=10).json()
