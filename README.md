@@ -7,7 +7,7 @@
 
 This repo includes several real-time alerts for crypto/stock trading, built with 
 [CoinGecko](https://www.coingecko.com/), [Binance](https://www.binance.com/en), 
-[Polygon.io](https://polygon.io/), and [Financial Modeling Prep](https://site.financialmodelingprep.com/) APIs. 
+[EODHD](https://eodhd.com/), and [Financial Modeling Prep](https://site.financialmodelingprep.com/) APIs. 
 Alerts are sent to [Telegram](https://telegram.org/) groups/channels.
 
 ## BONUS
