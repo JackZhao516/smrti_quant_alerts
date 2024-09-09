@@ -224,6 +224,51 @@ class StockApi:
 
         return res[:top_n]
 
+    @error_handling("financialmodelingprep", default_val={})
+    def get_close_price_sma_status(self, stock_list: List[StockSymbol], num_of_days_list: List[int],
+                                   timeframes: List[str]) -> Dict[StockSymbol, Dict[str, bool]]:
+        """
+        Get the mapping for whether the close price is higher than sma
+        :param stock_list: [StockSymbol, ...]
+        :param num_of_days_list: [int, ...], e.g. [200, 400] for sma200, sma400
+        :param timeframes: [str, ...], i.e. ["1min", "5min", "15min", "30min", "1hour", "4hour", "1day"]
+        :return: {StockSymbol: {"1min": True, "5min": False, "15min": True, "30min": False}}
+        """
+        res = defaultdict(dict)
+        for stock in stock_list:
+            close_price_url = f"https://financialmodelingprep.com/api/v3/quote-short/{stock}" \
+                              f"?apikey={self.FMP_API_KEY}"
+            response = requests.get(close_price_url, timeout=10)
+            response = response.json()[0]
+            close_price = response.get("price", 0)
+            for num_of_day, timeframe in zip(num_of_days_list, timeframes):
+                from_day = get_datetime_now() - datetime.timedelta(days=2)
+                sma_url = f"https://financialmodelingprep.com/api/v3/technical_indicator/{timeframe}/{stock}" \
+                          f"?type=sma&period={num_of_day}&apikey={self.FMP_API_KEY}" \
+                          f"&from={from_day.strftime('%Y-%m-%d')}"
+                response = requests.get(sma_url, timeout=10)
+                response = response.json()[0]
+                sma = response.get("sma", 0)
+
+                res[stock][timeframe] = close_price > sma
+        return res
+
+    @error_handling("financialmodelingprep", default_val={})
+    def get_stocks_market_cap(self, stock_list: List[StockSymbol]) -> Dict[StockSymbol, Decimal]:
+        """
+        Get stock market cap
+
+        :param stock_list: [StockSymbol, ...]
+        :return: {StockSymbol: market_cap}
+        """
+        res = defaultdict(Decimal)
+        for stock in stock_list:
+            api_url = f"{self.FMP_API_URL}market-capitalization/{stock.ticker}?apikey={self.FMP_API_KEY}"
+            response = requests.get(api_url, timeout=10).json()
+            if response:
+                res[stock] = Decimal(response[0].get("marketCap", 0))
+        return res
+
     def get_semi_year_stocks_stats(self, stock_list: List[StockSymbol]) -> Dict[StockSymbol, Dict[str, str]]:
         """
         Get stock free cash flow, net income, free cash flow margin
@@ -310,6 +355,7 @@ class StockApi:
 
 
 if __name__ == "__main__":
+    stock = StockSymbol("AAOI")
     stock_api = StockApi()
-    revenue_cagr = stock_api.get_stocks_revenue_cagr(stock_list=[StockSymbol("CING")])
-    print(revenue_cagr)
+    market_cap = stock_api.get_stocks_market_cap([stock])
+    print(market_cap)

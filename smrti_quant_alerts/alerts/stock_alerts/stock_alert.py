@@ -62,13 +62,17 @@ class StockAlert(BaseAlert, StockApi):
                   "Founded Year/IPO Date", "Is SP500", "Is Nasdaq", "Is NYSE",
                   "Is Newly Added", "Timeframe Alerted", "Free Cash Flow", "Net Income",
                   "Free Cash Flow Margin", "Revenue 1Y CAGR", "Revenue 3Y CAGR",
-                  "Revenue 5Y CAGR", "One Day Volume"]
+                  "Revenue 5Y CAGR", "One Day Volume", "Market Cap", "Close > 4H SMA200", "Close > 1D SMA200"]
         stocks = sorted(is_newly_added_dict.keys(), key=lambda x: x.ticker)
         stock_stats = self.get_semi_year_stocks_stats(stocks)
         stock_revenue_cagr = self.get_stocks_revenue_cagr(stocks)
 
         for k, v in stock_stats.items():
             stock_stats[k].update(stock_revenue_cagr[k])
+
+        stock_sma_data = self.get_close_price_sma_status(stocks, [200, 200], ["4hour", "1day"])
+
+        market_caps = self.get_stocks_market_cap(stocks)
 
         stock_timeframes = defaultdict(list)
         for timeframe, timeframe_stocks in timeframe_stocks_dict.items():
@@ -81,7 +85,8 @@ class StockAlert(BaseAlert, StockApi):
                        stock_stats[stock]["free_cash_flow"], stock_stats[stock]["net_income"],
                        stock_stats[stock]["free_cash_flow_margin"], stock_revenue_cagr[stock]["revenue_1y_cagr"],
                        stock_revenue_cagr[stock]["revenue_3y_cagr"], stock_revenue_cagr[stock]["revenue_5y_cagr"],
-                       self._daily_volume[stock]] for stock in stocks]
+                       self._daily_volume[stock], market_caps.get(stock, 0), stock_sma_data[stock]["4hour"],
+                       stock_sma_data[stock]["1day"]] for stock in stocks]
 
         self._tg_bot.send_data_as_csv_file(csv_file_name, headers=header, data=stock_info)
         pdf_files = []
@@ -233,9 +238,9 @@ class StockAlert(BaseAlert, StockApi):
 
 if __name__ == '__main__':
     start = time.time()
-    stock_alert = StockAlert("stock_alert", tg_type="TEST", email=True,
+    stock_alert = StockAlert("stock_alert", tg_type="TEST", email=False,
                              timeframe_list=["1m"],
                              #timeframe_list=["1m", "3m", "6m", "1y", "3y", "5y", "10y"],
-                             ai_analysis=True, daily_volume_threshold=500000)
+                             ai_analysis=False, daily_volume_threshold=500000)
     stock_alert.run()
     print(f"Time taken: {round(time.time() - start, 2)} seconds")

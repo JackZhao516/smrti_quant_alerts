@@ -148,3 +148,4 @@ exclude_coins.json
 *.db-shm
 *.db-wal
 configs.json
+.DS_Store
