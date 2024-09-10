@@ -224,7 +224,7 @@ class StockApi:
 
         return res[:top_n]
 
-    #@error_handling("financialmodelingprep", default_val={})
+    @error_handling("financialmodelingprep", default_val={})
     def get_close_price_sma_status(self, stock_list: List[StockSymbol], num_of_days_list: List[int],
                                    timeframes: List[str]) -> Dict[StockSymbol, Dict[str, bool]]:
         """
