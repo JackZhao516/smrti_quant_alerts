@@ -224,7 +224,7 @@ class StockApi:
 
         return res[:top_n]
 
-    @error_handling("financialmodelingprep", default_val={})
+    #@error_handling("financialmodelingprep", default_val={})
     def get_close_price_sma_status(self, stock_list: List[StockSymbol], num_of_days_list: List[int],
                                    timeframes: List[str]) -> Dict[StockSymbol, Dict[str, bool]]:
         """
@@ -236,19 +236,21 @@ class StockApi:
         """
         res = defaultdict(dict)
         for stock in stock_list:
-            close_price_url = f"https://financialmodelingprep.com/api/v3/quote-short/{stock}" \
-                              f"?apikey={self.FMP_API_KEY}"
-            response = requests.get(close_price_url, timeout=10)
-            response = response.json()[0]
-            close_price = response.get("price", 0)
+            close_price_url = f"{self.FMP_API_URL}quote-short/{stock}?apikey={self.FMP_API_KEY}"
+            response = requests.get(close_price_url, timeout=10).json()
+            if not response:
+                continue
+            close_price = response[0].get("price", 0)
+
             for num_of_day, timeframe in zip(num_of_days_list, timeframes):
                 from_day = get_datetime_now() - datetime.timedelta(days=2)
-                sma_url = f"https://financialmodelingprep.com/api/v3/technical_indicator/{timeframe}/{stock}" \
+                sma_url = f"{self.FMP_API_URL}technical_indicator/{timeframe}/{stock}" \
                           f"?type=sma&period={num_of_day}&apikey={self.FMP_API_KEY}" \
                           f"&from={from_day.strftime('%Y-%m-%d')}"
-                response = requests.get(sma_url, timeout=10)
-                response = response.json()[0]
-                sma = response.get("sma", 0)
+                response = requests.get(sma_url, timeout=10).json()
+                if not response:
+                    continue
+                sma = response[0].get("sma", 0)
 
                 res[stock][timeframe] = close_price > sma
         return res

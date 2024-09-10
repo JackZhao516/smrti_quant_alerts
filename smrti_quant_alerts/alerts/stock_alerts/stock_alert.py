@@ -85,8 +85,9 @@ class StockAlert(BaseAlert, StockApi):
                        stock_stats[stock]["free_cash_flow"], stock_stats[stock]["net_income"],
                        stock_stats[stock]["free_cash_flow_margin"], stock_revenue_cagr[stock]["revenue_1y_cagr"],
                        stock_revenue_cagr[stock]["revenue_3y_cagr"], stock_revenue_cagr[stock]["revenue_5y_cagr"],
-                       self._daily_volume[stock], market_caps.get(stock, 0), stock_sma_data[stock]["4hour"],
-                       stock_sma_data[stock]["1day"]] for stock in stocks]
+                       self._daily_volume[stock], market_caps.get(stock, 0),
+                       stock_sma_data[stock].get("4hour", "SMA Data Unavailable"),
+                       stock_sma_data[stock].get("1day", "SMA Data Unavailable")] for stock in stocks]
 
         self._tg_bot.send_data_as_csv_file(csv_file_name, headers=header, data=stock_info)
         pdf_files = []
@@ -239,8 +240,8 @@ class StockAlert(BaseAlert, StockApi):
 if __name__ == '__main__':
     start = time.time()
     stock_alert = StockAlert("stock_alert", tg_type="TEST", email=False,
-                             timeframe_list=["1m"],
-                             #timeframe_list=["1m", "3m", "6m", "1y", "3y", "5y", "10y"],
-                             ai_analysis=False, daily_volume_threshold=500000)
+                             #timeframe_list=["1m"],
+                             timeframe_list=["1m", "3m", "6m", "1y", "3y", "5y", "10y"],
+                             ai_analysis=False, daily_volume_threshold=0)
     stock_alert.run()
     print(f"Time taken: {round(time.time() - start, 2)} seconds")
