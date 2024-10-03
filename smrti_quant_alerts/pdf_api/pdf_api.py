@@ -9,13 +9,24 @@ from smrti_quant_alerts.data_type import StockSymbol
 class PDFApi:
     PWD = os.path.dirname(__file__)
 
-    def __init__(self, file_name: str) -> None:
+    def __init__(self, file_name: str = None) -> None:
+        if file_name is None:
+            file_name = "output.pdf"
         self._file_name = file_name
         self._tmp_file_name = f"{file_name}.txt"
 
     @property
     def file_name(self) -> str:
         return self._file_name
+
+    def start_new_pdf(self, file_name: str) -> None:
+        """
+        Start a new pdf
+
+        :param file_name: file name
+        """
+        self._file_name = file_name
+        self._tmp_file_name = f"{file_name}.txt"
 
     def append_text(self, text: str) -> None:
         """

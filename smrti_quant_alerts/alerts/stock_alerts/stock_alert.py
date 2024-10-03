@@ -44,7 +44,7 @@ class StockAlert(BaseAlert, StockApi):
 
         self._ai_analysis = ai_analysis
         self._ai_api = PerplexityAPI()
-        self._pdf_api = PDFApi(f"ai_analysis_{uuid.uuid4()}.pdf")
+        self._pdf_api = PDFApi()
 
         self._daily_volume = {}
 
@@ -92,8 +92,13 @@ class StockAlert(BaseAlert, StockApi):
         self._tg_bot.send_data_as_csv_file(csv_file_name, headers=header, data=stock_info)
         pdf_files = []
         if self._ai_analysis:
-            pdf_files.append(self.get_stocks_ai_analysis(timeframe_stocks_dict, is_newly_added_dict, stock_stats))
-            self._tg_bot.send_file(pdf_files[0], "Stock AI Analysis.pdf")
+            pdf_files.append(self.get_stocks_ai_analysis_for_timeframe_sma(
+                self.filter_stock_with_timeframe_sma(stock_timeframes, [["1Y", "6M"], ["1Y", "3M"]], stock_sma_data),
+                stock_stats))
+            self._tg_bot.send_file(pdf_files[0], "Stock AI Analysis With Timeframe SMA Filter.pdf")
+            pdf_files.append(self.get_stocks_ai_analysis_for_newly_added(timeframe_stocks_dict, is_newly_added_dict,
+                                                                         stock_stats))
+            self._tg_bot.send_file(pdf_files[1], "Newly Added Stock AI Analysis.pdf")
 
         if self._send_email:
             with open(csv_file_name, "w", newline="", encoding="utf-8") as csv_file:
@@ -107,9 +112,9 @@ class StockAlert(BaseAlert, StockApi):
                 os.remove(csv_file_name)
         self._pdf_api.delete_pdf()
 
-    def get_stocks_ai_analysis(self, timeframe_stocks_dict: Dict[str, List[StockSymbol]],
-                               is_newly_added_dict: Dict[StockSymbol, bool],
-                               stock_stats: Dict[StockSymbol, Dict[str, str]]) -> str:
+    def get_stocks_ai_analysis_for_newly_added(self, timeframe_stocks_dict: Dict[str, List[StockSymbol]],
+                                               is_newly_added_dict: Dict[StockSymbol, bool],
+                                               stock_stats: Dict[StockSymbol, Dict[str, str]]) -> str:
         """
         Send stock ai analysis
 
@@ -118,6 +123,7 @@ class StockAlert(BaseAlert, StockApi):
         :param stock_stats: {StockSymbol: {stat_name: stat_value, ...}}
         :return: saved pdf file name
         """
+        self._pdf_api.start_new_pdf(f"Newly Added Stock AI Analysis_{uuid.uuid4()}.pdf")
         for timeframe, stocks in timeframe_stocks_dict.items():
             self._pdf_api.append_text(f"Timeframe {timeframe}:")
             for stock in stocks:
@@ -129,6 +135,50 @@ class StockAlert(BaseAlert, StockApi):
                     self._pdf_api.append_stock_info(stock, stock_increase_reason)
         self._pdf_api.save_pdf()
         return self._pdf_api.file_name
+
+    def get_stocks_ai_analysis_for_timeframe_sma(self, stock_timeframe_dict: Dict[StockSymbol, List[str]],
+                                                 stock_stats: Dict[StockSymbol, Dict[str, str]]) -> str:
+        """
+        Send stock ai analysis
+
+        :param stock_timeframe_dict: {StockSymbol: [timeframe, ...]}
+        :param stock_stats: {StockSymbol: {stat_name: stat_value, ...}}
+        :return: saved pdf file name
+        """
+        self._pdf_api.start_new_pdf(f"Stock AI Analysis With Timeframe SMA Filter_{uuid.uuid4()}.pdf")
+        for stock, timeframes in stock_timeframe_dict.items():
+            stock_increase_reason = \
+                ["Stock Stats: " + ", ".join([f"{k}: {v}" for k, v in stock_stats[stock].items()]),
+                 "Timeframes: " + ", ".join(timeframes)]
+            stock_increase_reason.extend(self._ai_api.
+                                         get_stock_increase_reason(stock, timeframes).strip().split("\n"))
+            self._pdf_api.append_stock_info(stock, stock_increase_reason)
+        self._pdf_api.save_pdf()
+        return self._pdf_api.file_name
+
+    @staticmethod
+    def filter_stock_with_timeframe_sma(stock_timeframe_dict: Dict[StockSymbol, List[str]],
+                                        timeframe_combos: List[List[str]],
+                                        sma_dict: Dict[StockSymbol, Dict[str, bool]]) \
+            -> Dict[StockSymbol, List[str]]:
+        """
+        Filter stocks with the given timeframes combos and sma data
+
+        :param stock_timeframe_dict: {StockSymbol: [timeframe, ...]}
+        :param timeframe_combos: list of timeframe combos
+        :param sma_dict: {StockSymbol: {timeframe: bool, ...}}
+        :return: {StockSymbol: [timeframe, ...]}
+        """
+        res = {}
+        for stock, timeframes in stock_timeframe_dict.items():
+            if not all(sma_dict[stock].values()):
+                continue
+
+            for timeframe_combo in timeframe_combos:
+                if all(timeframe in timeframes for timeframe in timeframe_combo):
+                    res[stock] = timeframes
+                    break
+        return res
 
     def get_sorted_price_increased_stocks(self) -> Dict[str, List[Tuple[StockSymbol, Decimal]]]:
         """
@@ -240,8 +290,9 @@ class StockAlert(BaseAlert, StockApi):
 if __name__ == '__main__':
     start = time.time()
     stock_alert = StockAlert("stock_alert", tg_type="TEST", email=False,
-                             #timeframe_list=["1m"],
-                             timeframe_list=["1m", "3m", "6m", "1y", "3y", "5y", "10y"],
+                             # timeframe_list=["1m"],
+                             # timeframe_list=["1m", "3m", "6m", "1y", "3y", "5y", "10y"],
+                             timeframe_list=["3m", "6m", "1y"],
                              ai_analysis=False, daily_volume_threshold=0)
     stock_alert.run()
     print(f"Time taken: {round(time.time() - start, 2)} seconds")
