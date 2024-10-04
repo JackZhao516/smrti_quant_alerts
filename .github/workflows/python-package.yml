@@ -22,8 +22,8 @@ jobs:
     - uses: actions/checkout@v3
     - name: Install TA-Lib
       run: |
-        chmod +x ./install-ta-lib.sh
-        ./install-ta-lib.sh
+        chmod +x ./install_ta_lib.sh
+        ./install_ta_lib.sh
       shell: bash
     - uses: actions/checkout@v3
     - name: Set up Python ${{ matrix.python-version }}
