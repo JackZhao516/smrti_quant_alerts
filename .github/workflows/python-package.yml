@@ -25,7 +25,6 @@ jobs:
         chmod +x ./scripts/install_ta_lib.sh
         ./scripts/install_ta_lib.sh
       shell: bash
-    - uses: actions/checkout@v3
     - name: Set up Python ${{ matrix.python-version }}
       uses: actions/setup-python@v3
       with:
