@@ -10,7 +10,7 @@ else
 fi
 
 # install ta-lib c library
-source install_ta_lib.sh
+source scripts/install_ta_lib.sh
 
 python3 -m venv env
 source env/bin/activate

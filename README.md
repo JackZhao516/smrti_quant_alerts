@@ -40,12 +40,19 @@ Alerts are sent to [Telegram](https://telegram.org/) groups/channels.
 * Run on server in areas where [Binance](https://www.binance.com/en) and 
   [CoinGecko](https://www.coingecko.com/) apis are not banned.
 ## Install
-    ./env_init.sh
+    ./scripts/env_init.sh
+
+## Test
+    ./scripts/testit.sh
+
+## Clean Up
+    ./scripts/env_clean.sh
+
 ## Usage
 
 > 1. Change your API KEY and your Telegram Group ids in ``token.json``
 
-> 2. Run ``./start.sh <alert_name>``
+> 2. Run ``./scripts/start.sh <alert_name>``
 > alert_names are set in ``configs.json``.
 
 > 3. Available ``alert_type``: ``market_cap``, ``price_volume``, ``sequential``, 
