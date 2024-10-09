@@ -2,8 +2,11 @@ import os
 import json
 import datetime
 import pytz
+import numpy as np
 
-from typing import Set
+from typing import Set, List
+from decimal import Decimal
+from talib import MACD
 
 from smrti_quant_alerts.settings import Config
 
@@ -49,3 +52,41 @@ def get_datetime_now(timezone: str = "US/Eastern") -> datetime.datetime:
     :return: datetime.datetime
     """
     return datetime.datetime.now(pytz.timezone(timezone))
+
+
+def get_stock_market_close_timestamp_from_date(date: str) -> int:
+    """
+    get stock market close time stamp from date at 4pm EST
+
+    :param date: str
+    :return: timestamp in ms
+    """
+    timezone = pytz.timezone("US/Eastern")
+    return int(timezone.localize(datetime.datetime.strptime(
+        date, "%Y-%m-%d")).replace(hour=16, minute=0).timestamp()) * 1000
+
+
+def get_date_from_timestamp(timestamp: int) -> str:
+    """
+    get date from timestamp
+
+    :param timestamp: int
+    :return: str
+    """
+    timezone = pytz.timezone("US/Eastern")
+    return datetime.datetime.fromtimestamp(timestamp / 1000, timezone).strftime("%Y-%m-%d")
+
+
+def calculate_macd(close: List[float], fastperiod: int = 12,
+                   slowperiod: int = 26, signalperiod: int = 9) -> List[float]:
+    """
+    calculate MACD histogram
+
+    :param close: list of close prices
+    :param fastperiod: int
+    :param slowperiod: int
+    :param signalperiod: int
+    :return: MACD histogram, from newest to oldest
+    """
+    close = np.array(close)
+    return (MACD(close, fastperiod=fastperiod, slowperiod=slowperiod, signalperiod=signalperiod)[2])[::-1]

@@ -42,11 +42,34 @@
     "alert_type": "stock_alert",
     "alert_input_args": {
       "alert_name": "<stock_alert_example_name>",
-      "alert_time": "<match with the daily time parameter in run_time_input_args>",
       "timeframe_list": ["1d", "5d", "1M", "3M", "6M", "1y", "3y", "5y"],
       "tg_type": "STOCK",
       "email": true/false,
       "ai_analysis": true/false
+    },
+    "alert_params": {},
+    "run_time_input_args": {
+      "daily_times": "09:15",
+      "excluded_week_days": ["Wed", "Thu", "Fri", "Sat", "Sun", "Mon"],
+      "timezone": "Asia/Shanghai"
+    },
+    "database_name": "stock_alert"
+  },
+
+  "<macd_alert_example_name>": {
+    "alert_type": "macd_alert",
+    "alert_input_args": {
+      "alert_name": "<macd_alert_example_name>",
+      "timeframe_list": ["1d", "5d", "1M", "3M", "6M", "1y", "3y", "5y"],
+      "symbols": [
+        {"symbol_left": "<stock/binance exchange>", "symbol_right": "<stock/binance exchange>",
+          "type_left": "BinanceExchange/StockSymbol", "type_right": "BinanceExchange/StockSymbol"},
+        {"symbol_left": "<stock/binance exchange>", "symbol_right": "<stock/binance exchange>",
+          "type_left": "BinanceExchange/StockSymbol", "type_right": "BinanceExchange/StockSymbol"}
+      ],
+      "tg_type": "TEST",
+      "email": true/false,
+      "xlsx": true/false
     },
     "alert_params": {},
     "run_time_input_args": {

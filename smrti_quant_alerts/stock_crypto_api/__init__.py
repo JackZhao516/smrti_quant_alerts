@@ -2,4 +2,4 @@ from .crypto_binance_api import BinanceApi
 from .crypto_coingecko_api import CoingeckoApi
 from .stock_api import StockApi
 from .crypto_comprehensive_api import CryptoComprehensiveApi
-from .utility import write_exclude_coins_to_file
+from .utility import write_exclude_coins_to_file, get_datetime_now, get_stock_market_close_timestamp_from_date

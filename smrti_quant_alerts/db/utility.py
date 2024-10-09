@@ -1,10 +1,11 @@
 import time
+from decimal import Decimal
 from typing import Union, Type, Dict, Optional, List, Tuple, Iterable, Set
 from threading import RLock
 
 
 from smrti_quant_alerts.db.database import database_runtime, init_database
-from smrti_quant_alerts.db.models import LastCount, ExchangeCount, StockAlertCount
+from smrti_quant_alerts.db.models import LastCount, ExchangeCount, StockAlertCount, MACDAlertValue
 from smrti_quant_alerts.data_type import TradingSymbol, get_class, BinanceExchange, StockSymbol
 
 # ------------ general utilities -------------
@@ -12,7 +13,7 @@ from smrti_quant_alerts.data_type import TradingSymbol, get_class, BinanceExchan
 
 def init_database_runtime(db_name: str) -> None:
     database_runtime.initialize(init_database(db_name))
-    database_runtime.create_tables([LastCount, ExchangeCount, StockAlertCount], safe=True)
+    database_runtime.create_tables([LastCount, ExchangeCount, StockAlertCount, MACDAlertValue], safe=True)
 
 
 def close_database() -> None:
@@ -204,3 +205,37 @@ class StockAlertDBUtils:
         """
         with database_runtime.atomic():
             StockAlertCount.delete().execute()
+
+
+class MACDAlertDBUtils:
+    @staticmethod
+    def get_last_week_value(symbol_left: str, symbol_right: str) -> Optional[float]:
+        """
+        get last week value
+        :param symbol_left: symbol left
+        :param symbol_right: symbol right
+
+        :return: last week value
+        """
+        with database_runtime.atomic():
+            res = MACDAlertValue.select().where((MACDAlertValue.symbol_left == symbol_left) &
+                                                (MACDAlertValue.symbol_right == symbol_right)).dicts()
+            if res:
+                return res[0]["last_week_value"]
+            else:
+                return None
+
+    @staticmethod
+    def update_last_week_value(symbol_left: str, symbol_right: str, last_week_value: Decimal) -> None:
+        """
+        update last week value
+        :param symbol_left: symbol left
+        :param symbol_right: symbol right
+        :param last_week_value: last week value
+        """
+        with database_runtime.atomic("EXCLUSIVE"):
+            # if update fails, insert
+            MACDAlertValue.insert(symbol_left=symbol_left, symbol_right=symbol_right,
+                                  last_week_value=last_week_value).on_conflict(
+                conflict_target=[MACDAlertValue.symbol_left, MACDAlertValue.symbol_right],
+                update={MACDAlertValue.last_week_value: last_week_value}).execute()

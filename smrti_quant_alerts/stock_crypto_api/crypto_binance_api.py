@@ -1,6 +1,6 @@
 import time
 from decimal import Decimal
-from typing import List, Union, Set, Optional
+from typing import List, Union, Set, Optional, Tuple
 
 from binance.spot import Spot
 from binance.um_futures import UMFutures
@@ -8,7 +8,8 @@ from binance.um_futures import UMFutures
 from smrti_quant_alerts.exception import error_handling
 from smrti_quant_alerts.settings import Config
 from smrti_quant_alerts.data_type import BinanceExchange, CoingeckoCoin, TradingSymbol
-from smrti_quant_alerts.stock_crypto_api.utility import read_exclude_coins_from_file
+from smrti_quant_alerts.stock_crypto_api.utility import read_exclude_coins_from_file, \
+    get_date_from_timestamp, get_datetime_now
 
 
 class BinanceApi:
@@ -18,6 +19,9 @@ class BinanceApi:
     active_binance_spot_exchanges = []
     active_exchanges_timestamp = 0
     active_binance_spot_exchanges_set = set()
+
+    # timeframe to days
+    timeframe_to_days = {"1d": 1, "2d": 2, "3d": 3, "1w": 7, "2w": 14, "1m": 30}
 
     def __init__(self) -> None:
         self._binance_spot_client = Spot()
@@ -165,3 +169,43 @@ class BinanceApi:
                     break
 
         return list(binance_exchanges)
+
+    @error_handling("binance", default_val=[])
+    def get_exchange_close_prices_by_timeframe_num_of_ticks(self, exchange: BinanceExchange, timeframe: str,
+                                                            num_of_tick: int = 10) -> List[Tuple[str, float]]:
+        """
+        Get exchange past close price for the history <timeframe> number of ticks
+
+        :param exchange: BinanceExchange
+        :param timeframe: timeframe
+        :param num_of_tick: number of ticks
+
+        :return: [close_price, ...] in the order from newest to oldest
+        """
+        if not exchange:
+            return []
+        timeframe = timeframe.lower()
+        start_time = (int(time.time()) -
+                      self.timeframe_to_days[timeframe] * (num_of_tick + 1) * 24 * 60 * 60) * 1000
+        binance_timeframe = "1M" if timeframe == "1m" else f"1{timeframe[1]}"
+
+        response = self._binance_spot_client.klines(symbol=exchange, interval=binance_timeframe,
+                                                    startTime=start_time, limit=1000)
+
+        return [p for i, p in enumerate([(get_date_from_timestamp(i[0]), float(i[4]))
+                for i in response][::-1]) if i % int(timeframe[0]) == 0][:num_of_tick]
+
+    @error_handling("binance", default_val=0)
+    def get_exchange_close_price_on_timestamp(self, exchange: BinanceExchange, timestamp: int) -> float:
+        """
+        Get exchange close price on a specific date time
+
+        :param exchange: BinanceExchange
+        :param timestamp: timestamp
+
+        :return: close price
+        """
+        end_time = timestamp + 60000
+        response = self._binance_spot_client.klines(symbol=exchange, interval="1m",
+                                                    startTime=timestamp-1, endTime=end_time)
+        return float(response[0][4])

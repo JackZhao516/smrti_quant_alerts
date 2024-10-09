@@ -1,10 +1,10 @@
 setuptools
 binance-futures-connector>=4.0.0
-numpy
+numpy==1.26.4
 pycoingecko==3.1.0
 requests
 pytz
-pandas
+pandas[excel]
 lxml
 peewee
 urllib3>=1.26.9,<2.0.0

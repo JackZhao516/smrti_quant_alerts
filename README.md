@@ -36,7 +36,7 @@ Alerts are sent to [Telegram](https://telegram.org/) groups/channels.
   * Set all the parameters in 
     [*configs.json*](https://github.com/JackZhao516/smrti_quant_alerts/blob/main/configs.json.example) 
     for the alerts you want to run
-  * [python3.8](https://www.python.org/downloads/release/python-380/) or higher
+  * [python3.12](https://www.python.org/downloads/release/python-3120/) or higher
 * Run on server in areas where [Binance](https://www.binance.com/en) and 
   [CoinGecko](https://www.coingecko.com/) apis are not banned.
 ## Install

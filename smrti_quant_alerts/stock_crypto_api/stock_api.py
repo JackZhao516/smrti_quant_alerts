@@ -12,7 +12,7 @@ import pandas as pd
 from smrti_quant_alerts.exception import error_handling
 from smrti_quant_alerts.settings import Config
 from smrti_quant_alerts.data_type import StockSymbol
-from smrti_quant_alerts.stock_crypto_api.utility import get_datetime_now
+from smrti_quant_alerts.stock_crypto_api.utility import get_datetime_now, get_date_from_timestamp
 
 
 class StockApi:
@@ -25,7 +25,8 @@ class StockApi:
     PWD = Config.PROJECT_DIR
 
     timeframe_dict = {
-        "1D": 1, "5D": 5, "1M": 30, "3M": 90, "6M": 180, "1Y": 365, "3Y": 365 * 3, "5Y": 365 * 5, "10Y": 365 * 10
+        "1D": 1, "5D": 5, "1M": 30, "3M": 90, "6M": 180, "1Y": 365, "3Y": 365 * 3, "5Y": 365 * 5, "10Y": 365 * 10,
+        "d": 1, "w": 7, "m": 30
     }
     timeframe_dict_reverse = {v: k for k, v in timeframe_dict.items()}
 
@@ -355,9 +356,43 @@ class StockApi:
 
         return res
 
+    @error_handling("eodhd", default_val=[])
+    def get_stock_close_prices_by_timeframe_num_of_ticks(
+            self, stock: StockSymbol, timeframe: str, num_of_ticks: int) -> List[Tuple[str, float]]:
+        """
+        Get stock close prices by timeframe and num of ticks
 
-if __name__ == "__main__":
-    stock = StockSymbol("AAOI")
-    stock_api = StockApi()
-    market_cap = stock_api.get_stocks_market_cap([stock])
-    print(market_cap)
+        :param stock: StockSymbol
+        :param timeframe: str
+        :param num_of_ticks: int
+        :return: [(date, close_price), ...], with the newest date first
+        """
+        timeframe_int = int(timeframe[0])
+        timeframe = timeframe.lower()
+        from_date = get_datetime_now() - \
+            datetime.timedelta(days=2 * (self.timeframe_dict[timeframe[-1]] * num_of_ticks * timeframe_int + 1))
+        from_str = from_date.strftime("%Y-%m-%d")
+        api_url = f"{self.EODHD_API_URL}eod/{stock.ticker}.US?api_token={self.EODHD_API_KEY}" \
+                  f"&fmt=json&from={from_str}&period={timeframe[-1]}"
+        response = requests.get(api_url, timeout=10).json()
+        res = [(tick["date"], float(tick["adjusted_close"]))
+               for i, tick in enumerate(response[::-1]) if i % timeframe_int == 0][:num_of_ticks]
+
+        # prepend latest close price
+        latest_close = self.get_stock_current_close_price(stock)
+        if latest_close[0] != res[0][0]:
+            res.insert(0, latest_close)
+        return res
+
+    @error_handling("eodhd", default_val=[])
+    def get_stock_current_close_price(self, stock: StockSymbol) -> Tuple[str, float]:
+        """
+        Get stock current close price
+
+        :param stock: StockSymbol
+        :return: (date, close_price)
+        """
+        api_url = f"{self.EODHD_API_URL}real-time/{stock.ticker}.US?api_token={self.EODHD_API_KEY}" \
+                  f"&fmt=json"
+        response = requests.get(api_url, timeout=10).json()
+        return get_date_from_timestamp(response["timestamp"] * 1000), float(response["close"])

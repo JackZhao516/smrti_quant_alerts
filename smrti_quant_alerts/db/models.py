@@ -1,6 +1,6 @@
 import time
 
-from peewee import Model, CharField, IntegerField, DateTimeField, CompositeKey
+from peewee import Model, CharField, IntegerField, DateTimeField, CompositeKey, DecimalField
 from playhouse.shortcuts import ThreadSafeDatabaseMetadata
 
 
@@ -37,3 +37,13 @@ class LastCount(BaseModel):
 # -------------- stock_alert ----------------
 class StockAlertCount(BaseModel):
     stock_symbol = CharField()
+
+
+# -------------- macd_alert ----------------
+class MACDAlertValue(BaseModel):
+    symbol_left = CharField()
+    symbol_right = CharField()
+    last_week_value = DecimalField()
+
+    class Meta:
+        primary_key = CompositeKey('symbol_left', 'symbol_right')
