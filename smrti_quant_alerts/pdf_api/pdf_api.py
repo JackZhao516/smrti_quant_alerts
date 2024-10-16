@@ -14,6 +14,7 @@ class PDFApi:
             file_name = "output.pdf"
         self._file_name = file_name
         self._tmp_file_name = f"{file_name}.txt"
+        self._old_file_names = []
 
     @property
     def file_name(self) -> str:
@@ -25,7 +26,7 @@ class PDFApi:
 
         :param file_name: file name
         """
-        self.delete_pdf()
+        self._old_file_names.append(self._file_name)
         self._file_name = file_name
         self._tmp_file_name = f"{file_name}.txt"
 
@@ -80,5 +81,10 @@ class PDFApi:
         """
         Delete pdf
         """
-        if os.path.exists(self._file_name):
-            os.remove(self._file_name)
+        self._old_file_names.append(self._file_name)
+        for file_name in self._old_file_names:
+            if os.path.exists(file_name):
+                os.remove(file_name)
+        self._old_file_names = []
+        self._file_name = "output.pdf"
+        self._tmp_file_name = f"{self._file_name}.txt"

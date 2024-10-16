@@ -56,7 +56,7 @@ class StockApi:
 
         :return: [StockSymbol, ...]
         """
-        api_url = f"{self.FMP_API_URL}available-traded/list?apikey={self.FMP_API_KEY}"
+        api_url = f"{self.FMP_API_URL}/v3/available-traded/list?apikey={self.FMP_API_KEY}"
         response = requests.get(api_url, timeout=5)
         response = response.json()
 
@@ -73,7 +73,7 @@ class StockApi:
 
         :return: [StockSymbol, ...]
         """
-        api_url = f"{self.FMP_API_URL}available-traded/list?apikey={self.FMP_API_KEY}"
+        api_url = f"{self.FMP_API_URL}/v3/available-traded/list?apikey={self.FMP_API_KEY}"
         response = requests.get(api_url, timeout=5)
         response = response.json()
 
@@ -101,7 +101,7 @@ class StockApi:
         target_date_str = target_date.strftime("%Y-%m-%d")
         while response is None or response.status_code != 200 or not response.json():
             target_date_str = target_date.strftime("%Y-%m-%d")
-            url = f"{self.EODHD_API_URL}eod-bulk-last-day/US?api_token=" \
+            url = f"{self.EODHD_API_URL}/eod-bulk-last-day/US?api_token=" \
                   f"{self.EODHD_API_KEY}&date={target_date_str}&fmt=json"
             response = requests.get(url, timeout=50)
             target_date -= datetime.timedelta(days=1)
@@ -175,7 +175,7 @@ class StockApi:
                 stocks.append(stock)
         stock_str = ",".join([stock.ticker for stock in stocks])
 
-        api_url = f"{self.FMP_API_URL}profile/{stock_str}?apikey={self.FMP_API_KEY}"
+        api_url = f"{self.FMP_API_URL}/v3/profile/{stock_str}?apikey={self.FMP_API_KEY}"
         response = requests.get(api_url, timeout=10)
         response = response.json()
 
@@ -208,7 +208,7 @@ class StockApi:
 
             n = n - 1 if n % 1000 == 0 else n
             while n % 1000:
-                api_url = f"{self.EODHD_API_URL}screener?api_token={self.EODHD_API_KEY}" \
+                api_url = f"{self.EODHD_API_URL}/screener?api_token={self.EODHD_API_KEY}" \
                           f"&sort=market_capitalization.desc&filters=" \
                           f'[["market_capitalization","<",{last_market_cap}],' \
                           f'["exchange","=","us"]]&limit=100&offset={offset}'
@@ -237,7 +237,7 @@ class StockApi:
         """
         res = defaultdict(dict)
         for stock in stock_list:
-            close_price_url = f"{self.FMP_API_URL}quote-short/{stock}?apikey={self.FMP_API_KEY}"
+            close_price_url = f"{self.FMP_API_URL}/v3/quote-short/{stock}?apikey={self.FMP_API_KEY}"
             response = requests.get(close_price_url, timeout=10).json()
             if not response:
                 continue
@@ -245,7 +245,7 @@ class StockApi:
 
             for num_of_day, timeframe in zip(num_of_days_list, timeframes):
                 from_day = get_datetime_now() - datetime.timedelta(days=2)
-                sma_url = f"{self.FMP_API_URL}technical_indicator/{timeframe}/{stock}" \
+                sma_url = f"{self.FMP_API_URL}/v3/technical_indicator/{timeframe}/{stock}" \
                           f"?type=sma&period={num_of_day}&apikey={self.FMP_API_KEY}" \
                           f"&from={from_day.strftime('%Y-%m-%d')}"
                 response = requests.get(sma_url, timeout=10).json()
@@ -266,7 +266,7 @@ class StockApi:
         """
         res = defaultdict(Decimal)
         for stock in stock_list:
-            api_url = f"{self.FMP_API_URL}market-capitalization/{stock.ticker}?apikey={self.FMP_API_KEY}"
+            api_url = f"{self.FMP_API_URL}/v3/market-capitalization/{stock.ticker}?apikey={self.FMP_API_KEY}"
             response = requests.get(api_url, timeout=10).json()
             if response:
                 res[stock] = Decimal(response[0].get("marketCap", 0))
@@ -286,7 +286,7 @@ class StockApi:
         def get_semi_year_stock_stats(stock: StockSymbol) -> None:
             res[stock] = {"free_cash_flow": "0", "net_income": "0",
                           "free_cash_flow_margin": "0"}
-            api_url = f"{self.FMP_API_URL}/income-statement/{stock.ticker}?" \
+            api_url = f"{self.FMP_API_URL}/v3/income-statement/{stock.ticker}?" \
                       f"period=quarter&limit=2&apikey={self.FMP_API_KEY}"
             response = requests.get(api_url, timeout=10).json()
             if not response:
@@ -297,7 +297,7 @@ class StockApi:
                 revenue += quarter.get("revenue", 0)
                 net_income += quarter.get("netIncome", 0)
 
-            api_url = f"{self.FMP_API_URL}/cash-flow-statement/{stock.ticker}?" \
+            api_url = f"{self.FMP_API_URL}/v3/cash-flow-statement/{stock.ticker}?" \
                       f"period=quarter&limit=2&apikey={self.FMP_API_KEY}"
             response = requests.get(api_url, timeout=10).json()
             if not response:
@@ -328,7 +328,7 @@ class StockApi:
 
         @error_handling("financialmodelingprep", default_val=None)
         def get_stock_revenue_cagr(stock: StockSymbol) -> None:
-            api_url = f"{self.FMP_API_URL}/income-statement/{stock.ticker}?" \
+            api_url = f"{self.FMP_API_URL}/v3/income-statement/{stock.ticker}?" \
                       f"period=quarter&limit=24&apikey={self.FMP_API_KEY}"
             response = requests.get(api_url, timeout=10).json()
             res[stock] = {f"revenue_{i}y_cagr": "0%" for i in [1, 3, 5]}
@@ -372,7 +372,7 @@ class StockApi:
         from_date = get_datetime_now() - \
             datetime.timedelta(days=2 * (self.timeframe_dict[timeframe[-1]] * num_of_ticks * timeframe_int + 1))
         from_str = from_date.strftime("%Y-%m-%d")
-        api_url = f"{self.EODHD_API_URL}eod/{stock.ticker}.US?api_token={self.EODHD_API_KEY}" \
+        api_url = f"{self.EODHD_API_URL}/eod/{stock.ticker}.US?api_token={self.EODHD_API_KEY}" \
                   f"&fmt=json&from={from_str}&period={timeframe[-1]}"
         response = requests.get(api_url, timeout=10).json()
         res = [(tick["date"], float(tick["adjusted_close"]))
@@ -392,7 +392,44 @@ class StockApi:
         :param stock: StockSymbol
         :return: (date, close_price)
         """
-        api_url = f"{self.EODHD_API_URL}real-time/{stock.ticker}.US?api_token={self.EODHD_API_KEY}" \
+        api_url = f"{self.EODHD_API_URL}/real-time/{stock.ticker}.US?api_token={self.EODHD_API_KEY}" \
                   f"&fmt=json"
         response = requests.get(api_url, timeout=10).json()
         return get_date_from_timestamp(response["timestamp"] * 1000), float(response["close"])
+
+    @error_handling("financialmodelingprep", default_val=[])
+    def get_all_8k_filings_for_today(self) -> List[Dict[str, Union[str, bool]]]:
+        """
+        Get all 8k filings for today
+
+        :return: [{"title": str, "date": str, "symbol": str, "cik": str,
+            "process": bool, "link": str, "hasFinancials": bool}, ...]
+        """
+        today = get_datetime_now().strftime("%Y-%m-%d")
+        today = "2024-10-15"
+        api_url = f"{self.FMP_API_URL}/v4/rss_feed_8k?from={today}&to={today}&apikey={self.FMP_API_KEY}&limit=1000"
+        page = 0
+        res = []
+        while True:
+            url = f"{api_url}&page={page}"
+            response = requests.get(url, timeout=10).json()
+            if not response:
+                break
+
+            tmp = [filing for filing in response if filing.get("date")[:10] == today]
+            res.extend(tmp)
+            if len(tmp) != len(response):
+                break
+            page += 1
+
+        # filter out repeated filings
+        symbol_set = set([filing.get("symbol", None) for filing in res])
+        if None in symbol_set:
+            symbol_set.remove(None)
+
+        filtered_res = []
+        for filing in res:
+            if filing.get("symbol", None) in symbol_set:
+                filtered_res.append(filing)
+                symbol_set.remove(filing.get("symbol", None))
+        return filtered_res
