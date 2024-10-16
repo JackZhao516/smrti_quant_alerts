@@ -406,7 +406,6 @@ class StockApi:
             "process": bool, "link": str, "hasFinancials": bool}, ...]
         """
         today = get_datetime_now().strftime("%Y-%m-%d")
-        today = "2024-10-15"
         api_url = f"{self.FMP_API_URL}/v4/rss_feed_8k?from={today}&to={today}&apikey={self.FMP_API_KEY}&limit=1000"
         page = 0
         res = []
