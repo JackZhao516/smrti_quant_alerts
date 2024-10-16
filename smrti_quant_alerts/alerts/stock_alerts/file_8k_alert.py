@@ -23,7 +23,7 @@ class File8KAlert(BaseAlert):
         self._alert_name = alert_name
         self._email_api = EmailApi()
         self._stock_api = StockApi()
-        self._symbols = symbols
+        self._symbols = set(symbols) if symbols else None
         self._file_name = f"{self._alert_name}_{uuid.uuid4()}.csv"
 
     def run(self) -> None:
