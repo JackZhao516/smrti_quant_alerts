@@ -45,8 +45,6 @@ def run_alert(alert_name: str, alert_class: Callable) -> None:
     :param alert_class: alert class
     """
     logging.info(f"{alert_name} start")
-    print(Config.IS_SETUP)
-    print(Config.SETTINGS)
     config = Config()
 
     settings = config.SETTINGS[alert_name]
