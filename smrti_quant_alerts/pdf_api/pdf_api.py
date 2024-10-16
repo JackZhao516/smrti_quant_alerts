@@ -25,6 +25,7 @@ class PDFApi:
 
         :param file_name: file name
         """
+        self.delete_pdf()
         self._file_name = file_name
         self._tmp_file_name = f"{file_name}.txt"
 
