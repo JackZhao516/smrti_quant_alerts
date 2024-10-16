@@ -56,6 +56,22 @@
     "database_name": "stock_alert"
   },
 
+   "<file_8k_example_name>": {
+    "alert_type": "file_8k",
+    "alert_input_args": {
+      "alert_name": "<file_8k_example_name>",
+      "symbols": ["<symbol>", "<symbol>", ...],
+      "tg_type": "TEST"
+    },
+    "alert_params": {},
+    "run_time_input_args": {
+      "daily_times": "23:50",
+      "excluded_week_days": ["Sat", "Sun"],
+      "timezone": "US/Eastern"
+    },
+    "database_name": "file_8k"
+  },
+
   "<macd_alert_example_name>": {
     "alert_type": "macd_alert",
     "alert_input_args": {
