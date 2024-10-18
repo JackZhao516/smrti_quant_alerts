@@ -37,11 +37,14 @@ class File8KAlert(BaseAlert):
             data = [d for d in data if d[1] in self._symbols]
         df = pd.DataFrame(data, columns=headers)
         df.to_csv(self._file_name, index=False)
+        # email content
+        content = f"Filter by symbols: {self._symbols}" if self._symbols else ""
+
         # send email
-        self._email_api.send_email(self._alert_name, "", [self._file_name])
+        self._email_api.send_email(self._alert_name, content, [self._file_name])
 
         # send telegram message
-        self._tg_bot.send_message(self._alert_name)
+        self._tg_bot.send_message(f"{self._alert_name}\n{content}")
         self._tg_bot.send_file(self._file_name, self._alert_name)
         os.remove(self._file_name)
 
