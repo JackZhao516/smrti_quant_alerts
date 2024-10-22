@@ -380,7 +380,7 @@ class StockApi:
 
         # prepend latest close price
         latest_close = self.get_stock_current_close_price(stock)
-        if latest_close[0] != res[0][0]:
+        if (latest_close[0] != res[0][0] and timeframe[-1] != "m") or latest_close[0][:7] != res[0][0][:7]:
             res.insert(0, latest_close)
         return res
 

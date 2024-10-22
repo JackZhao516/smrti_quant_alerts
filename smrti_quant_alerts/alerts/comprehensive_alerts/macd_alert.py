@@ -42,16 +42,22 @@ class MACDAlert(BaseAlert):
         """
         Get the symbol pairs from the symbol list
         """
-        # stock does not care about the quote symbol
-        return [(get_class(symbol_pair["type_left"])(symbol_pair["symbol_left"], "USDT"),
-                 get_class(symbol_pair["type_right"])(symbol_pair["symbol_right"], "USDT")) for symbol_pair in symbols]
+        res = []
+        for symbol_pair in symbols:
+            # stock does not care about the quote symbol
+            if not symbol_pair["symbol_right"]:
+                res.append((get_class(symbol_pair["type_left"])(symbol_pair["symbol_left"], "USDT"), None))
+            else:
+                res.append((get_class(symbol_pair["type_left"])(symbol_pair["symbol_left"], "USDT"),
+                            get_class(symbol_pair["type_right"])(symbol_pair["symbol_right"], "USDT")))
+        return res
 
     @staticmethod
     def _encode_symbol_pair(symbol_pair: Tuple[TradingSymbol, TradingSymbol]) -> str:
         """
         Encode the symbol pair
         """
-        return f"{symbol_pair[0]}/{symbol_pair[1]}"
+        return f"{symbol_pair[0]}/{symbol_pair[1]}" if symbol_pair[1] else str(symbol_pair[0])
 
     def _get_past_number_of_macd(self, num_of_macd: int = 14) \
             -> Dict[str, Dict[str, List[Tuple[str, float]]]]:
@@ -81,6 +87,9 @@ class MACDAlert(BaseAlert):
 
         :return: list of MACD values
         """
+        if not right_close_prices:
+            macds = calculate_macd([close_price for _, close_price in left_close_prices[::-1]])[:num_of_macd]
+            return [(date, macd) for date, macd in zip([date for date, _ in left_close_prices], macds)]
         close_prices = []
         dates = []
         index_left, index_right = 0, 0
@@ -103,36 +112,37 @@ class MACDAlert(BaseAlert):
         """
         Get the close prices for the left and right symbols
         """
-        if isinstance(symbol_pair[0], StockSymbol) and isinstance(symbol_pair[1], StockSymbol):
+        right_close_prices = None
+        if isinstance(symbol_pair[0], StockSymbol):
             left_close_prices = self._stock_api.get_stock_close_prices_by_timeframe_num_of_ticks(
                 symbol_pair[0], timeframe, 200)
-            right_close_prices = self._stock_api.get_stock_close_prices_by_timeframe_num_of_ticks(
-                symbol_pair[1], timeframe, 200)
-        elif isinstance(symbol_pair[0], BinanceExchange) and isinstance(symbol_pair[1], BinanceExchange):
+            if isinstance(symbol_pair[1], StockSymbol):
+                right_close_prices = self._stock_api.get_stock_close_prices_by_timeframe_num_of_ticks(
+                    symbol_pair[1], timeframe, 200)
+            elif isinstance(symbol_pair[1], BinanceExchange):
+                right_close_prices = []
+                for date, _ in left_close_prices:
+                    right_close_prices.append((date, self._binance_api.get_exchange_close_price_on_timestamp(
+                        symbol_pair[1], get_stock_market_close_timestamp_from_date(date))))
+                    if right_close_prices[-1][1] == 0:
+                        right_close_prices.pop()
+                        break
+        else:
             left_close_prices = self._binance_api.get_exchange_close_prices_by_timeframe_num_of_ticks(
                 symbol_pair[0], timeframe, 200)
-            right_close_prices = self._binance_api.get_exchange_close_prices_by_timeframe_num_of_ticks(
-                symbol_pair[1], timeframe, 200)
-        elif isinstance(symbol_pair[0], StockSymbol):
-            left_close_prices = self._stock_api.get_stock_close_prices_by_timeframe_num_of_ticks(
-                symbol_pair[0], timeframe, 200)
-            right_close_prices = []
-            for date, _ in left_close_prices:
-                right_close_prices.append((date, self._binance_api.get_exchange_close_price_on_timestamp(
-                    symbol_pair[1], get_stock_market_close_timestamp_from_date(date))))
-                if right_close_prices[-1][1] == 0:
-                    right_close_prices.pop()
-                    break
-        else:
-            left_close_prices = []
-            right_close_prices = self._stock_api.get_stock_close_prices_by_timeframe_num_of_ticks(
-                symbol_pair[1], timeframe, 200)
-            for date, _ in right_close_prices:
-                left_close_prices.append((date, self._binance_api.get_exchange_close_price_on_timestamp(
-                    symbol_pair[0], get_stock_market_close_timestamp_from_date(date))))
-                if left_close_prices[-1][1] == 0:
-                    left_close_prices.pop()
-                    break
+            if isinstance(symbol_pair[1], BinanceExchange):
+                right_close_prices = self._binance_api.get_exchange_close_prices_by_timeframe_num_of_ticks(
+                    symbol_pair[1], timeframe, 200)
+            elif isinstance(symbol_pair[1], StockSymbol):
+                left_close_prices = []
+                right_close_prices = self._stock_api.get_stock_close_prices_by_timeframe_num_of_ticks(
+                    symbol_pair[1], timeframe, 200)
+                for date, _ in right_close_prices:
+                    left_close_prices.append((date, self._binance_api.get_exchange_close_price_on_timestamp(
+                        symbol_pair[0], get_stock_market_close_timestamp_from_date(date))))
+                    if left_close_prices[-1][1] == 0:
+                        left_close_prices.pop()
+                        break
 
         return left_close_prices, right_close_prices
 
@@ -219,7 +229,11 @@ if __name__ == "__main__":
                    "type_right": "StockSymbol", "symbol_right": "NVDA"}]
     stock_crypto_pair = [{"type_right": "StockSymbol", "symbol_right": "NVDA",
                           "type_left": "BinanceExchange", "symbol_left": "BTC"}]
+    crypto_none_pair = [{"type_left": "BinanceExchange", "symbol_left": "BTC",
+                         "type_right": "", "symbol_right": ""}]
+    stock_none_pair = [{"type_left": "StockSymbol", "symbol_left": "TSLA",
+                        "type_right": "", "symbol_right": ""}]
 
     alert = MACDAlert("macd_alert_daily", ["1M"],
-                      stock_crypto_pair, email=False, xlsx=True, tg_type="TEST")
+                      crypto_none_pair, email=False, xlsx=True, tg_type="TEST")
     alert.run()
