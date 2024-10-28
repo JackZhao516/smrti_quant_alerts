@@ -1,8 +1,10 @@
 import logging
 import uuid
 import os
+import csv
 
 import pandas as pd
+import numpy as np
 from typing import List, Dict, Tuple
 from collections import defaultdict
 
@@ -17,16 +19,17 @@ logging.basicConfig(level=logging.INFO)
 
 class MACDAlert(BaseAlert):
     def __init__(self, alert_name: str, timeframe_list: List[str],
-                 symbols: List[Dict[str, str]], email: bool = False, xlsx: bool = False, tg_type: str = "TEST") -> None:
+                 symbols_file: str, email: bool = False, xlsx: bool = False, tg_type: str = "TEST") -> None:
         """
         :param alert_name: alert name
         :param timeframe_list: list of timeframes to check
-        :param symbols: list of pairs of symbols
+        :param symbols_file: csv file containing the symbols
         :param email: send email or not
         :param tg_type: telegram type
         """
         super().__init__(tg_type)
-        self._symbol_pairs = self._get_symbol_pairs(symbols)
+        self._sectors = defaultdict(dict)
+        self._symbol_pairs = self._parse_symbols_file(symbols_file)
         self._email = email
         self._xlsx = xlsx
         self._alert_name = alert_name
@@ -37,20 +40,30 @@ class MACDAlert(BaseAlert):
 
         self._excel_file_paths = []
 
-    @staticmethod
-    def _get_symbol_pairs(symbols: List[Dict[str, str]]) -> List[Tuple[TradingSymbol, TradingSymbol]]:
+    def _parse_symbols_file(self, file_name: str) -> List[Tuple[TradingSymbol, TradingSymbol]]:
         """
-        Get the symbol pairs from the symbol list
+        parse the symbols file
+
+        :param file_name: file name
+        :return: list of symbol pairs
         """
-        res = []
-        for symbol_pair in symbols:
-            # stock does not care about the quote symbol
-            if not symbol_pair["symbol_right"]:
-                res.append((get_class(symbol_pair["type_left"])(symbol_pair["symbol_left"], "USDT"), None))
-            else:
-                res.append((get_class(symbol_pair["type_left"])(symbol_pair["symbol_left"], "USDT"),
-                            get_class(symbol_pair["type_right"])(symbol_pair["symbol_right"], "USDT")))
-        return res
+        symbols = []
+        with open(file_name, "r") as f:
+            reader = csv.DictReader(f)
+            for row in reader:
+                if not row["sub_sector"]:
+                    row["sub_sector"] = None
+                # stock does not care about the quote currency
+                left_symbol = get_class(row["type_left"])(row["symbol_left"], "USDT")
+                right_symbol = get_class(row["type_right"])(row["symbol_right"], "USDT") \
+                    if row["symbol_right"] else None
+                symbol = (left_symbol, right_symbol)
+                symbols.append(symbol)
+                if self._sectors[row["sector"]].get(row["sub_sector"]):
+                    self._sectors[row["sector"]][row["sub_sector"]].append(symbol)
+                else:
+                    self._sectors[row["sector"]][row["sub_sector"]] = [symbol]
+        return symbols
 
     @staticmethod
     def _encode_symbol_pair(symbol_pair: Tuple[TradingSymbol, TradingSymbol]) -> str:
@@ -165,36 +178,53 @@ class MACDAlert(BaseAlert):
                 df.to_excel(writer, sheet_name=timeframe, index=False)
         return filename
 
-    @staticmethod
-    def _generate_email_content(macd_dict: Dict[str, Dict[str, List[Tuple[str, float]]]]) -> str:
+    def _generate_email_content(self, macd_dict: Dict[str, Dict[str, List[Tuple[str, float]]]]) -> str:
         """
         Generate the email content
         """
         content = ""
+        space = " " * 4
+        level = 0
 
         rising_to_falling = ["·Rising to Falling"]
         falling_to_rising = ["·Falling to Rising"]
-        for symbol_pair_encoded, macd_values in macd_dict.items():
-            symbol_content = f"{symbol_pair_encoded}:"
-            for timeframe, values in macd_values.items():
-                r_to_f = []
-                f_to_r = []
-                current_macd, previous_macd = values[0][1], values[1][1]
-                symbol_content += f"\n   ·{timeframe}: {round(previous_macd, 8)} to {round(current_macd, 8)}"
 
-                if current_macd > 0 > previous_macd:
-                    f_to_r.append(timeframe)
-                elif current_macd < 0 < previous_macd:
-                    r_to_f.append(timeframe)
-                if r_to_f:
-                    rising_to_falling.append(f"   ·{symbol_pair_encoded} {r_to_f}")
-                if f_to_r:
-                    falling_to_rising.append(f"   ·{symbol_pair_encoded} {f_to_r}")
+        for sector, sub_sectors in self._sectors.items():
+            content += f"- {sector}:\n"
+            level += 1
+            for sub_sector, symbol_pairs in sub_sectors.items():
+                content += space * level + f"- {sub_sector}:\n" if sub_sector else ""
+                level += 1 if sub_sector else 0
+                for symbol_pair in symbol_pairs:
+                    symbol_pair_encoded = self._encode_symbol_pair(symbol_pair)
+                    # print individual symbol content
+                    symbol_content = space * level + f"- {symbol_pair_encoded}:"
+                    for timeframe, values in macd_dict[symbol_pair_encoded].items():
+                        r_to_f = []
+                        f_to_r = []
+                        current_macd, previous_macd = values[0][1], values[1][1]
+                        symbol_content += '\n' + space * (level + 1)
+                        if np.isnan(current_macd) or np.isnan(previous_macd):
+                            symbol_content += f"·{timeframe}: Not enough data to calculate MACD"
+                        else:
+                            symbol_content += f"·{timeframe}: {round(previous_macd, 8)} to {round(current_macd, 8)}"
 
-                if current_macd * previous_macd < 0:
-                    symbol_content += "  *"
+                        if current_macd > 0 > previous_macd:
+                            f_to_r.append(timeframe)
+                        elif current_macd < 0 < previous_macd:
+                            r_to_f.append(timeframe)
+                        if r_to_f:
+                            rising_to_falling.append(space + f"·{symbol_pair_encoded} {r_to_f}")
+                        if f_to_r:
+                            falling_to_rising.append(space + f"·{symbol_pair_encoded} {f_to_r}")
 
-            content += symbol_content + "\n\n"
+                        if current_macd * previous_macd < 0:
+                            symbol_content += "  *"
+
+                    content += symbol_content + "\n\n"
+                level -= 1 if sub_sector else 0
+            level = 0
+
         return "Summary\n\n" + "\n".join(rising_to_falling) + "\n" + \
                "\n".join(falling_to_rising) + "\n\n\n" + content
 
@@ -223,17 +253,9 @@ class MACDAlert(BaseAlert):
 
 
 if __name__ == "__main__":
-    crypto_pair = [{"type_left": "BinanceExchange", "symbol_left": "SOL",
-                    "type_right": "BinanceExchange", "symbol_right": "BTC"}]
-    stock_pair = [{"type_left": "StockSymbol", "symbol_left": "TSLA",
-                   "type_right": "StockSymbol", "symbol_right": "NVDA"}]
-    stock_crypto_pair = [{"type_right": "StockSymbol", "symbol_right": "NVDA",
-                          "type_left": "BinanceExchange", "symbol_left": "BTC"}]
-    crypto_none_pair = [{"type_left": "BinanceExchange", "symbol_left": "BTC",
-                         "type_right": "", "symbol_right": ""}]
-    stock_none_pair = [{"type_left": "StockSymbol", "symbol_left": "TSLA",
-                        "type_right": "", "symbol_right": ""}]
-
+    # macd_symbols_file = "macd_symbols_example.csv"
+    macd_symbols_file = "macd_symbols.csv"
+    # macd_symbols_file = "test.csv"
     alert = MACDAlert("macd_alert_daily", ["1M"],
-                      crypto_none_pair, email=False, xlsx=True, tg_type="TEST")
+                      macd_symbols_file, email=False, xlsx=False, tg_type="TEST")
     alert.run()

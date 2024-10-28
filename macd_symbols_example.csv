@@ -1,0 +1,6 @@
+symbol_left,type_left,symbol_right,type_right,sector,sub_sector
+SOL,BinanceExchange,BTC,BinanceExchange,Pair,
+WIF,BinanceExchange,,,Crypto,Meme
+BTC,BinanceExchange,,,Crypto,
+TSLA,StockSymbol,,,Share,
+NVDA,StockSymbol,,,Share,Semi

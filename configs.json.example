@@ -77,12 +77,7 @@
     "alert_input_args": {
       "alert_name": "<macd_alert_example_name>",
       "timeframe_list": ["1d", "5d", "1M", "3M", "6M", "1y", "3y", "5y"],
-      "symbols": [
-        {"symbol_left": "<stock/binance exchange>", "symbol_right": "<stock/binance exchange>",
-          "type_left": "BinanceExchange/StockSymbol", "type_right": "BinanceExchange/StockSymbol"},
-        {"symbol_left": "<stock/binance exchange>", "symbol_right": "<stock/binance exchange>",
-          "type_left": "BinanceExchange/StockSymbol", "type_right": "BinanceExchange/StockSymbol"}
-      ],
+      "symbols_file": "macd_symbols_example.csv",
       "tg_type": "TEST",
       "email": true/false,
       "xlsx": true/false
