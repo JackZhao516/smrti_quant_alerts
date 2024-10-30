@@ -254,8 +254,8 @@ class MACDAlert(BaseAlert):
 
 if __name__ == "__main__":
     # macd_symbols_file = "macd_symbols_example.csv"
-    macd_symbols_file = "macd_symbols.csv"
-    # macd_symbols_file = "test.csv"
+    # macd_symbols_file = "macd_symbols.csv"
+    macd_symbols_file = "test.csv"
     alert = MACDAlert("macd_alert_daily", ["1M"],
                       macd_symbols_file, email=False, xlsx=False, tg_type="TEST")
     alert.run()

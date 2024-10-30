@@ -1,4 +1,5 @@
 from __future__ import annotations
+from typing import Tuple
 
 from .base_data_type import TradingSymbol
 
@@ -13,8 +14,8 @@ class StockSymbol(TradingSymbol):
                  gics_sub_industry: str = "", location: str = "", cik: str = "",
                  founded_time: str = "", sp500: bool = False, nasdaq: bool = False,
                  nyse: bool = False) -> None:
+        symbol, self.market = StockSymbol.parse_symbol_market(symbol)
         super().__init__(symbol.upper())
-
         self.security_name = security_name
         self.gics_sector = gics_sector
         self.gics_sub_industry = gics_sub_industry
@@ -66,3 +67,10 @@ class StockSymbol(TradingSymbol):
         if symbol.upper() in StockSymbol.symbol_info_map:
             return StockSymbol.symbol_info_map[symbol.upper()]
         return StockSymbol(symbol)
+
+    @staticmethod
+    def parse_symbol_market(symbol: str) -> Tuple[str, str]:
+        if "@" in symbol:
+            symbol, market = symbol.split("@")
+            return symbol, market
+        return symbol, "US"

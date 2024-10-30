@@ -33,6 +33,10 @@ class StockApi:
     def __init__(self) -> None:
         super().__init__()
 
+    @staticmethod
+    def _parse_eodhd_symbol(symbol: StockSymbol) -> str:
+        return f"{symbol.ticker}.{symbol.market}"
+
     @error_handling("sp500", default_val=[])
     def get_sp_500_list(self) -> List[StockSymbol]:
         """
@@ -372,7 +376,7 @@ class StockApi:
         from_date = get_datetime_now() - \
             datetime.timedelta(days=2 * (self.timeframe_dict[timeframe[-1]] * num_of_ticks * timeframe_int + 1))
         from_str = from_date.strftime("%Y-%m-%d")
-        api_url = f"{self.EODHD_API_URL}/eod/{stock.ticker}.US?api_token={self.EODHD_API_KEY}" \
+        api_url = f"{self.EODHD_API_URL}/eod/{self._parse_eodhd_symbol(stock)}?api_token={self.EODHD_API_KEY}" \
                   f"&fmt=json&from={from_str}&period={timeframe[-1]}"
         response = requests.get(api_url, timeout=10).json()
         res = [(tick["date"], float(tick["adjusted_close"]))
@@ -392,7 +396,7 @@ class StockApi:
         :param stock: StockSymbol
         :return: (date, close_price)
         """
-        api_url = f"{self.EODHD_API_URL}/real-time/{stock.ticker}.US?api_token={self.EODHD_API_KEY}" \
+        api_url = f"{self.EODHD_API_URL}/real-time/{self._parse_eodhd_symbol(stock)}?api_token={self.EODHD_API_KEY}" \
                   f"&fmt=json"
         response = requests.get(api_url, timeout=10).json()
         return get_date_from_timestamp(response["timestamp"] * 1000), float(response["close"])
