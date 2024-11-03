@@ -178,9 +178,25 @@ class MACDAlert(BaseAlert):
                 df.to_excel(writer, sheet_name=timeframe, index=False)
         return filename
 
+    @staticmethod
+    def _process_timeframe_for_changed_macd(
+            changed_timeframes: List[str], positive_timeframes: List[str], negative_timeframes: List[str]) -> str:
+        pos_set_exclude_changed = set(positive_timeframes) - set(changed_timeframes)
+        neg_set_exclude_changed = set(negative_timeframes) - set(changed_timeframes)
+        pos_str = "+, ".join(pos_set_exclude_changed)
+        neg_str = "-, ".join(neg_set_exclude_changed)
+        pos_str = f"[{pos_str}+]" if pos_set_exclude_changed else ""
+        neg_str = f"[{neg_str}-]" if neg_set_exclude_changed else ""
+
+        return f"{pos_str} {neg_str}"
+
     def _generate_email_content(self, macd_dict: Dict[str, Dict[str, List[Tuple[str, float]]]]) -> str:
         """
         Generate the email content
+
+        :param macd_dict: mapping from symbol pair to mapping from timeframe to list of MACD values
+
+        :return: email content
         """
         content = ""
         space = " " * 4
@@ -199,27 +215,33 @@ class MACDAlert(BaseAlert):
                     symbol_pair_encoded = self._encode_symbol_pair(symbol_pair)
                     # print individual symbol content
                     symbol_content = space * level + f"- {symbol_pair_encoded}:"
+                    r_to_f, f_to_r, pos, neg = [], [], [], []
                     for timeframe, values in macd_dict[symbol_pair_encoded].items():
-                        r_to_f = []
-                        f_to_r = []
                         current_macd, previous_macd = values[0][1], values[1][1]
                         symbol_content += '\n' + space * (level + 1)
                         if np.isnan(current_macd) or np.isnan(previous_macd):
-                            symbol_content += f"·{timeframe}: Not enough data to calculate MACD"
+                            symbol_content += f"·{timeframe}: No enough data to calculate MACD"
                         else:
                             symbol_content += f"·{timeframe}: {round(previous_macd, 8)} to {round(current_macd, 8)}"
 
-                        if current_macd > 0 > previous_macd:
-                            f_to_r.append(timeframe)
-                        elif current_macd < 0 < previous_macd:
-                            r_to_f.append(timeframe)
-                        if r_to_f:
-                            rising_to_falling.append(space + f"·{symbol_pair_encoded} {r_to_f}")
-                        if f_to_r:
-                            falling_to_rising.append(space + f"·{symbol_pair_encoded} {f_to_r}")
-
+                        if current_macd > 0:
+                            pos.append(timeframe)
+                            if previous_macd < 0:
+                                f_to_r.append(timeframe)
+                        else:
+                            neg.append(timeframe)
+                            if previous_macd > 0:
+                                r_to_f.append(timeframe)
                         if current_macd * previous_macd < 0:
                             symbol_content += "  *"
+                    if r_to_f:
+                        rising_to_falling.append(
+                            f"{space}·{symbol_pair_encoded} {r_to_f}\n"
+                            f"{space * 2}-{self._process_timeframe_for_changed_macd(r_to_f, pos, neg)}")
+                    if f_to_r:
+                        falling_to_rising.append(
+                            f"{space}·{symbol_pair_encoded} {f_to_r}\n"
+                            f"{space * 2}-{self._process_timeframe_for_changed_macd(f_to_r, pos, neg)}")
 
                     content += symbol_content + "\n\n"
                 level -= 1 if sub_sector else 0
@@ -240,7 +262,6 @@ class MACDAlert(BaseAlert):
                 self._excel_file_paths.append(file_path)
 
         email_content = self._generate_email_content(macd_dict)
-
         # send email
         if self._email:
             self._email_api.send_email(self._alert_name, email_content, [], self._excel_file_paths)
@@ -256,6 +277,6 @@ if __name__ == "__main__":
     # macd_symbols_file = "macd_symbols_example.csv"
     # macd_symbols_file = "macd_symbols.csv"
     macd_symbols_file = "test.csv"
-    alert = MACDAlert("macd_alert_daily", ["1M"],
+    alert = MACDAlert("macd_alert_daily", ["1D", "2D", "3D"],
                       macd_symbols_file, email=False, xlsx=False, tg_type="TEST")
     alert.run()
