@@ -18,8 +18,9 @@ logging.basicConfig(level=logging.INFO)
 
 
 class MACDAlert(BaseAlert):
-    def __init__(self, alert_name: str, timeframe_list: List[str],
-                 symbols_file: str, email: bool = False, xlsx: bool = False, tg_type: str = "TEST") -> None:
+    def __init__(self, alert_name: str, timeframe_list: List[str], symbols_file: str,
+                 add_on_timeframe_list: List[str] = None, email: bool = False,
+                 xlsx: bool = False, tg_type: str = "TEST") -> None:
         """
         :param alert_name: alert name
         :param timeframe_list: list of timeframes to check
@@ -34,6 +35,7 @@ class MACDAlert(BaseAlert):
         self._xlsx = xlsx
         self._alert_name = alert_name
         self._timeframe_list = timeframe_list
+        self._add_on_timeframe_list = add_on_timeframe_list
         self._stock_api = StockApi()
         self._binance_api = BinanceApi()
         self._email_api = EmailApi()
@@ -72,7 +74,8 @@ class MACDAlert(BaseAlert):
         """
         return f"{symbol_pair[0]}/{symbol_pair[1]}" if symbol_pair[1] else str(symbol_pair[0])
 
-    def _get_past_number_of_macd(self, num_of_macd: int = 14) \
+    def _get_past_number_of_macd(self, symbol_pairs: List[Tuple[TradingSymbol, TradingSymbol]],
+                                 timeframe_list: List[str], num_of_macd: int = 14) \
             -> Dict[str, Dict[str, List[Tuple[str, float]]]]:
         """
         Get the past number of MACD values
@@ -80,8 +83,8 @@ class MACDAlert(BaseAlert):
         :param num_of_macd: number of MACD values
         """
         macd_dict = defaultdict(dict)
-        for symbol_pair in self._symbol_pairs:
-            for timeframe in self._timeframe_list:
+        for symbol_pair in symbol_pairs:
+            for timeframe in timeframe_list:
                 left_close_prices, right_close_prices = self._get_left_right_close_prices(symbol_pair, timeframe)
                 res = self._get_macd_for_stocks_or_cryptos(left_close_prices, right_close_prices, num_of_macd)
                 macd_dict[self._encode_symbol_pair(symbol_pair)][timeframe] = res
@@ -178,9 +181,30 @@ class MACDAlert(BaseAlert):
                 df.to_excel(writer, sheet_name=timeframe, index=False)
         return filename
 
-    @staticmethod
-    def _process_timeframe_for_changed_macd(
-            changed_timeframes: List[str], positive_timeframes: List[str], negative_timeframes: List[str]) -> str:
+    def _process_timeframe_for_changed_macd(self, symbol_pair: Tuple[TradingSymbol, TradingSymbol],
+                                            changed_timeframes: List[str], positive_timeframes: List[str],
+                                            negative_timeframes: List[str]) -> str:
+        """
+        Process the timeframe for changed MACD
+
+        :param symbol_pair: symbol pair
+        :param changed_timeframes: list of changed timeframes
+        :param positive_timeframes: list of positive timeframes
+        :param negative_timeframes: list of negative timeframes
+
+        :return: processed timeframe string
+        """
+        if self._add_on_timeframe_list:
+            add_on_timeframe_macd = self._get_past_number_of_macd(
+                [symbol_pair], self._add_on_timeframe_list)[self._encode_symbol_pair(symbol_pair)]
+            for timeframe, values in add_on_timeframe_macd.items():
+                if np.isnan(values[0][1]):
+                    continue
+                if values[0][1] > 0:
+                    positive_timeframes.append(timeframe)
+                else:
+                    negative_timeframes.append(timeframe)
+
         pos_set_exclude_changed = set(positive_timeframes) - set(changed_timeframes)
         neg_set_exclude_changed = set(negative_timeframes) - set(changed_timeframes)
         pos_str = "+, ".join(pos_set_exclude_changed)
@@ -189,6 +213,53 @@ class MACDAlert(BaseAlert):
         neg_str = f"[{neg_str}-]" if neg_set_exclude_changed else ""
 
         return f"{pos_str} {neg_str}"
+
+    def _generate_individual_symbol_content(self, symbol_pair: Tuple[TradingSymbol, TradingSymbol],
+                                            level: int, rising_to_falling: List[str], falling_to_rising: List[str],
+                                            macd_dict: Dict[str, Dict[str, List[Tuple[str, float]]]]) \
+            -> Tuple[int, str]:
+        """
+        Generate the individual symbol content
+
+        :param symbol_pair: symbol pair
+        :param level: level of the symbol
+        :param rising_to_falling: list of rising to falling
+        :param falling_to_rising: list of falling to rising
+        :param macd_dict: mapping from symbol pair to mapping from timeframe to list of MACD values
+
+        :return: level, symbol content
+        """
+        space = " " * 4
+        symbol_pair_encoded = self._encode_symbol_pair(symbol_pair)
+        symbol_content = space * level + f"- {symbol_pair_encoded}:"
+        r_to_f, f_to_r, pos, neg = [], [], [], []
+        for timeframe, values in macd_dict[symbol_pair_encoded].items():
+            current_macd, previous_macd = values[0][1], values[1][1]
+            symbol_content += '\n' + space * (level + 1)
+            if np.isnan(current_macd) or np.isnan(previous_macd):
+                symbol_content += f"·{timeframe}: No enough data to calculate MACD"
+            else:
+                symbol_content += f"·{timeframe}: {round(previous_macd, 8)} to {round(current_macd, 8)}"
+
+            if current_macd > 0:
+                pos.append(timeframe)
+                if previous_macd < 0:
+                    f_to_r.append(timeframe)
+            else:
+                neg.append(timeframe)
+                if previous_macd > 0:
+                    r_to_f.append(timeframe)
+            if current_macd * previous_macd < 0:
+                symbol_content += "  *"
+        if r_to_f:
+            rising_to_falling.append(
+                f"{space}·{symbol_pair_encoded} {r_to_f}\n"
+                f"{space * 2}-{self._process_timeframe_for_changed_macd(symbol_pair, r_to_f, pos, neg)}")
+        if f_to_r:
+            falling_to_rising.append(
+                f"{space}·{symbol_pair_encoded} {f_to_r}\n"
+                f"{space * 2}-{self._process_timeframe_for_changed_macd(symbol_pair, f_to_r, pos, neg)}")
+        return level, symbol_content
 
     def _generate_email_content(self, macd_dict: Dict[str, Dict[str, List[Tuple[str, float]]]]) -> str:
         """
@@ -212,36 +283,8 @@ class MACDAlert(BaseAlert):
                 content += space * level + f"- {sub_sector}:\n" if sub_sector else ""
                 level += 1 if sub_sector else 0
                 for symbol_pair in symbol_pairs:
-                    symbol_pair_encoded = self._encode_symbol_pair(symbol_pair)
-                    # print individual symbol content
-                    symbol_content = space * level + f"- {symbol_pair_encoded}:"
-                    r_to_f, f_to_r, pos, neg = [], [], [], []
-                    for timeframe, values in macd_dict[symbol_pair_encoded].items():
-                        current_macd, previous_macd = values[0][1], values[1][1]
-                        symbol_content += '\n' + space * (level + 1)
-                        if np.isnan(current_macd) or np.isnan(previous_macd):
-                            symbol_content += f"·{timeframe}: No enough data to calculate MACD"
-                        else:
-                            symbol_content += f"·{timeframe}: {round(previous_macd, 8)} to {round(current_macd, 8)}"
-
-                        if current_macd > 0:
-                            pos.append(timeframe)
-                            if previous_macd < 0:
-                                f_to_r.append(timeframe)
-                        else:
-                            neg.append(timeframe)
-                            if previous_macd > 0:
-                                r_to_f.append(timeframe)
-                        if current_macd * previous_macd < 0:
-                            symbol_content += "  *"
-                    if r_to_f:
-                        rising_to_falling.append(
-                            f"{space}·{symbol_pair_encoded} {r_to_f}\n"
-                            f"{space * 2}-{self._process_timeframe_for_changed_macd(r_to_f, pos, neg)}")
-                    if f_to_r:
-                        falling_to_rising.append(
-                            f"{space}·{symbol_pair_encoded} {f_to_r}\n"
-                            f"{space * 2}-{self._process_timeframe_for_changed_macd(f_to_r, pos, neg)}")
+                    level, symbol_content = self._generate_individual_symbol_content(
+                        symbol_pair, level, rising_to_falling, falling_to_rising, macd_dict)
 
                     content += symbol_content + "\n\n"
                 level -= 1 if sub_sector else 0
@@ -254,7 +297,7 @@ class MACDAlert(BaseAlert):
         """
         Run the alert
         """
-        macd_dict = self._get_past_number_of_macd()
+        macd_dict = self._get_past_number_of_macd(self._symbol_pairs, self._timeframe_list)
         self._tg_bot.send_message(f"MACD values for {list(macd_dict.keys())}")
         if self._xlsx:
             for symbol_pair_encoded, macd_values in macd_dict.items():
@@ -278,5 +321,6 @@ if __name__ == "__main__":
     # macd_symbols_file = "macd_symbols.csv"
     macd_symbols_file = "test.csv"
     alert = MACDAlert("macd_alert_daily", ["1D", "2D", "3D"],
-                      macd_symbols_file, email=False, xlsx=False, tg_type="TEST")
+                      macd_symbols_file, ["1W", "1M"],
+                      email=False, xlsx=False, tg_type="TEST")
     alert.run()
