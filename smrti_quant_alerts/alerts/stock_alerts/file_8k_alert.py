@@ -8,6 +8,7 @@ import pandas as pd
 from smrti_quant_alerts.email_api import EmailApi
 from smrti_quant_alerts.stock_crypto_api import StockApi
 from smrti_quant_alerts.alerts.base_alert import BaseAlert
+from smrti_quant_alerts.data_type import StockSymbol
 
 logging.basicConfig(level=logging.INFO)
 
@@ -26,6 +27,23 @@ class File8KAlert(BaseAlert):
         self._symbols = set(symbols) if symbols else None
         self._file_name = f"{self._alert_name}_{uuid.uuid4()}.csv"
 
+    def _generate_outstanding_shares(self, symbols: List[StockSymbol]) -> str:
+        """
+        Generate outstanding shares for the list of symbols
+
+        :param symbols: list of StockSymbol
+
+        :return: outstanding shares formatted email content
+        """
+        outstanding_shares = self._stock_api.get_outstanding_shares(symbols)
+        shares_content = ""
+        for symbol, shares in outstanding_shares.items():
+            if shares and len(shares) == 4:
+                has_increased = shares[1] > shares[3]
+                shares_content += f"~ {symbol}: {shares[3]} ({shares[2]}) -> {shares[1]} ({shares[0]}) " \
+                                  f"{'+' if has_increased else '-'}\n\n"
+        return shares_content
+
     def run(self) -> None:
         """
         Run the alert
@@ -39,6 +57,7 @@ class File8KAlert(BaseAlert):
         df.to_csv(self._file_name, index=False)
         # email content
         content = f"Filter by symbols: {self._symbols}" if self._symbols else ""
+        content += f"\n\n{self._generate_outstanding_shares([StockSymbol(symbol=s) for s in sorted(self._symbols)])}"
 
         # send email
         self._email_api.send_email(self._alert_name, content, [self._file_name])
@@ -50,5 +69,5 @@ class File8KAlert(BaseAlert):
 
 
 if __name__ == "__main__":
-    alert = File8KAlert("File8KAlert")
+    alert = File8KAlert("File8KAlert", symbols=["TSLA", "ALAB", "TEM", "CRM", "RKLB", "SHOP"])
     alert.run()

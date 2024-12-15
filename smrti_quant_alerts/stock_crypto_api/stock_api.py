@@ -18,9 +18,11 @@ from smrti_quant_alerts.stock_crypto_api.utility import get_datetime_now, get_da
 class StockApi:
     FMP_API_KEY = Config.TOKENS["FMP_API_KEY"]
     EODHD_API_KEY = Config.TOKENS["EODHD_API_KEY"]
+    SEC_API_KEY = Config.TOKENS["SEC_API_KEY"]
     SP_500_SOURCE_URL = Config.API_ENDPOINTS["SP_500_SOURCE_URL"]
     FMP_API_URL = Config.API_ENDPOINTS["FMP_API_URL"]
     EODHD_API_URL = Config.API_ENDPOINTS["EODHD_API_URL"]
+    SEC_API_URL = Config.API_ENDPOINTS["SEC_API_URL"]
 
     PWD = Config.PROJECT_DIR
 
@@ -436,3 +438,26 @@ class StockApi:
                 filtered_res.append(filing)
                 symbol_set.remove(filing.get("symbol", None))
         return filtered_res
+
+    @error_handling("secapi", default_val=defaultdict(list))
+    def get_outstanding_shares(self, stock_list: List[StockSymbol]) -> Dict[StockSymbol, List[Union[str, float]]]:
+        """
+        Get outstanding shares
+
+        :param stock_list: [StockSymbol, ...]
+        :return: {StockSymbol: [period_new, shares_new, period_old, shares_old]}
+        """
+        res = defaultdict(list)
+        for stock in stock_list:
+            api_url = f"{self.SEC_API_URL}/float?ticker={stock.ticker}&token={self.SEC_API_KEY}"
+            response = requests.get(api_url, timeout=10).json()
+            data = response.get("data", [])
+            if len(data) >= 2:
+                for i in range(2):
+                    outstanding_shares = data[i].get("float", {}).get("outstandingShares", [])
+                    if len(outstanding_shares) == 0:
+                        res[stock] = []
+                        break
+                    res[stock].append(outstanding_shares[0].get("period", ""))
+                    res[stock].append(outstanding_shares[0].get("value", 0))
+        return res
