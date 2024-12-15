@@ -39,7 +39,7 @@
   },
 
   "<stock_alert_example_name>": {
-    "alert_type": "stock_alert",
+    "alert_type": "stock_price_outperformer",
     "alert_input_args": {
       "alert_name": "<stock_alert_example_name>",
       "timeframe_list": ["1d", "5d", "1M", "3M", "6M", "1y", "3y", "5y"],

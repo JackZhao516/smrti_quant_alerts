@@ -3,7 +3,7 @@ import logging
 
 from smrti_quant_alerts.settings import Config
 from smrti_quant_alerts.alerts import CoingeckoMarketCapAlert, BinancePriceVolumeAlert, \
-    CGAltsAlert, SpotOverMAAlert, FutureFundingRate, StockAlert, CoingeckoPriceIncreaseAlert, \
+    CGAltsAlert, SpotOverMAAlert, FutureFundingRate, StockPriceTopPerformerAlert, CoingeckoPriceIncreaseAlert, \
     MACDAlert, File8KAlert
 from smrti_quant_alerts.utility import run_alert
 
@@ -20,7 +20,7 @@ alert_type_to_alert_class = {
     "meme_alert": SpotOverMAAlert,
     "sequential": SpotOverMAAlert,
     "funding_rate": FutureFundingRate,
-    "stock_alert": StockAlert,
+    "stock_price_outperformer": StockPriceTopPerformerAlert,
     "price_increase_alert": CoingeckoPriceIncreaseAlert,
     "macd_alert": MACDAlert,
     "file_8k": File8KAlert

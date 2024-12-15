@@ -18,13 +18,13 @@ from smrti_quant_alerts.db import init_database_runtime, close_database, StockAl
 logging.basicConfig(level=logging.INFO)
 
 
-class StockAlert(BaseAlert, StockApi):
+class StockPriceTopPerformerAlert(BaseAlert, StockApi):
     def __init__(self, alert_name: str, tg_type: str = "TEST",
                  timeframe_list: Optional[List[str]] = None,
                  email: bool = True, ai_analysis: bool = False,
                  daily_volume_threshold: int = 0) -> None:
         """
-        StockAlert class for sending
+        StockPriceTopPerformerAlert class for sending
         :param alert_name: alert name
         :param tg_type: telegram type
         :param timeframe_list: list of timeframe
@@ -289,10 +289,10 @@ class StockAlert(BaseAlert, StockApi):
 
 if __name__ == '__main__':
     start = time.time()
-    stock_alert = StockAlert("stock_alert", tg_type="TEST", email=False,
-                             # timeframe_list=["1m"],
-                             # timeframe_list=["1m", "3m", "6m", "1y", "3y", "5y", "10y"],
-                             timeframe_list=["3m", "6m", "1y"],
-                             ai_analysis=False, daily_volume_threshold=0)
+    stock_alert = StockPriceTopPerformerAlert("stock_alert", tg_type="TEST", email=False,
+                                              # timeframe_list=["1m"],
+                                              # timeframe_list=["1m", "3m", "6m", "1y", "3y", "5y", "10y"],
+                                              timeframe_list=["3m", "6m", "1y"],
+                                              ai_analysis=False, daily_volume_threshold=0)
     stock_alert.run()
     print(f"Time taken: {round(time.time() - start, 2)} seconds")
