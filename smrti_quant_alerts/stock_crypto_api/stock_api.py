@@ -1,18 +1,21 @@
 import datetime
+import warnings
 from functools import reduce
 from multiprocessing.pool import ThreadPool
 from typing import List, Dict, Union, Optional, Iterable, Tuple
 from decimal import Decimal
 from collections import defaultdict
 
-
 import requests
 import pandas as pd
+import numpy as np
 
 from smrti_quant_alerts.exception import error_handling
 from smrti_quant_alerts.settings import Config
 from smrti_quant_alerts.data_type import StockSymbol
 from smrti_quant_alerts.stock_crypto_api.utility import get_datetime_now, get_date_from_timestamp
+
+warnings.filterwarnings('ignore', category=RuntimeWarning)
 
 
 class StockApi:
@@ -278,46 +281,53 @@ class StockApi:
                 res[stock] = Decimal(response[0].get("marketCap", 0))
         return res
 
-    def get_semi_year_stocks_stats(self, stock_list: List[StockSymbol]) -> Dict[StockSymbol, Dict[str, str]]:
+    def get_stocks_stats_by_num_of_timeframe(self, stock_list: List[StockSymbol], timeframe: str, num: int) \
+            -> Dict[StockSymbol, List[Dict[str, str]]]:
         """
         Get stock free cash flow, net income, free cash flow margin
 
         :param stock_list: [StockSymbol, ...]
-        :return: {StockSymbol: {"free_cash_flow": Decimal, "net_income": Decimal,
-                  "free_cash_flow_margin": Decimal}}
+        :param timeframe: str, "quarter" or "semi" or "annual"
+        :param num: int, number of timeframes
+        :return: {StockSymbol: {"free_cash_flow": str, "net_income": str,
+                  "free_cash_flow_margin": str, "revenue": str}}
         """
-        res = defaultdict(dict)
+        res = defaultdict(list)
+        timeframes = {"quarter": 1, "semi": 2, "annual": 4}
+        empty_res = [{"free_cash_flow": "0", "net_income": "0", "free_cash_flow_margin": "0", "revenue": "0"}]
 
         @error_handling("financialmodelingprep", default_val=None)
-        def get_semi_year_stock_stats(stock: StockSymbol) -> None:
-            res[stock] = {"free_cash_flow": "0", "net_income": "0",
-                          "free_cash_flow_margin": "0"}
+        def get_stock_stats_by_num_of_quarter(stock: StockSymbol) -> None:
             api_url = f"{self.FMP_API_URL}/v3/income-statement/{stock.ticker}?" \
-                      f"period=quarter&limit=2&apikey={self.FMP_API_KEY}"
+                      f"period=quarter&limit={timeframes[timeframe] * num}&apikey={self.FMP_API_KEY}"
             response = requests.get(api_url, timeout=10).json()
             if not response:
+                res[stock] = empty_res * num
                 return
-            revenue, net_income = 0, 0
+            revenues, net_incomes = np.zeros(num), np.zeros(num)
 
-            for quarter in response:
-                revenue += quarter.get("revenue", 0)
-                net_income += quarter.get("netIncome", 0)
+            for i, quarter in enumerate(response):
+                revenues[i // timeframes[timeframe]] += quarter.get("revenue", 0)
+                net_incomes[i // timeframes[timeframe]] += quarter.get("netIncome", 0)
 
             api_url = f"{self.FMP_API_URL}/v3/cash-flow-statement/{stock.ticker}?" \
-                      f"period=quarter&limit=2&apikey={self.FMP_API_KEY}"
+                      f"period=quarter&limit={timeframes[timeframe] * num}&apikey={self.FMP_API_KEY}"
             response = requests.get(api_url, timeout=10).json()
             if not response:
+                res[stock] = empty_res * num
                 return
-            free_cash_flow = 0
-            for quarter in response:
-                free_cash_flow += quarter.get("freeCashFlow", 0)
+            free_cash_flows = np.zeros(num)
+            for i, quarter in enumerate(response):
+                free_cash_flows[i // timeframes[timeframe]] += quarter.get("freeCashFlow", 0)
 
-            free_cash_flow_margin = free_cash_flow / revenue if revenue else 0
-            res[stock] = {"free_cash_flow": f"{round(free_cash_flow, 4)}", "net_income": f"{round(net_income, 4)}",
-                          "free_cash_flow_margin": f"{round(free_cash_flow_margin, 4)}"}
-
+            free_cash_flow_margins = free_cash_flows / revenues
+            res[stock] = [{"free_cash_flow": f"{round(free_cash_flow, 4)}", "net_income": f"{round(net_income, 4)}",
+                          "free_cash_flow_margin": f"{round(free_cash_flow_margin, 4)}",
+                           "revenue": f"{round(revenue, 4)}"}
+                          for free_cash_flow, net_income, free_cash_flow_margin, revenue in
+                          zip(free_cash_flows, net_incomes, free_cash_flow_margins, revenues)]
         pool = ThreadPool(8)
-        pool.map(get_semi_year_stock_stats, stock_list)
+        pool.map(get_stock_stats_by_num_of_quarter, stock_list)
         pool.close()
         pool.join()
 
@@ -460,4 +470,40 @@ class StockApi:
                         break
                     res[stock].append(outstanding_shares[0].get("period", ""))
                     res[stock].append(outstanding_shares[0].get("value", 0))
+        return res
+
+    def get_stocks_enterprise_value(self, stock_list: List[StockSymbol]) -> Dict[StockSymbol, List[Union[str, float]]]:
+        """
+        Get enterprise value
+
+        :param stock_list: [StockSymbol, ...]
+        :return: {StockSymbol: [date, enterprise_value]}
+        """
+        res = defaultdict(list)
+        for stock in stock_list:
+            api_url = f"{self.FMP_API_URL}/v3/enterprise-value/{stock.ticker}?period=quarter&apikey={self.FMP_API_KEY}"
+            response = requests.get(api_url, timeout=10).json()
+            if response and len(response) > 0:
+                res[stock] = [response[0].get("date", ""), response[0].get("enterpriseValue", 0)]
+        return res
+
+    def get_stocks_growth_score(self, stock_list: List[StockSymbol]) -> Dict[StockSymbol, Dict[str, str]]:
+        """
+        Get stock growth score
+        Growth Score = most 2 recent quarterly revenue YOY growth + avg(2 recent quarterly FCF margin)
+
+        :param stock_list: [StockSymbol, ...]
+        :return: {StockSymbol: {"growth_score": str}}
+        """
+        res = defaultdict(dict)
+        stock_stats = self.get_stocks_stats_by_num_of_timeframe(stock_list, "quarter", 6)
+        for stock, stats in stock_stats.items():
+            res[stock]["growth_score"] = "0"
+            if stats and len(stats) == 6 and float(stats[4]["revenue"]) > 0 and float(stats[5]["revenue"]) > 0:
+                revenue_yoy_growth_0 = (float(stats[0]["revenue"]) / float(stats[4]["revenue"]) - 1) * 100
+                revenue_yoy_growth_1 = (float(stats[1]["revenue"]) / float(stats[5]["revenue"]) - 1) * 100
+                avg_fcf_margin = (float(stats[0]["free_cash_flow_margin"]) +
+                                  float(stats[1]["free_cash_flow_margin"])) * 50
+                res[stock]["growth_score"] = str(revenue_yoy_growth_0 + revenue_yoy_growth_1 + avg_fcf_margin)
+
         return res

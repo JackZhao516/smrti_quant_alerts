@@ -45,7 +45,9 @@
       "timeframe_list": ["1d", "5d", "1M", "3M", "6M", "1y", "3y", "5y"],
       "tg_type": "STOCK",
       "email": true/false,
-      "ai_analysis": true/false
+      "time_frame_sma_filter_ai_analysis": true/false,
+      "newly_added_stock_ai_analysis": true/false,
+      "growth_score_filter_ai_analysis": true/false
     },
     "alert_params": {},
     "run_time_input_args": {
