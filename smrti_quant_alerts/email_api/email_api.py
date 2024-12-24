@@ -21,14 +21,14 @@ class EmailApi:
 
     @error_handling("email", default_val=None)
     def send_email(self, subject: str, body: str, csv_file_names: List[str] = None,
-                   pdf_file_names: Iterable[str] = None) -> None:
+                   pdf_or_xlsx_file_names: Iterable[str] = None) -> None:
         """
         send email with message and csv file
 
         :param subject: email subject
         :param body: email body
         :param csv_file_names: list of csv file path
-        :param pdf_file_names: pdf file path
+        :param pdf_or_xlsx_file_names: pdf or xlsx file path
         """
         if not self.sender_email or not self.receiver_emails or not self.password:
             return
@@ -46,8 +46,8 @@ class EmailApi:
                 attachment.add_header("Content-Disposition", "attachment", filename=csv_file_name)
                 message.attach(attachment)
 
-        if pdf_file_names:
-            for file_name in pdf_file_names:
+        if pdf_or_xlsx_file_names:
+            for file_name in pdf_or_xlsx_file_names:
                 with open(file_name, "rb") as fp:
                     attachment = MIMEApplication(fp.read(), _subtype="pdf")
                 attachment.add_header("Content-Disposition", "attachment", filename=file_name)

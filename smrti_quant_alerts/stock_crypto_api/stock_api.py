@@ -7,7 +7,6 @@ from decimal import Decimal
 from collections import defaultdict
 
 import requests
-import pandas as pd
 import numpy as np
 
 from smrti_quant_alerts.exception import error_handling
@@ -22,7 +21,6 @@ class StockApi:
     FMP_API_KEY = Config.TOKENS["FMP_API_KEY"]
     EODHD_API_KEY = Config.TOKENS["EODHD_API_KEY"]
     SEC_API_KEY = Config.TOKENS["SEC_API_KEY"]
-    SP_500_SOURCE_URL = Config.API_ENDPOINTS["SP_500_SOURCE_URL"]
     FMP_API_URL = Config.API_ENDPOINTS["FMP_API_URL"]
     EODHD_API_URL = Config.API_ENDPOINTS["EODHD_API_URL"]
     SEC_API_URL = Config.API_ENDPOINTS["SEC_API_URL"]
@@ -49,14 +47,16 @@ class StockApi:
 
         :return: [StockSymbol, ...]
         """
-        stock_list = []
-        link = self.SP_500_SOURCE_URL
-        df = pd.read_html(link, header=0)[0]
-        for i, row in df.iterrows():
-            stock_list.append(StockSymbol(row["Symbol"], row["Security"], row["GICS Sector"],
-                                          row["GICS Sub-Industry"], row["Headquarters Location"],
-                                          row["CIK"], row["Founded"], sp500=True))
-        return stock_list
+        api_url = f"{self.FMP_API_URL}/v3/sp500_constituent?apikey={self.FMP_API_KEY}"
+        response = requests.get(api_url, timeout=5)
+        response = response.json()
+
+        stock_list = [StockSymbol(stock["symbol"], stock["name"], stock["sector"],
+                                  stock["subSector"], stock['headQuarter'], stock["cik"], stock["founded"],
+                                  sp500=True) for stock in response
+                      if stock["symbol"] and stock["name"]]
+
+        return sorted(stock_list, key=lambda x: x.ticker)
 
     @error_handling("financialmodelingprep", default_val=[])
     def get_nasdaq_list(self) -> List[StockSymbol]:
@@ -182,16 +182,19 @@ class StockApi:
                 if stock.ticker_alias:
                     stocks.append(StockSymbol(stock.ticker_alias))
                 stocks.append(stock)
-        stock_str = ",".join([stock.ticker for stock in stocks])
 
-        api_url = f"{self.FMP_API_URL}/v3/profile/{stock_str}?apikey={self.FMP_API_KEY}"
-        response = requests.get(api_url, timeout=10)
-        response = response.json()
+        for i in range(len(stocks) // 100 + 1):
+            stocks_sub = stocks[i * 100:(i + 1) * 100]
+            stock_str = ",".join([stock.ticker for stock in stocks_sub])
 
-        res += [StockSymbol(stock["symbol"], stock["companyName"], stock["sector"],
-                            stock["industry"], f"{stock['city']}, {stock['state']}, {stock['country']}",
-                            stock["cik"], stock["ipoDate"])
-                for stock in response]
+            api_url = f"{self.FMP_API_URL}/v3/profile/{stock_str}?apikey={self.FMP_API_KEY}"
+            response = requests.get(api_url, timeout=10)
+            response = response.json()
+
+            res += [StockSymbol(stock["symbol"], stock["companyName"], stock["sector"],
+                                stock["industry"], f"{stock['city']}, {stock['state']}, {stock['country']}",
+                                stock["cik"], stock["ipoDate"])
+                    for stock in response]
 
         # preserve the order
         result = []
@@ -233,6 +236,31 @@ class StockApi:
             last_market_cap = cur_market_cap
 
         return res[:top_n]
+
+    @error_handling("financialmodelingprep", default_val=[])
+    def get_top_market_cap_stocks_by_market_cap_threshold(self, market_cap_threshold: int = 10 ** 6) \
+            -> List[StockSymbol]:
+        """
+        Get top market cap stocks by market cap threshold
+
+        :param market_cap_threshold: int
+
+        :return: [StockSymbol, ...]
+        """
+        all_stocks = self.get_nasdaq_list() + self.get_nyse_list()
+        all_stocks = [stock for stock in all_stocks if stock.ticker and len(stock.ticker) < 5]
+        res = []
+        n = len(all_stocks) // 100 + 1
+        for i in range(n):
+            symbols = ",".join([stock.ticker for stock in all_stocks[i * 100:(i + 1) * 100]])
+            api_url = f"{self.FMP_API_URL}/v3/quote/{symbols}?apikey={self.FMP_API_KEY}"
+            response = requests.get(api_url, timeout=10)
+            response = response.json()
+            for stock in response:
+                if stock.get("marketCap", 0) >= market_cap_threshold:
+                    res.append(StockSymbol(stock["symbol"], stock["name"]))
+
+        return res
 
     @error_handling("financialmodelingprep", default_val={})
     def get_close_price_sma_status(self, stock_list: List[StockSymbol], num_of_days_list: List[int],
@@ -290,29 +318,33 @@ class StockApi:
         :param timeframe: str, "quarter" or "semi" or "annual"
         :param num: int, number of timeframes
         :return: {StockSymbol: {"free_cash_flow": str, "net_income": str,
-                  "free_cash_flow_margin": str, "revenue": str}}
+                  "free_cash_flow_margin": str, "revenue": str,
+                  "gross_margin": str, "operating_margin": str}}
         """
         res = defaultdict(list)
         timeframes = {"quarter": 1, "semi": 2, "annual": 4}
-        empty_res = [{"free_cash_flow": "0", "net_income": "0", "free_cash_flow_margin": "0", "revenue": "0"}]
+        empty_res = [defaultdict(lambda: "0")]
 
         @error_handling("financialmodelingprep", default_val=None)
         def get_stock_stats_by_num_of_quarter(stock: StockSymbol) -> None:
             api_url = f"{self.FMP_API_URL}/v3/income-statement/{stock.ticker}?" \
                       f"period=quarter&limit={timeframes[timeframe] * num}&apikey={self.FMP_API_KEY}"
-            response = requests.get(api_url, timeout=10).json()
+            response = requests.get(api_url, timeout=15).json()
             if not response:
                 res[stock] = empty_res * num
                 return
-            revenues, net_incomes = np.zeros(num), np.zeros(num)
+            revenues, net_incomes, gross_margins, operating_margins = \
+                np.zeros(num), np.zeros(num), np.zeros(num), np.zeros(num)
 
             for i, quarter in enumerate(response):
                 revenues[i // timeframes[timeframe]] += quarter.get("revenue", 0)
                 net_incomes[i // timeframes[timeframe]] += quarter.get("netIncome", 0)
+                gross_margins[i // timeframes[timeframe]] += quarter.get("grossProfitRatio", 0) * 100
+                operating_margins[i // timeframes[timeframe]] += quarter.get("operatingIncomeRatio", 0) * 100
 
             api_url = f"{self.FMP_API_URL}/v3/cash-flow-statement/{stock.ticker}?" \
                       f"period=quarter&limit={timeframes[timeframe] * num}&apikey={self.FMP_API_KEY}"
-            response = requests.get(api_url, timeout=10).json()
+            response = requests.get(api_url, timeout=15).json()
             if not response:
                 res[stock] = empty_res * num
                 return
@@ -323,9 +355,12 @@ class StockApi:
             free_cash_flow_margins = free_cash_flows / revenues
             res[stock] = [{"free_cash_flow": f"{round(free_cash_flow, 4)}", "net_income": f"{round(net_income, 4)}",
                           "free_cash_flow_margin": f"{round(free_cash_flow_margin, 4)}",
-                           "revenue": f"{round(revenue, 4)}"}
-                          for free_cash_flow, net_income, free_cash_flow_margin, revenue in
-                          zip(free_cash_flows, net_incomes, free_cash_flow_margins, revenues)]
+                           "revenue": f"{round(revenue, 4)}", "gross_margin": f"{round(gross_margin, 4)}",
+                           "operating_margin": f"{round(operating_margin, 4)}"}
+                          for free_cash_flow, net_income, free_cash_flow_margin,
+                          revenue, gross_margin, operating_margin in
+                          zip(free_cash_flows, net_incomes, free_cash_flow_margins,
+                              revenues, gross_margins, operating_margins)]
         pool = ThreadPool(8)
         pool.map(get_stock_stats_by_num_of_quarter, stock_list)
         pool.close()
@@ -346,7 +381,7 @@ class StockApi:
         def get_stock_revenue_cagr(stock: StockSymbol) -> None:
             api_url = f"{self.FMP_API_URL}/v3/income-statement/{stock.ticker}?" \
                       f"period=quarter&limit=24&apikey={self.FMP_API_KEY}"
-            response = requests.get(api_url, timeout=10).json()
+            response = requests.get(api_url, timeout=15).json()
             res[stock] = {f"revenue_{i}y_cagr": "0%" for i in [1, 3, 5]}
             if not response:
                 return
@@ -472,27 +507,48 @@ class StockApi:
                     res[stock].append(outstanding_shares[0].get("value", 0))
         return res
 
-    def get_stocks_enterprise_value(self, stock_list: List[StockSymbol]) -> Dict[StockSymbol, List[Union[str, float]]]:
+    @error_handling("financialmodelingprep", default_val=defaultdict(lambda: 0))
+    def get_stocks_enterprise_value(self, stock_list: List[StockSymbol]) -> Dict[StockSymbol, float]:
         """
         Get enterprise value
 
         :param stock_list: [StockSymbol, ...]
-        :return: {StockSymbol: [date, enterprise_value]}
+        :return: {StockSymbol: enterprise_value}
         """
-        res = defaultdict(list)
+        res = defaultdict(lambda: 0)
         for stock in stock_list:
             api_url = f"{self.FMP_API_URL}/v3/enterprise-value/{stock.ticker}?period=quarter&apikey={self.FMP_API_KEY}"
             response = requests.get(api_url, timeout=10).json()
             if response and len(response) > 0:
-                res[stock] = [response[0].get("date", ""), response[0].get("enterpriseValue", 0)]
+                res[stock] = response[0].get("enterpriseValue", 0)
         return res
 
-    def get_stocks_growth_score(self, stock_list: List[StockSymbol]) -> Dict[StockSymbol, Dict[str, str]]:
+    @error_handling("financialmodelingprep", default_val=defaultdict(lambda: 0))
+    def get_stocks_revenue(self, stock_list: List[StockSymbol]) -> Dict[StockSymbol, float]:
+        """
+        Get stock revenue
+
+        :param stock_list: [StockSymbol, ...]
+        :return: {StockSymbol: revenue}
+        """
+        res = defaultdict(lambda: 0)
+        for stock in stock_list:
+            api_url = f"{self.FMP_API_URL}/v3/income-statement/{stock.ticker}?" \
+                      f"period=quarter&limit=1&apikey={self.FMP_API_KEY}"
+            response = requests.get(api_url, timeout=10).json()
+            if response and len(response) > 0:
+                res[stock] = response[0].get("revenue", 0)
+        return res
+
+    @error_handling("financialmodelingprep", default_val=defaultdict(dict))
+    def get_stocks_growth_score(self, stock_list: List[StockSymbol], full: bool = False) \
+            -> Dict[StockSymbol, Dict[str, str]]:
         """
         Get stock growth score
         Growth Score = most 2 recent quarterly revenue YOY growth + avg(2 recent quarterly FCF margin)
 
         :param stock_list: [StockSymbol, ...]
+        :param full: bool, whether to return full stats
         :return: {StockSymbol: {"growth_score": str}}
         """
         res = defaultdict(dict)
@@ -502,8 +558,65 @@ class StockApi:
             if stats and len(stats) == 6 and float(stats[4]["revenue"]) > 0 and float(stats[5]["revenue"]) > 0:
                 revenue_yoy_growth_0 = (float(stats[0]["revenue"]) / float(stats[4]["revenue"]) - 1) * 100
                 revenue_yoy_growth_1 = (float(stats[1]["revenue"]) / float(stats[5]["revenue"]) - 1) * 100
-                avg_fcf_margin = (float(stats[0]["free_cash_flow_margin"]) +
-                                  float(stats[1]["free_cash_flow_margin"])) * 50
-                res[stock]["growth_score"] = str(revenue_yoy_growth_0 + revenue_yoy_growth_1 + avg_fcf_margin)
+                revenue_yoy_sum = revenue_yoy_growth_0 + revenue_yoy_growth_1
+                fcf_margin_0 = float(stats[0]["free_cash_flow_margin"]) * 100
+                fcf_margin_1 = float(stats[1]["free_cash_flow_margin"]) * 100
+                avg_fcf_margin = (fcf_margin_0 + fcf_margin_1) / 2
+                growth_score = str(revenue_yoy_growth_0 + revenue_yoy_growth_1 + avg_fcf_margin)
+
+                res[stock]["growth_score"] = growth_score if growth_score != "inf" else "0"
+                if full:
+                    res[stock]["revenue_yoy_growth_latest"] = f"{revenue_yoy_growth_0:.2f}%"
+                    res[stock]["revenue_yoy_growth_second_latest"] = f"{revenue_yoy_growth_1:.2f}%"
+                    res[stock]["revenue_yoy_growth_sum"] = f"{revenue_yoy_sum:.2f}%"
+                    res[stock]["fcf_margin_latest"] = f"{fcf_margin_0:.2f}%"
+                    res[stock]["fcf_margin_second_latest"] = f"{fcf_margin_1:.2f}%"
+                    res[stock]["fcf_margin_avg"] = f"{avg_fcf_margin:.2f}%"
 
         return res
+
+    @error_handling("financialmodelingprep", default_val=defaultdict(list))
+    def get_stocks_quarterly_revenue_yoy_growth(self, stock_list: List[StockSymbol], num_of_quarters: int) \
+            -> Dict[StockSymbol, List[str]]:
+        """
+        Get stock quarterly revenue growth
+
+        :param stock_list: [StockSymbol, ...]
+        :param num_of_quarters: int
+        :return: {StockSymbol: ["<revenue_growth>", ...]}
+        """
+        res = defaultdict(list)
+        for stock in stock_list:
+            res[stock] = [0] * num_of_quarters
+            api_url = f"{self.FMP_API_URL}/v3/income-statement/{stock.ticker}?" \
+                      f"period=quarter&limit={num_of_quarters * 2}&apikey={self.FMP_API_KEY}"
+            response = requests.get(api_url, timeout=10).json()
+            if not response:
+                continue
+            revenues = [quarter.get("revenue", 0) for quarter in response]
+            if len(revenues) < num_of_quarters * 2:
+                continue
+            for i in range(num_of_quarters):
+                if revenues[i + num_of_quarters] == 0:
+                    break
+                revenue_growth = (revenues[i] / revenues[i + num_of_quarters] - 1) * 100
+                res[stock][i] = f"{revenue_growth:.2f}"
+
+        return res
+
+
+if __name__ == "__main__":
+    stock_api = StockApi()
+    #
+    # top_market_cap_stocks = stock_api.get_top_market_cap_stocks_by_market_cap_threshold(10 ** 6)
+    # print(len(top_market_cap_stocks))
+    #
+    # revenue_growth = stock_api.get_stocks_quarterly_revenue_yoy_growth([StockSymbol("HOOD")], 8)
+    # print(revenue_growth)
+
+    stock_stats = stock_api.get_stocks_stats_by_num_of_timeframe([StockSymbol("PGR")], "quarter", 8)
+    print(stock_stats)
+
+    # growth_score = stock_api.get_stocks_growth_score([StockSymbol("NYC")], full=True)
+    # print(growth_score)
+

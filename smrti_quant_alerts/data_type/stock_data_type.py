@@ -22,6 +22,13 @@ class StockSymbol(TradingSymbol):
         self.location = location
         self.cik = cik
         self.founded_time = founded_time
+        if symbol in StockSymbol.symbol_info_map and StockSymbol.symbol_info_map[symbol].has_stock_info:
+            self.security_name = StockSymbol.symbol_info_map[symbol].security_name
+            self.gics_sector = StockSymbol.symbol_info_map[symbol].gics_sector
+            self.gics_sub_industry = StockSymbol.symbol_info_map[symbol].gics_sub_industry
+            self.location = StockSymbol.symbol_info_map[symbol].location
+            self.cik = StockSymbol.symbol_info_map[symbol].cik
+            self.founded_time = StockSymbol.symbol_info_map[symbol].founded_time
 
         if sp500:
             StockSymbol.sp500_set.add(self._symbol)

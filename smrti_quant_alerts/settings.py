@@ -15,7 +15,6 @@ class Config:
     TOKENS = None
     SETTINGS = None
     API_ENDPOINTS = {
-        "SP_500_SOURCE_URL": "https://en.wikipedia.org/wiki/List_of_S%26P_500_companies#S&P_500_component_stocks",
         "FMP_API_URL": "https://financialmodelingprep.com/api",
         "EODHD_API_URL": "https://eodhd.com/api",
         "PERPLEXITY_API_URL": "https://api.perplexity.ai",
@@ -114,8 +113,11 @@ class Config:
             elif alert_type == "price_increase_alert":
                 self._validate_individual_configs([], ["top_range", "top_n", "timeframe", "tg_type"],
                                                   alert_setting, alert_name)
-            elif alert_type == "stock_alert":
-                self._validate_individual_configs([], ["tg_type", "timeframe_list", "email"],
+            elif alert_type == "stock_price_outperformer":
+                self._validate_individual_configs([], ["alert_name", "tg_type", "timeframe_list", "email",
+                                                       "time_frame_sma_filter_ai_analysis",
+                                                       "newly_added_stock_ai_analysis",
+                                                       "growth_score_filter_ai_analysis"],
                                                   alert_setting, alert_name)
             elif alert_type == "alts_alert":
                 self._validate_individual_configs([], ["tg_type"],

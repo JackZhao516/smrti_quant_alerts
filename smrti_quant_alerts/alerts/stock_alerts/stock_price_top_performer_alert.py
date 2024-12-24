@@ -136,7 +136,9 @@ class StockPriceTopPerformerAlert(BaseAlert, StockApi):
                                        email_message, [csv_file_name], pdf_files)
             if os.path.exists(csv_file_name):
                 os.remove(csv_file_name)
-        self._pdf_api.delete_pdf()
+        for pdf_file in pdf_files:
+            if os.path.exists(pdf_file):
+                os.remove(pdf_file)
 
     def get_stocks_ai_analysis_for_newly_added(self, timeframe_stocks_dict: Dict[str, List[StockSymbol]],
                                                is_newly_added_dict: Dict[StockSymbol, bool],
@@ -345,8 +347,8 @@ class StockPriceTopPerformerAlert(BaseAlert, StockApi):
 if __name__ == '__main__':
     start = time.time()
     stock_alert = StockPriceTopPerformerAlert("stock_alert", tg_type="TEST", email=False,
-                                              # timeframe_list=["1m"],
-                                              timeframe_list=["1m", "3m", "6m", "1y", "3y", "5y", "10y"],
+                                              timeframe_list=["1m"],
+                                              # timeframe_list=["1m", "3m", "6m", "1y", "3y", "5y", "10y"],
                                               # timeframe_list=["3m", "6m", "1y"],
                                               time_frame_sma_filter_ai_analysis=True,
                                               newly_added_stock_ai_analysis=True,

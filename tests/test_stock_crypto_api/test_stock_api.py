@@ -23,16 +23,15 @@ class TestStockApi(unittest.TestCase):
         self.stock_api = StockApi()
 
     def test_get_sp_500_list(self) -> None:
-        with mock.patch("pandas.read_html",
-                        return_value=[pd.DataFrame({"Symbol": ["AAPL"], "Security": ["Apple Inc."],
-                                                    "GICS Sector": ["Information Technology"],
-                                                    "GICS Sub-Industry": ["Technology Hardware"],
-                                                    "Headquarters Location": ["Cupertino, California"],
-                                                    "CIK": ["320193"], "Founded": ["1977"]})]):
+        with mock.patch("requests.get", return_value=mock.Mock(json=lambda: [{"symbol": "SPGI", "name": "S&P Global",
+                                                                              "sector": "Financials",
+                                                                              "subSector": "Financial Exchanges & Data",
+                                                                              "headQuarter": "New York City, New York",
+                                                                              "dateFirstAdded": "1957-03-04",
+                                                                              "cik": "0000064040",
+                                                                              "founded": "1917"}])):
             stock_list = self.stock_api.get_sp_500_list()
-            self.assertEqual(stock_list, [StockSymbol("AAPL", "Apple Inc.", "Information Technology",
-                                                      "Technology Hardware", "Cupertino, California",
-                                                      "320193", "1977", sp500=True)])
+            self.assertEqual(stock_list, [StockSymbol("SPGI", "S&P Global", sp500=True)])
 
     def test_get_nasdaq_list(self) -> None:
         with mock.patch("requests.get", return_value=mock.Mock(json=lambda: [{"symbol": "AAPL", "name": "Apple Inc.",
