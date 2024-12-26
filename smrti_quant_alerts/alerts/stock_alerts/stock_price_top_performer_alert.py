@@ -8,7 +8,7 @@ from typing import List, Dict, Tuple, Optional
 from collections import defaultdict
 
 from smrti_quant_alerts.email_api import EmailApi
-from smrti_quant_alerts.data_type import StockSymbol
+from smrti_quant_alerts.data_type import StockSymbol, FinancialMetricType, FinancialMetricsData
 from smrti_quant_alerts.stock_crypto_api import StockApi
 from smrti_quant_alerts.alerts.base_alert import BaseAlert
 from smrti_quant_alerts.llm_api import PerplexityAPI
@@ -79,8 +79,11 @@ class StockPriceTopPerformerAlert(BaseAlert, StockApi):
         stock_stats = {}
         for k, v in stock_stats_list.items():
             if len(v) == 0:
-                stock_stats[k] = {"free_cash_flow": "N/A", "net_income": "N/A",
-                                  "free_cash_flow_margin": "N/A", "revenue": "N/A"}
+                default_data = FinancialMetricsData()
+                stock_stats[k] = {FinancialMetricType.FREE_CASH_FLOW: default_data,
+                                  FinancialMetricType.NET_INCOME: default_data,
+                                  FinancialMetricType.FREE_CASH_FLOW_MARGIN: default_data,
+                                  FinancialMetricType.REVENUE: default_data}
             else:
                 stock_stats[k] = v[0]
             stock_stats[k].update(stock_revenue_cagr[k])
@@ -98,11 +101,14 @@ class StockPriceTopPerformerAlert(BaseAlert, StockApi):
                        stock.gics_sub_industry, stock.location, stock.founded_time,
                        stock.is_sp500, stock.is_nasdaq, stock.is_nyse,
                        is_newly_added_dict[stock], stock_timeframes[stock],
-                       stock_stats[stock]["free_cash_flow"], stock_stats[stock]["net_income"],
-                       stock_stats[stock]["free_cash_flow_margin"], stock_stats[stock]["revenue_1y_cagr"],
-                       stock_stats[stock]["revenue_3y_cagr"], stock_stats[stock]["revenue_5y_cagr"],
-                       stock_stats[stock]["growth_score"],
-                       self._daily_volume[stock], market_caps.get(stock, 0),
+                       stock_stats[stock][FinancialMetricType.FREE_CASH_FLOW],
+                       stock_stats[stock][FinancialMetricType.NET_INCOME],
+                       stock_stats[stock][FinancialMetricType.FREE_CASH_FLOW_MARGIN],
+                       stock_stats[stock][FinancialMetricType.REVENUE_1Y_CAGR],
+                       stock_stats[stock][FinancialMetricType.REVENUE_3Y_CAGR],
+                       stock_stats[stock][FinancialMetricType.REVENUE_5Y_CAGR],
+                       stock_stats[stock][FinancialMetricType.GROWTH_SCORE],
+                       self._daily_volume.get(stock, 0), market_caps[stock],
                        stock_sma_data[stock].get("4hour", "SMA Data Unavailable"),
                        stock_sma_data[stock].get("1day", "SMA Data Unavailable")] for stock in stocks]
 
@@ -122,7 +128,7 @@ class StockPriceTopPerformerAlert(BaseAlert, StockApi):
             self._tg_bot.send_file(pdf_files[-1], "Newly Added Stock AI Analysis.pdf")
 
         if self._growth_score_filter_ai_analysis:
-            pdf_files.append(self.get_stocks_ai_analysis_for_growth_score(stock_timeframes, stock_stats, 80))
+            pdf_files.append(self.get_stocks_ai_analysis_for_growth_score(stock_timeframes, stock_stats, 0.8))
             self._tg_bot.send_file(pdf_files[-1], "Stock AI Analysis With Growth Score Filter.pdf")
 
         # send email
@@ -142,7 +148,7 @@ class StockPriceTopPerformerAlert(BaseAlert, StockApi):
 
     def get_stocks_ai_analysis_for_newly_added(self, timeframe_stocks_dict: Dict[str, List[StockSymbol]],
                                                is_newly_added_dict: Dict[StockSymbol, bool],
-                                               stock_stats: Dict[StockSymbol, Dict[str, str]]) -> str:
+                                               stock_stats: Dict[StockSymbol, Dict[str, FinancialMetricsData]]) -> str:
         """
         Send stock ai analysis
 
@@ -165,7 +171,7 @@ class StockPriceTopPerformerAlert(BaseAlert, StockApi):
         return self._pdf_api.file_name
 
     def get_stocks_ai_analysis_for_timeframe_sma(self, stock_timeframe_dict: Dict[StockSymbol, List[str]],
-                                                 stock_stats: Dict[StockSymbol, Dict[str, str]]) -> str:
+                                                 stock_stats: Dict[StockSymbol, Dict[str, FinancialMetricsData]]) -> str:
         """
         Send stock ai analysis
 
@@ -185,7 +191,7 @@ class StockPriceTopPerformerAlert(BaseAlert, StockApi):
         return self._pdf_api.file_name
 
     def get_stocks_ai_analysis_for_growth_score(self, stock_timeframe_dict: Dict[StockSymbol, List[str]],
-                                                stock_stats: Dict[StockSymbol, Dict[str, str]],
+                                                stock_stats: Dict[StockSymbol, Dict[str, FinancialMetricsData]],
                                                 growth_score_threshold: float) -> str:
         """
         Send stock ai analysis based on growth score
@@ -196,9 +202,9 @@ class StockPriceTopPerformerAlert(BaseAlert, StockApi):
         :return: saved pdf file name
         """
         self._pdf_api.start_new_pdf(f"Stock AI Analysis With Growth Score Filter_{uuid.uuid4()}.pdf")
-        sorted_stocks = sorted(stock_stats.items(), key=lambda x: float(x[1]["growth_score"]), reverse=True)
+        sorted_stocks = sorted(stock_stats.items(), key=lambda x: x[1][FinancialMetricType.GROWTH_SCORE], reverse=True)
         for stock, stock_stat in sorted_stocks:
-            if float(stock_stat["growth_score"]) <= growth_score_threshold:
+            if stock_stat[FinancialMetricType.GROWTH_SCORE] <= growth_score_threshold:
                 break
 
             timeframes = stock_timeframe_dict[stock]

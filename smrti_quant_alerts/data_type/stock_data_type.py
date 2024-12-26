@@ -23,12 +23,7 @@ class StockSymbol(TradingSymbol):
         self.cik = cik
         self.founded_time = founded_time
         if symbol in StockSymbol.symbol_info_map and StockSymbol.symbol_info_map[symbol].has_stock_info:
-            self.security_name = StockSymbol.symbol_info_map[symbol].security_name
-            self.gics_sector = StockSymbol.symbol_info_map[symbol].gics_sector
-            self.gics_sub_industry = StockSymbol.symbol_info_map[symbol].gics_sub_industry
-            self.location = StockSymbol.symbol_info_map[symbol].location
-            self.cik = StockSymbol.symbol_info_map[symbol].cik
-            self.founded_time = StockSymbol.symbol_info_map[symbol].founded_time
+            self.copy(StockSymbol.symbol_info_map[symbol])
 
         if sp500:
             StockSymbol.sp500_set.add(self._symbol)
@@ -66,8 +61,8 @@ class StockSymbol(TradingSymbol):
 
     @property
     def has_stock_info(self) -> bool:
-        return self.security_name and self.gics_sector and self.gics_sub_industry and \
-               self.location and self.cik and self.founded_time
+        return self.security_name != "" and self.gics_sector != "" and self.gics_sub_industry != "" \
+               and self.location != "" and self.cik != "" and self.founded_time != ""
 
     @staticmethod
     def get_symbol_object(symbol: str) -> StockSymbol:
@@ -81,3 +76,13 @@ class StockSymbol(TradingSymbol):
             symbol, market = symbol.split("@")
             return symbol, market
         return symbol, "US"
+
+    def copy(self, stock_symbol: StockSymbol):
+        self.security_name = stock_symbol.security_name
+        self.gics_sector = stock_symbol.gics_sector
+        self.gics_sub_industry = stock_symbol.gics_sub_industry
+        self.location = stock_symbol.location
+        self.cik = stock_symbol.cik
+        self.founded_time = stock_symbol.founded_time
+        self.market = stock_symbol.market
+        self._symbol = stock_symbol._symbol

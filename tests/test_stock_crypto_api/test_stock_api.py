@@ -8,7 +8,7 @@ import pytz
 
 import smrti_quant_alerts.stock_crypto_api.stock_api
 from smrti_quant_alerts.stock_crypto_api import StockApi
-from smrti_quant_alerts.data_type import StockSymbol
+from smrti_quant_alerts.data_type import StockSymbol, FinancialMetricsData, FinancialDataType, FinancialMetricType
 from smrti_quant_alerts.stock_crypto_api.utility import get_datetime_now
 
 
@@ -126,4 +126,5 @@ class TestStockApi(unittest.TestCase):
                                                                       {"code": "AMZN", "name": "Amazon",
                                                                        "market_capitalization": 1000}]})):
             stock_list = self.stock_api.get_top_market_cap_stocks(2)
-            self.assertEqual(stock_list, [[StockSymbol("AAPL"), 2000], [StockSymbol("MSFT"), 1500]])
+            self.assertEqual(stock_list, [[StockSymbol("AAPL"), FinancialMetricsData(2000)],
+                                          [StockSymbol("MSFT"), FinancialMetricsData(1500)]])

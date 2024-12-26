@@ -35,6 +35,7 @@ class TestStockSymbol(unittest.TestCase):
         self.assertTrue(symbol.is_nyse)
 
     def test_has_stock_info(self) -> None:
+        StockSymbol.symbol_info_map = {}
         symbol = StockSymbol("AAPL")
         self.assertFalse(symbol.has_stock_info)
         symbol = StockSymbol("AAPL", security_name="Apple Inc.", gics_sector="Technology",
