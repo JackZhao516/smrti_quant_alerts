@@ -16,12 +16,12 @@ class StockSymbol(TradingSymbol):
                  nyse: bool = False) -> None:
         symbol, self.market = StockSymbol.parse_symbol_market(symbol)
         super().__init__(symbol.upper())
-        self.security_name = security_name
-        self.gics_sector = gics_sector
-        self.gics_sub_industry = gics_sub_industry
-        self.location = location
-        self.cik = cik
-        self.founded_time = founded_time
+        self._security_name = security_name
+        self._gics_sector = gics_sector
+        self._gics_sub_industry = gics_sub_industry
+        self._location = location
+        self._cik = cik
+        self._founded_time = founded_time
         if symbol in StockSymbol.symbol_info_map and StockSymbol.symbol_info_map[symbol].has_stock_info:
             self.copy(StockSymbol.symbol_info_map[symbol])
 
@@ -48,6 +48,36 @@ class StockSymbol(TradingSymbol):
         return ""
 
     @property
+    def security_name(self) -> str:
+        self._refresh()
+        return self._security_name
+
+    @property
+    def gics_sector(self) -> str:
+        self._refresh()
+        return self._gics_sector
+
+    @property
+    def gics_sub_industry(self) -> str:
+        self._refresh()
+        return self._gics_sub_industry
+
+    @property
+    def location(self) -> str:
+        self._refresh()
+        return self._location
+
+    @property
+    def cik(self) -> str:
+        self._refresh()
+        return self._cik
+
+    @property
+    def founded_time(self) -> str:
+        self._refresh()
+        return self._founded_time
+
+    @property
     def is_sp500(self) -> bool:
         return self._symbol in StockSymbol.sp500_set
 
@@ -61,8 +91,9 @@ class StockSymbol(TradingSymbol):
 
     @property
     def has_stock_info(self) -> bool:
-        return self.security_name != "" and self.gics_sector != "" and self.gics_sub_industry != "" \
-               and self.location != "" and self.cik != "" and self.founded_time != ""
+        self._refresh()
+        return self._security_name != "" and self._gics_sector != "" and self._gics_sub_industry != "" \
+            and self._location != "" and self._cik != "" and self._founded_time != ""
 
     @staticmethod
     def get_symbol_object(symbol: str) -> StockSymbol:
@@ -78,11 +109,15 @@ class StockSymbol(TradingSymbol):
         return symbol, "US"
 
     def copy(self, stock_symbol: StockSymbol):
-        self.security_name = stock_symbol.security_name
-        self.gics_sector = stock_symbol.gics_sector
-        self.gics_sub_industry = stock_symbol.gics_sub_industry
-        self.location = stock_symbol.location
-        self.cik = stock_symbol.cik
-        self.founded_time = stock_symbol.founded_time
+        self._security_name = stock_symbol._security_name
+        self._gics_sector = stock_symbol._gics_sector
+        self._gics_sub_industry = stock_symbol._gics_sub_industry
+        self._location = stock_symbol._location
+        self._cik = stock_symbol._cik
+        self._founded_time = stock_symbol._founded_time
         self.market = stock_symbol.market
         self._symbol = stock_symbol._symbol
+
+    def _refresh(self):
+        if self._symbol in StockSymbol.symbol_info_map:
+            self.copy(StockSymbol.symbol_info_map[self._symbol])

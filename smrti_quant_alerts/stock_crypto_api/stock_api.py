@@ -495,7 +495,7 @@ class StockApi:
         return filtered_res
 
     @error_handling("secapi", default_val=defaultdict(list))
-    def get_outstanding_shares(self, stock_list: List[StockSymbol]) -> Dict[StockSymbol, List[Union[str, float]]]:
+    def get_floating_shares(self, stock_list: List[StockSymbol]) -> Dict[StockSymbol, List[Union[str, float]]]:
         """
         Get outstanding shares
 
@@ -601,7 +601,7 @@ class StockApi:
         """
         res = defaultdict(list)
         for stock in stock_list:
-            res[stock] = [FinancialMetricsData(has_percentage=True)] * num_of_quarters
+            res[stock] = [FinancialMetricsData(has_percentage=True) for _ in range(num_of_quarters)]
             api_url = f"{self.FMP_API_URL}/v3/income-statement/{stock.ticker}?" \
                       f"period=quarter&limit={num_of_quarters * 2}&apikey={self.FMP_API_KEY}"
             response = requests.get(api_url, timeout=10).json()
@@ -613,7 +613,7 @@ class StockApi:
             for i in range(num_of_quarters):
                 if revenues[i + num_of_quarters] == 0:
                     break
-                revenue_growth = (revenues[i] / revenues[i + num_of_quarters] - 1) * 100
-                res[stock][i].update_data(revenue_growth, FinancialDataType.PERCENTAGE)
+                revenue_growth = (revenues[i] / revenues[i + num_of_quarters] - 1)
+                res[stock][i].update_data(revenue_growth, FinancialDataType.FLOAT)
 
         return res

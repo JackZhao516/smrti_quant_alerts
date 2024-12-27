@@ -1,5 +1,4 @@
 import logging
-import csv
 import time
 import os
 import uuid
@@ -134,7 +133,7 @@ class StockScreenerAlert(BaseAlert, StockApi):
         for stock in stocks:
             if revenue_yoy_growth[stock][0] > 0.3 and \
                     (revenue_cagr[stock][FinancialMetricType.REVENUE_3Y_CAGR] > 0.3 or
-                     sum([revenue_yoy_growth[stock][i] for i in range(6)]) / 6 > 0.3):
+                     sum(revenue_yoy_growth[stock]) / 6 > 0.3):
                 filtered_stocks.append(stock)
 
         return filtered_stocks
@@ -147,7 +146,7 @@ class StockScreenerAlert(BaseAlert, StockApi):
         revenue_yoy_growth = self.get_stocks_quarterly_revenue_yoy_growth(stocks, 3)
         for stock in stocks:
             if revenue_yoy_growth[stock][0] > 0.3 and \
-                    sum([revenue_yoy_growth[stock][i] for i in range(3)]) / 3 > 0.3:
+                    sum(revenue_yoy_growth[stock]) / 3 > 0.3:
                 filtered_stocks.append(stock)
         return filtered_stocks
 
@@ -156,7 +155,7 @@ class StockScreenerAlert(BaseAlert, StockApi):
                                   growth_scores: Dict[StockSymbol, Dict[str, FinancialMetricsData]],
                                   growth_score_file_break_threshold: int = 1) -> List[str]:
         """
-        Build csv file
+        Build growth filter xlsx files
 
         :param stocks: list of stocks
         :param growth_scores: growth scores
@@ -164,11 +163,10 @@ class StockScreenerAlert(BaseAlert, StockApi):
 
         :return: list of file names
         """
-        file_name_less_than_threshold = \
-            f"screener_1_growth_score_filter_lt_{growth_score_file_break_threshold}_" \
-            f"{self._alert_name}_{uuid.uuid4()}.csv"
-        file_name_greater_than_threshold = f"screener_1_growth_score_filter_gt_{growth_score_file_break_threshold}" \
-                                           f"_{self._alert_name}_{uuid.uuid4()}.csv"
+        filenames = [f"screener_1_growth_score_filter_lt_{growth_score_file_break_threshold}_"
+                     f"{self._alert_name}_{uuid.uuid4()}.xlsx",
+                     f"screener_1_growth_score_filter_gt_{growth_score_file_break_threshold}"
+                     f"_{self._alert_name}_{uuid.uuid4()}.xlsx"]
         headers = ["symbol", FinancialMetricType.REVENUE_YOY_GROWTH_LATEST,
                    FinancialMetricType.REVENUE_YOY_GROWTH_SECOND_LATEST,
                    FinancialMetricType.REVENUE_YOY_GROWTH_SUM,
@@ -177,17 +175,24 @@ class StockScreenerAlert(BaseAlert, StockApi):
                    FinancialMetricType.FREE_CASH_FLOW_MARGIN_AVG,
                    FinancialMetricType.GROWTH_SCORE]
 
-        file_less_than_writer = csv.writer(open(file_name_less_than_threshold, mode="w"))
-        file_greater_than_writer = csv.writer(open(file_name_greater_than_threshold, mode="w"))
-        file_less_than_writer.writerow(headers)
-        file_greater_than_writer.writerow(headers)
+        writer_industry_maps = [defaultdict(list), defaultdict(list)]
 
         for stock in stocks:
-            writer = file_less_than_writer \
-                if growth_scores[stock][FinancialMetricType.GROWTH_SCORE] < growth_score_file_break_threshold \
-                else file_greater_than_writer
-            writer.writerow([stock.ticker] + [str(growth_scores[stock][header]) for header in headers[1:]])
-        return [file_name_less_than_threshold, file_name_greater_than_threshold]
+            index = 1 if growth_scores[stock][FinancialMetricType.GROWTH_SCORE] > \
+                         growth_score_file_break_threshold else 0
+            writer_industry_maps[index][stock.gics_sector].append(
+                [stock.ticker] + [str(growth_scores[stock][header]) for header in headers[1:]])
+
+        for filename, writer_industry_map in zip(filenames, writer_industry_maps):
+            with pd.ExcelWriter(filename) as writer:
+                for industry, rows in writer_industry_map.items():
+                    rows.insert(0, headers)
+                    if industry == "":
+                        industry = "Others"
+                    df = pd.DataFrame(rows, dtype=str)
+                    df.to_excel(writer, sheet_name=industry, header=False, index=False)
+
+        return filenames
 
     def _build_standard_filter_xlsx(self, stocks: List[StockSymbol], screener_name: str) -> str:
         """
@@ -201,7 +206,6 @@ class StockScreenerAlert(BaseAlert, StockApi):
         file_name = f"{screener_name}_{self._alert_name}_{uuid.uuid4()}.xlsx"
         self._get_enterprise_value_over_revenue(stocks)
         self._get_stocks_eight_quarters_stats(stocks)
-        self._get_stock_info_thread.join()
 
         industry_to_stock_stats = defaultdict(list)
         for stock in stocks:
@@ -220,17 +224,19 @@ class StockScreenerAlert(BaseAlert, StockApi):
 
         with pd.ExcelWriter(file_name) as writer:
             for industry, rows in industry_to_stock_stats.items():
+                if industry == "":
+                    industry = "Others"
                 df = pd.DataFrame(rows, dtype=str)
                 df.to_excel(writer, sheet_name=industry, header=False, index=False)
         return file_name
 
     # ---------------------------send email--------------------------------
-    def _send_email(self, csv_files: List[str] = None, pdf_files: List[str] = None) -> None:
+    def _send_email(self, csv_files: List[str] = None, pdf_xlsx_files: List[str] = None) -> None:
         """
         Send email
 
         :param csv_files: csv file names
-        :param pdf_files: pdf file names
+        :param pdf_xlsx_files: pdf file names
         """
         content = "Stock Screener 1: Growth Score Filter\n" \
                   "  - growth score = last two quarterly revenue yoy growth + avg (last two quarters) FCF margin\n" \
@@ -242,7 +248,7 @@ class StockScreenerAlert(BaseAlert, StockApi):
                   "  - 3Y revenue CAGR > 30% or avg (last 6 quarterly revenue yoy growth) > 30%\n\n" \
                   "Stock Screener 4: Quarterly Revenue YoY Growth Filter\n" \
                   "  - latest quarterly revenue yoy growth > 30% and avg(last 3 quarterly revenue yoy growth) > 30%\n\n"
-        self._email_api.send_email(self._alert_name, content, csv_files, pdf_files)
+        self._email_api.send_email(self._alert_name, content, csv_files, pdf_xlsx_files)
 
     # ---------------------------main--------------------------------
     def run(self) -> None:
@@ -254,22 +260,23 @@ class StockScreenerAlert(BaseAlert, StockApi):
         screener_2_res = pool.apply_async(self._quarterly_revenue_yoy_growth_operating_margin_filter, (stocks,))
         screener_3_res = pool.apply_async(self._quarterly_revenue_yoy_growth_revenue_cagr_filter, (stocks,))
         screener_4_res = pool.apply_async(self._quarterly_revenue_yoy_growth_filter, (stocks,))
+        self._get_stock_info_thread.join()
 
-        csv_files = self._build_growth_filter_docs(*screener_1_res.get())
-        xlsx_files = [self._build_standard_filter_xlsx(screener_2_res.get(),
-                                                       "screener_2_quarter_rev_yoy_growth_operating_margin"),
-                      self._build_standard_filter_xlsx(screener_3_res.get(),
-                                                       "screener_3_quarter_rev_yoy_growth_revenue_cagr"),
-                      self._build_standard_filter_xlsx(screener_4_res.get(),
-                                                       "screener_4_quarter_rev_yoy_growth")]
+        xlsx_files = self._build_growth_filter_docs(*screener_1_res.get()) + \
+            [self._build_standard_filter_xlsx(screener_2_res.get(),
+                                              "screener_2_quarter_rev_yoy_growth_operating_margin"),
+             self._build_standard_filter_xlsx(screener_3_res.get(),
+                                              "screener_3_quarter_rev_yoy_growth_revenue_cagr"),
+             self._build_standard_filter_xlsx(screener_4_res.get(),
+                                              "screener_4_quarter_rev_yoy_growth")]
 
         pool.close()
         pool.join()
 
         if self._email:
-            self._send_email(csv_files, xlsx_files)
+            self._send_email(pdf_xlsx_files=xlsx_files)
 
-        for file in csv_files + xlsx_files:
+        for file in xlsx_files:
             if os.path.exists(file):
                 os.remove(file)
 

@@ -117,6 +117,9 @@ class FinancialMetricsData:
                                         FinancialDataType.FLOAT, self._has_percentage)
         return FinancialMetricsData(self.float_data + other, FinancialDataType.FLOAT, self._has_percentage)
 
+    def __radd__(self, other: Union[FinancialMetricsData, float]) -> FinancialMetricsData:
+        return self.__add__(other)
+
     def __sub__(self, other: Union[FinancialMetricsData, float]) -> FinancialMetricsData:
         if isinstance(other, FinancialMetricsData):
             return FinancialMetricsData(self.float_data - other.float_data,

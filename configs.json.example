@@ -58,11 +58,11 @@
     "database_name": "stock_alert"
   },
 
-   "<file_8k_example_name>": {
-    "alert_type": "file_8k",
+   "<floating_shares_example_name>": {
+    "alert_type": "floating_shares",
     "alert_input_args": {
-      "alert_name": "<file_8k_example_name>",
-      "symbols": ["<symbol>", "<symbol>", ...],
+      "alert_name": "<floating_shares_example_name>",
+      "symbols_file": "floating_shares_symbols_example.txt",
       "tg_type": "TEST"
     },
     "alert_params": {},
@@ -71,7 +71,7 @@
       "excluded_week_days": ["Sat", "Sun"],
       "timezone": "US/Eastern"
     },
-    "database_name": "file_8k"
+    "database_name": "floating_shares"
   },
 
   "<macd_alert_example_name>": {
