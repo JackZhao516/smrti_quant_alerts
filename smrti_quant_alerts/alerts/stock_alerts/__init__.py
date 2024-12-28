@@ -1,2 +1,3 @@
 from .stock_price_top_performer_alert import StockPriceTopPerformerAlert
 from .floating_shares_alert import FloatingSharesAlert
+from .stock_screener_alert import StockScreenerAlert

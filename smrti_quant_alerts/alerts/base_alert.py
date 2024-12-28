@@ -14,7 +14,7 @@ class BaseAlert:
     CONFIG = Config(verbose=False)
     PWD = CONFIG.PROJECT_DIR
 
-    def __init__(self, tg_type: str) -> None:
+    def __init__(self, tg_type: str = "TEST") -> None:
         self._tg_bot = TelegramBot(tg_type=tg_type)
 
     def __str__(self) -> str:

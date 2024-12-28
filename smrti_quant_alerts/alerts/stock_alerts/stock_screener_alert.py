@@ -18,8 +18,8 @@ logging.basicConfig(level=logging.INFO)
 
 
 class StockScreenerAlert(BaseAlert, StockApi):
-    def __init__(self, alert_name: str, tg_type: str = "TEST", email: bool = True):
-        BaseAlert.__init__(self, tg_type=tg_type)
+    def __init__(self, alert_name: str, email: bool = True):
+        BaseAlert.__init__(self)
         StockApi.__init__(self)
         self._alert_name = alert_name
         self._email_api = EmailApi()

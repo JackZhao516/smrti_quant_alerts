@@ -74,6 +74,21 @@
     "database_name": "floating_shares"
   },
 
+  "<stock_screener_example_name>": {
+    "alert_type": "stock_screener",
+    "alert_input_args": {
+      "alert_name": "<stock_screener_example_name>",
+      "email":  true/false
+    },
+    "alert_params": {},
+    "run_time_input_args": {
+      "daily_times": "23:50",
+      "excluded_week_days": ["Sat", "Sun"],
+      "timezone": "US/Eastern"
+    },
+    "database_name": "stock_screener"
+  },
+
   "<macd_alert_example_name>": {
     "alert_type": "macd_alert",
     "alert_input_args": {
