@@ -14,8 +14,6 @@ from smrti_quant_alerts.data_type import StockSymbol, FinancialMetricType, Finan
 from smrti_quant_alerts.stock_crypto_api import StockApi
 from smrti_quant_alerts.alerts.base_alert import BaseAlert
 
-logging.basicConfig(level=logging.DEBUG)
-
 
 class StockScreenerAlert(BaseAlert, StockApi):
     def __init__(self, alert_name: str, email: bool = True):
@@ -253,7 +251,7 @@ class StockScreenerAlert(BaseAlert, StockApi):
     # ---------------------------main--------------------------------
     def run(self) -> None:
         stocks = self._get_stocks()
-        logging.info(f"Total stocks: {len(stocks)}")
+        logging.warning(f"Total stocks: {len(stocks)}")
 
         with ThreadPoolExecutor(max_workers=8) as executor:
             screener_1_res = executor.submit(self._growth_score_filter, stocks)
