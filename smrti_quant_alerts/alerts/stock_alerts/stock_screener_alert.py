@@ -14,7 +14,7 @@ from smrti_quant_alerts.data_type import StockSymbol, FinancialMetricType, Finan
 from smrti_quant_alerts.stock_crypto_api import StockApi
 from smrti_quant_alerts.alerts.base_alert import BaseAlert
 
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(level=logging.DEBUG)
 
 
 class StockScreenerAlert(BaseAlert, StockApi):
@@ -87,6 +87,7 @@ class StockScreenerAlert(BaseAlert, StockApi):
         """
         last two quarterly revenue yoy growth + avg (last two quarters) FCF margin > 80%
         """
+        logging.info("growth_score_filter started")
         filtered_stocks = []
         growth_scores = self.get_stocks_growth_score(stocks, True)
         for stock in stocks:
@@ -105,6 +106,7 @@ class StockScreenerAlert(BaseAlert, StockApi):
 
         :return: list of stocks
         """
+        logging.info("quarterly_revenue_yoy_growth_operating_margin_filter started")
         filtered_stocks = []
         revenue_yoy_growth = self.get_stocks_quarterly_revenue_yoy_growth(stocks, 1)
         stock_stats = self.get_stocks_stats_by_num_of_timeframe(stocks, "quarter", 1)
@@ -123,6 +125,7 @@ class StockScreenerAlert(BaseAlert, StockApi):
 
         :return: list of stocks
         """
+        logging.info("quarterly_revenue_yoy_growth_revenue_cagr_filter started")
         filtered_stocks = []
         revenue_yoy_growth = self.get_stocks_quarterly_revenue_yoy_growth(stocks, 6)
         revenue_cagr = self.get_stocks_revenue_cagr(stocks)
@@ -138,6 +141,7 @@ class StockScreenerAlert(BaseAlert, StockApi):
         """
         latest quarterly revenue yoy growth > 30% and avg(last 3 quarterly revenue yoy growth) > 30%
         """
+        logging.info("quarterly_revenue_yoy_growth_filter started")
         filtered_stocks = []
         revenue_yoy_growth = self.get_stocks_quarterly_revenue_yoy_growth(stocks, 3)
         for stock in stocks:
