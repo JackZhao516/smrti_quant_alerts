@@ -25,11 +25,11 @@ class FloatingSharesAlert(BaseAlert, StockApi):
         self._alert_name = alert_name
         self._email_api = EmailApi()
         self._symbols = []
-        self._file_name = f"{self._alert_name}_{uuid.uuid4()}.csv"
+        self._file_8k_summary_filename = f"file_8k_summary_{uuid.uuid4()}.csv"
+        self._floating_shares_summary_filename = f"floating_shares_{uuid.uuid4()}.xlsx"
         self._load_symbols(symbols_file)
-        # self._load_stocks_info_thread = threading.Thread(
-        #     self.get_stock_info, ()
-        # )
+        self._load_stocks_info_thread = threading.Thread(target=self._load_stocks_info)
+        self._load_stocks_info_thread.start()
 
     def _load_symbols(self, symbols_file: str) -> None:
         """
@@ -41,6 +41,13 @@ class FloatingSharesAlert(BaseAlert, StockApi):
             return
         with open(symbols_file, "r") as f:
             self._symbols = [line.strip() for line in f.readlines()]
+
+    def _load_stocks_info(self) -> None:
+        """
+        Pre-load the stocks info
+        """
+        stocks = self.get_nasdaq_list() + self.get_nyse_list()
+        self.get_stock_info(stocks)
 
     def _generate_floating_shares(self, symbols: List[StockSymbol]) -> str:
         """
@@ -59,9 +66,9 @@ class FloatingSharesAlert(BaseAlert, StockApi):
                                   f"{'+' if has_increased else '-'}\n\n"
         return shares_content
 
-    def run(self) -> None:
+    def _generate_file_8k_summary_csv(self) -> None:
         """
-        Run the alert
+        Generate the file 8k summary csv
         """
         filings = self.get_all_8k_filings_for_today()
         headers = ["title", "symbol", "cik", "link", "process", "hasFinancials", "date"]
@@ -69,20 +76,26 @@ class FloatingSharesAlert(BaseAlert, StockApi):
         if self._symbols:
             data = [d for d in data if d[1] in self._symbols]
         df = pd.DataFrame(data, columns=headers)
-        df.to_csv(self._file_name, index=False)
+        df.to_csv(self._file_8k_summary_filename, index=False)
+
+    def run(self) -> None:
+        """
+        Run the alert
+        """
+        self._generate_file_8k_summary_csv()
         # email content
         content = f"Filter by symbols: {self._symbols}" if self._symbols else ""
         content += f"\n\n{self._generate_floating_shares([StockSymbol(symbol=s) for s in sorted(self._symbols)])}"
 
         # send email
-        self._email_api.send_email(self._alert_name, content, [self._file_name])
+        self._email_api.send_email(self._alert_name, content, [self._file_8k_summary_filename])
 
         # send telegram message
         self._tg_bot.send_message(f"{self._alert_name}\n{content}")
-        self._tg_bot.send_file(self._file_name, self._alert_name)
-        os.remove(self._file_name)
+        self._tg_bot.send_file(self._file_8k_summary_filename, self._alert_name)
+        os.remove(self._file_8k_summary_filename)
 
 
 if __name__ == "__main__":
-    alert = FloatingSharesAlert("FloatingSharesAlert", symbols=["TSLA", "ALAB", "TEM", "CRM", "RKLB", "SHOP"])
+    alert = FloatingSharesAlert("FloatingSharesAlert", symbols_file="floating_shares_symbols.txt")
     alert.run()

@@ -3,9 +3,9 @@ import time
 import os
 import uuid
 import threading
-from multiprocessing.pool import ThreadPool
 from typing import List, Dict, Tuple
 from collections import defaultdict
+from concurrent.futures import ThreadPoolExecutor
 
 import pandas as pd
 
@@ -49,13 +49,11 @@ class StockScreenerAlert(BaseAlert, StockApi):
         # filter out already calculated stocks
         stocks = [stock for stock in stocks if stock not in self._stocks_ev_over_revenue]
 
-        pool = ThreadPool(processes=2)
-        enterprise_values = pool.apply_async(self.get_stocks_enterprise_value, (stocks,))
-        revenues = pool.apply_async(self.get_stocks_revenue, (stocks,))
-        enterprise_values = enterprise_values.get()
-        revenues = revenues.get()
-        pool.close()
-        pool.join()
+        with ThreadPoolExecutor(max_workers=8) as executor:
+            enterprise_values = executor.submit(self.get_stocks_enterprise_value, stocks)
+            revenues = executor.submit(self.get_stocks_revenue, stocks)
+            enterprise_values = enterprise_values.result()
+            revenues = revenues.result()
 
         self._stocks_ev_over_revenue.update(
             {stock: (enterprise_values[stock] / revenues[stock]) for stock in stocks})
@@ -69,13 +67,11 @@ class StockScreenerAlert(BaseAlert, StockApi):
         # filter out already calculated stocks
         stocks = [stock for stock in stocks if stock not in self._stocks_eight_quarters_stats]
 
-        pool = ThreadPool(processes=2)
-        quarterly_revenue_yoy_growth = pool.apply_async(self.get_stocks_quarterly_revenue_yoy_growth, (stocks, 8))
-        stock_stats = pool.apply_async(self.get_stocks_stats_by_num_of_timeframe, (stocks, "quarter", 8))
-        quarterly_revenue_yoy_growth = quarterly_revenue_yoy_growth.get()
-        stock_stats = stock_stats.get()
-        pool.close()
-        pool.join()
+        with ThreadPoolExecutor(max_workers=8) as executor:
+            quarterly_revenue_yoy_growth = executor.submit(self.get_stocks_quarterly_revenue_yoy_growth, stocks, 8)
+            stock_stats = executor.submit(self.get_stocks_stats_by_num_of_timeframe, stocks, "quarter", 8)
+            quarterly_revenue_yoy_growth = quarterly_revenue_yoy_growth.result()
+            stock_stats = stock_stats.result()
 
         for stock in stocks:
             stats = [{FinancialMetricType.REVENUE_YOY_GROWTH: quarterly_revenue_yoy_growth[stock][i],
@@ -255,23 +251,20 @@ class StockScreenerAlert(BaseAlert, StockApi):
         stocks = self._get_stocks()
         print(f"Total stocks: {len(stocks)}")
 
-        pool = ThreadPool(processes=4)
-        screener_1_res = pool.apply_async(self._growth_score_filter, (stocks,))
-        screener_2_res = pool.apply_async(self._quarterly_revenue_yoy_growth_operating_margin_filter, (stocks,))
-        screener_3_res = pool.apply_async(self._quarterly_revenue_yoy_growth_revenue_cagr_filter, (stocks,))
-        screener_4_res = pool.apply_async(self._quarterly_revenue_yoy_growth_filter, (stocks,))
-        self._get_stock_info_thread.join()
+        with ThreadPoolExecutor(max_workers=8) as executor:
+            screener_1_res = executor.submit(self._growth_score_filter, stocks)
+            screener_2_res = executor.submit(self._quarterly_revenue_yoy_growth_operating_margin_filter, stocks)
+            screener_3_res = executor.submit(self._quarterly_revenue_yoy_growth_revenue_cagr_filter, stocks)
+            screener_4_res = executor.submit(self._quarterly_revenue_yoy_growth_filter, stocks)
+            self._get_stock_info_thread.join()
 
-        xlsx_files = self._build_growth_filter_docs(*screener_1_res.get()) + \
-            [self._build_standard_filter_xlsx(screener_2_res.get(),
-                                              "screener_2_quarter_rev_yoy_growth_operating_margin"),
-             self._build_standard_filter_xlsx(screener_3_res.get(),
-                                              "screener_3_quarter_rev_yoy_growth_revenue_cagr"),
-             self._build_standard_filter_xlsx(screener_4_res.get(),
-                                              "screener_4_quarter_rev_yoy_growth")]
-
-        pool.close()
-        pool.join()
+            xlsx_files = self._build_growth_filter_docs(*screener_1_res.result()) + \
+                [self._build_standard_filter_xlsx(screener_2_res.result(),
+                                                  "screener_2_quarter_rev_yoy_growth_operating_margin"),
+                 self._build_standard_filter_xlsx(screener_3_res.result(),
+                                                  "screener_3_quarter_rev_yoy_growth_revenue_cagr"),
+                 self._build_standard_filter_xlsx(screener_4_res.result(),
+                                                  "screener_4_quarter_rev_yoy_growth")]
 
         if self._email:
             self._send_email(pdf_xlsx_files=xlsx_files)

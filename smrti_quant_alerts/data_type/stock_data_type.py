@@ -16,12 +16,12 @@ class StockSymbol(TradingSymbol):
                  nyse: bool = False) -> None:
         symbol, self.market = StockSymbol.parse_symbol_market(symbol)
         super().__init__(symbol.upper())
-        self._security_name = security_name
-        self._gics_sector = gics_sector
-        self._gics_sub_industry = gics_sub_industry
-        self._location = location
-        self._cik = cik
-        self._founded_time = founded_time
+        self._security_name = security_name if security_name else ""
+        self._gics_sector = gics_sector if gics_sector else ""
+        self._gics_sub_industry = gics_sub_industry if gics_sub_industry else ""
+        self._location = location if location else ""
+        self._cik = cik if cik else ""
+        self._founded_time = founded_time if founded_time else ""
         if symbol in StockSymbol.symbol_info_map and StockSymbol.symbol_info_map[symbol].has_stock_info:
             self.copy(StockSymbol.symbol_info_map[symbol])
 

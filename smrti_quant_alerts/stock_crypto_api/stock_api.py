@@ -26,7 +26,7 @@ class StockApi:
     SEC_API_URL = Config.API_ENDPOINTS["SEC_API_URL"]
 
     PWD = Config.PROJECT_DIR
-
+    TIMEOUT = 50
     timeframe_dict = {
         "1D": 1, "5D": 5, "1M": 30, "3M": 90, "6M": 180, "1Y": 365, "3Y": 365 * 3, "5Y": 365 * 5, "10Y": 365 * 10,
         "d": 1, "w": 7, "m": 30
@@ -48,7 +48,7 @@ class StockApi:
         :return: [StockSymbol, ...]
         """
         api_url = f"{self.FMP_API_URL}/v3/sp500_constituent?apikey={self.FMP_API_KEY}"
-        response = requests.get(api_url, timeout=5)
+        response = requests.get(api_url, timeout=self.TIMEOUT)
         response = response.json()
 
         stock_list = [StockSymbol(stock["symbol"], stock["name"], stock["sector"],
@@ -66,7 +66,7 @@ class StockApi:
         :return: [StockSymbol, ...]
         """
         api_url = f"{self.FMP_API_URL}/v3/available-traded/list?apikey={self.FMP_API_KEY}"
-        response = requests.get(api_url, timeout=5)
+        response = requests.get(api_url, timeout=self.TIMEOUT)
         response = response.json()
 
         stock_list = [StockSymbol(stock["symbol"], stock["name"], nasdaq=True) for stock in response
@@ -83,7 +83,7 @@ class StockApi:
         :return: [StockSymbol, ...]
         """
         api_url = f"{self.FMP_API_URL}/v3/available-traded/list?apikey={self.FMP_API_KEY}"
-        response = requests.get(api_url, timeout=5)
+        response = requests.get(api_url, timeout=self.TIMEOUT)
         response = response.json()
 
         stock_list = [StockSymbol(stock["symbol"], stock["name"], nasdaq=True) for stock in response
@@ -112,7 +112,7 @@ class StockApi:
             target_date_str = target_date.strftime("%Y-%m-%d")
             url = f"{self.EODHD_API_URL}/eod-bulk-last-day/US?api_token=" \
                   f"{self.EODHD_API_KEY}&date={target_date_str}&fmt=json"
-            response = requests.get(url, timeout=50)
+            response = requests.get(url, timeout=self.TIMEOUT)
             target_date -= datetime.timedelta(days=1)
 
         prices = {}
@@ -188,9 +188,8 @@ class StockApi:
             stock_str = ",".join([stock.ticker for stock in stocks_sub])
 
             api_url = f"{self.FMP_API_URL}/v3/profile/{stock_str}?apikey={self.FMP_API_KEY}"
-            response = requests.get(api_url, timeout=10)
+            response = requests.get(api_url, timeout=self.TIMEOUT)
             response = response.json()
-
             res += [StockSymbol(stock["symbol"], stock["companyName"], stock["sector"],
                                 stock["industry"], f"{stock['city']}, {stock['state']}, {stock['country']}",
                                 stock["cik"], stock["ipoDate"])
@@ -225,7 +224,7 @@ class StockApi:
                           f'[["market_capitalization","<",{last_market_cap}],' \
                           f'["exchange","=","us"]]&limit=100&offset={offset}'
                 offset += 100 if n % 100 == 0 else n % 100
-                response = requests.get(api_url, timeout=10)
+                response = requests.get(api_url, timeout=self.TIMEOUT)
                 response = response.json().get("data", [])
 
                 for stock in response:
@@ -255,7 +254,7 @@ class StockApi:
         for i in range(n):
             symbols = ",".join([stock.ticker for stock in all_stocks[i * 100:(i + 1) * 100]])
             api_url = f"{self.FMP_API_URL}/v3/quote/{symbols}?apikey={self.FMP_API_KEY}"
-            response = requests.get(api_url, timeout=10)
+            response = requests.get(api_url, timeout=self.TIMEOUT)
             response = response.json()
             for stock in response:
                 if stock.get("marketCap", 0) >= market_cap_threshold:
@@ -276,7 +275,7 @@ class StockApi:
         res = defaultdict(dict)
         for stock in stock_list:
             close_price_url = f"{self.FMP_API_URL}/v3/quote-short/{stock}?apikey={self.FMP_API_KEY}"
-            response = requests.get(close_price_url, timeout=10).json()
+            response = requests.get(close_price_url, timeout=self.TIMEOUT).json()
             if not response:
                 continue
             close_price = response[0].get("price", 0)
@@ -286,7 +285,7 @@ class StockApi:
                 sma_url = f"{self.FMP_API_URL}/v3/technical_indicator/{timeframe}/{stock}" \
                           f"?type=sma&period={num_of_day}&apikey={self.FMP_API_KEY}" \
                           f"&from={from_day.strftime('%Y-%m-%d')}"
-                response = requests.get(sma_url, timeout=10).json()
+                response = requests.get(sma_url, timeout=self.TIMEOUT).json()
                 if not response:
                     continue
                 sma = response[0].get("sma", 0)
@@ -305,7 +304,7 @@ class StockApi:
         res = defaultdict(FinancialMetricsData)
         for stock in stock_list:
             api_url = f"{self.FMP_API_URL}/v3/market-capitalization/{stock.ticker}?apikey={self.FMP_API_KEY}"
-            response = requests.get(api_url, timeout=10).json()
+            response = requests.get(api_url, timeout=self.TIMEOUT).json()
             if response:
                 res[stock] = FinancialMetricsData(response[0].get("marketCap", 0))
         return res
@@ -335,7 +334,7 @@ class StockApi:
         def get_stock_stats_by_num_of_quarter(stock: StockSymbol) -> None:
             api_url = f"{self.FMP_API_URL}/v3/income-statement/{stock.ticker}?" \
                       f"period=quarter&limit={timeframes[timeframe] * num}&apikey={self.FMP_API_KEY}"
-            response = requests.get(api_url, timeout=15).json()
+            response = requests.get(api_url, timeout=self.TIMEOUT).json()
             if not response:
                 res[stock] = empty_res * num
                 return
@@ -350,7 +349,7 @@ class StockApi:
 
             api_url = f"{self.FMP_API_URL}/v3/cash-flow-statement/{stock.ticker}?" \
                       f"period=quarter&limit={timeframes[timeframe] * num}&apikey={self.FMP_API_KEY}"
-            response = requests.get(api_url, timeout=15).json()
+            response = requests.get(api_url, timeout=self.TIMEOUT).json()
             if not response:
                 res[stock] = empty_res * num
                 return
@@ -392,8 +391,8 @@ class StockApi:
         def get_stock_revenue_cagr(stock: StockSymbol) -> None:
             api_url = f"{self.FMP_API_URL}/v3/income-statement/{stock.ticker}?" \
                       f"period=quarter&limit=24&apikey={self.FMP_API_KEY}"
-            response = requests.get(api_url, timeout=15).json()
-            res[stock] = {f"revenue_{i}y_cagr": "0%" for i in [1, 3, 5]}
+            response = requests.get(api_url, timeout=self.TIMEOUT).json()
+            res[stock] = {f"revenue_{i}y_cagr": FinancialMetricsData(has_percentage=True) for i in [1, 3, 5]}
             if not response:
                 return
             revenue_this_year = reduce(lambda a, b: a + b,
@@ -435,7 +434,7 @@ class StockApi:
         from_str = from_date.strftime("%Y-%m-%d")
         api_url = f"{self.EODHD_API_URL}/eod/{self._parse_eodhd_symbol(stock)}?api_token={self.EODHD_API_KEY}" \
                   f"&fmt=json&from={from_str}&period={timeframe[-1]}"
-        response = requests.get(api_url, timeout=10).json()
+        response = requests.get(api_url, timeout=self.TIMEOUT).json()
         res = [(tick["date"], float(tick["adjusted_close"]))
                for i, tick in enumerate(response[::-1]) if i % timeframe_int == 0][:num_of_ticks]
 
@@ -455,7 +454,7 @@ class StockApi:
         """
         api_url = f"{self.EODHD_API_URL}/real-time/{self._parse_eodhd_symbol(stock)}?api_token={self.EODHD_API_KEY}" \
                   f"&fmt=json"
-        response = requests.get(api_url, timeout=10).json()
+        response = requests.get(api_url, timeout=self.TIMEOUT).json()
         return get_date_from_timestamp(response["timestamp"] * 1000), float(response["close"])
 
     @error_handling("financialmodelingprep", default_val=[])
@@ -472,7 +471,7 @@ class StockApi:
         res = []
         while True:
             url = f"{api_url}&page={page}"
-            response = requests.get(url, timeout=10).json()
+            response = requests.get(url, timeout=self.TIMEOUT).json()
             if not response:
                 break
 
@@ -505,7 +504,7 @@ class StockApi:
         res = defaultdict(list)
         for stock in stock_list:
             api_url = f"{self.SEC_API_URL}/float?ticker={stock.ticker}&token={self.SEC_API_KEY}"
-            response = requests.get(api_url, timeout=10).json()
+            response = requests.get(api_url, timeout=self.TIMEOUT).json()
             data = response.get("data", [])
             if len(data) >= 2:
                 for i in range(2):
@@ -528,7 +527,7 @@ class StockApi:
         res = defaultdict(FinancialMetricsData)
         for stock in stock_list:
             api_url = f"{self.FMP_API_URL}/v3/enterprise-value/{stock.ticker}?period=quarter&apikey={self.FMP_API_KEY}"
-            response = requests.get(api_url, timeout=10).json()
+            response = requests.get(api_url, timeout=self.TIMEOUT).json()
             if response and len(response) > 0:
                 res[stock] = FinancialMetricsData(response[0].get("enterpriseValue", 0))
         return res
@@ -545,7 +544,7 @@ class StockApi:
         for stock in stock_list:
             api_url = f"{self.FMP_API_URL}/v3/income-statement/{stock.ticker}?" \
                       f"period=quarter&limit=1&apikey={self.FMP_API_KEY}"
-            response = requests.get(api_url, timeout=10).json()
+            response = requests.get(api_url, timeout=self.TIMEOUT).json()
             if response and len(response) > 0:
                 res[stock] = FinancialMetricsData(response[0].get("revenue", 0))
         return res
@@ -603,17 +602,16 @@ class StockApi:
         for stock in stock_list:
             res[stock] = [FinancialMetricsData(has_percentage=True) for _ in range(num_of_quarters)]
             api_url = f"{self.FMP_API_URL}/v3/income-statement/{stock.ticker}?" \
-                      f"period=quarter&limit={num_of_quarters * 2}&apikey={self.FMP_API_KEY}"
-            response = requests.get(api_url, timeout=10).json()
+                      f"period=quarter&limit={num_of_quarters + 4}&apikey={self.FMP_API_KEY}"
+            response = requests.get(api_url, timeout=self.TIMEOUT).json()
             if not response:
                 continue
+
             revenues = [quarter.get("revenue", 0) for quarter in response]
-            if len(revenues) < num_of_quarters * 2:
-                continue
-            for i in range(num_of_quarters):
-                if revenues[i + num_of_quarters] == 0:
-                    break
-                revenue_growth = (revenues[i] / revenues[i + num_of_quarters] - 1)
+            for i in range(min(num_of_quarters, len(response) - 4)):
+                if revenues[i + 4] == 0:
+                    continue
+                revenue_growth = (revenues[i] / revenues[i + 4] - 1)
                 res[stock][i].update_data(revenue_growth, FinancialDataType.FLOAT)
 
         return res
