@@ -1,8 +1,10 @@
 import logging
 import uuid
 import os
+import time
 import threading
-from typing import List
+from typing import List, Tuple, Dict, Union
+from collections import defaultdict
 
 import pandas as pd
 
@@ -49,7 +51,8 @@ class FloatingSharesAlert(BaseAlert, StockApi):
         stocks = self.get_nasdaq_list() + self.get_nyse_list()
         self.get_stock_info(stocks)
 
-    def _generate_floating_shares(self, symbols: List[StockSymbol]) -> str:
+    def _generate_floating_shares(self, symbols: List[StockSymbol]) \
+            -> Tuple[str, Dict[StockSymbol, List[Union[str, float]]]]:
         """
         Generate outstanding shares for the list of symbols
 
@@ -59,12 +62,13 @@ class FloatingSharesAlert(BaseAlert, StockApi):
         """
         floating_shares = self.get_floating_shares(symbols)
         shares_content = ""
+
         for symbol, shares in floating_shares.items():
             if shares and len(shares) == 4:
                 has_increased = shares[1] > shares[3]
                 shares_content += f"~ {symbol}: {shares[3]} ({shares[2]}) -> {shares[1]} ({shares[0]}) " \
                                   f"{'+' if has_increased else '-'}\n\n"
-        return shares_content
+        return shares_content, floating_shares
 
     def _generate_file_8k_summary_csv(self) -> None:
         """
@@ -78,6 +82,26 @@ class FloatingSharesAlert(BaseAlert, StockApi):
         df = pd.DataFrame(data, columns=headers)
         df.to_csv(self._file_8k_summary_filename, index=False)
 
+    def _generate_floating_shares_summary_xlsx(
+            self, floating_shares: Dict[StockSymbol, List[Union[str, float]]]) -> None:
+        """
+        Generate the floating shares summary xlsx
+        """
+        self._load_stocks_info_thread.join()
+        industry_stock_floating_shares_mapping = defaultdict(list)
+        headers = ["stock", "previous date", "previous floating shares",
+                   "current date", "current floating shares", "has increased"]
+        for stock, floating_share in floating_shares.items():
+            industry_stock_floating_shares_mapping[stock.gics_sector].append(
+                [stock.ticker] + floating_share + [str(floating_share[1] > floating_share[3])]
+            )
+        with pd.ExcelWriter(self._floating_shares_summary_filename) as writer:
+            for industry, rows in industry_stock_floating_shares_mapping.items():
+                if industry == "":
+                    industry = "Others"
+                df = pd.DataFrame(rows, dtype=str)
+                df.to_excel(writer, sheet_name=industry, header=headers, index=False)
+
     def run(self) -> None:
         """
         Run the alert
@@ -85,17 +109,26 @@ class FloatingSharesAlert(BaseAlert, StockApi):
         self._generate_file_8k_summary_csv()
         # email content
         content = f"Filter by symbols: {self._symbols}" if self._symbols else ""
-        content += f"\n\n{self._generate_floating_shares([StockSymbol(symbol=s) for s in sorted(self._symbols)])}"
+        content_str, floating_shares = \
+            self._generate_floating_shares([StockSymbol(symbol=s) for s in sorted(self._symbols)])
+        content += f"\n\n{content_str}"
+        self._generate_floating_shares_summary_xlsx(floating_shares)
 
         # send email
-        self._email_api.send_email(self._alert_name, content, [self._file_8k_summary_filename])
+        self._email_api.send_email(self._alert_name, content,
+                                   [self._file_8k_summary_filename], [self._floating_shares_summary_filename])
 
         # send telegram message
         self._tg_bot.send_message(f"{self._alert_name}\n{content}")
-        self._tg_bot.send_file(self._file_8k_summary_filename, self._alert_name)
-        os.remove(self._file_8k_summary_filename)
+        for file in [self._file_8k_summary_filename, self._floating_shares_summary_filename]:
+            if os.path.exists(file):
+                self._tg_bot.send_file(file, self._alert_name)
+                os.remove(file)
 
 
 if __name__ == "__main__":
+    start = time.time()
     alert = FloatingSharesAlert("FloatingSharesAlert", symbols_file="floating_shares_symbols.txt")
     alert.run()
+
+    print(f"time taken: {time.time() - start} seconds")

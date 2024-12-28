@@ -493,27 +493,38 @@ class StockApi:
                 symbol_set.remove(filing.get("symbol", None))
         return filtered_res
 
-    @error_handling("secapi", default_val=defaultdict(list))
+    @error_handling("financialmodelingprep", default_val=defaultdict(list))
     def get_floating_shares(self, stock_list: List[StockSymbol]) -> Dict[StockSymbol, List[Union[str, float]]]:
         """
         Get outstanding shares
 
         :param stock_list: [StockSymbol, ...]
-        :return: {StockSymbol: [period_new, shares_new, period_old, shares_old]}
+        :return: {StockSymbol: [date_new, shares_new, date_old, shares_old]}
         """
         res = defaultdict(list)
         for stock in stock_list:
-            api_url = f"{self.SEC_API_URL}/float?ticker={stock.ticker}&token={self.SEC_API_KEY}"
+            api_url = f"{self.FMP_API_URL}/v4/historical/shares_float?symbol={stock.ticker}&apikey={self.FMP_API_KEY}"
             response = requests.get(api_url, timeout=self.TIMEOUT).json()
-            data = response.get("data", [])
-            if len(data) >= 2:
-                for i in range(2):
-                    outstanding_shares = data[i].get("float", {}).get("outstandingShares", [])
-                    if len(outstanding_shares) == 0:
-                        res[stock] = []
+            if response:
+                try:
+                    date_now, floating_shares_now = \
+                        response[0].get("date", ""), int(response[0].get("floatShares", "0"))
+                    target_date_previous = \
+                        datetime.datetime.strptime(date_now, "%Y-%m-%d") - datetime.timedelta(days=90)
+                except ValueError:
+                    continue
+
+                for i in range(1, len(response)):
+                    try:
+                        date_previous_str, floating_shares_previous = response[i].get("date", ""), int(
+                            response[i].get("floatShares", "0"))
+                        date_previous = datetime.datetime.strptime(date_previous_str, "%Y-%m-%d")
+                    except ValueError:
+                        continue
+                    if date_previous <= target_date_previous:
+                        res[stock] = [date_now, floating_shares_now, date_previous_str, floating_shares_previous]
                         break
-                    res[stock].append(outstanding_shares[0].get("period", ""))
-                    res[stock].append(outstanding_shares[0].get("value", 0))
+
         return res
 
     @error_handling("financialmodelingprep", default_val=defaultdict(lambda: 0))
