@@ -20,10 +20,8 @@ warnings.filterwarnings('ignore', category=RuntimeWarning)
 class StockApi:
     FMP_API_KEY = Config.TOKENS["FMP_API_KEY"]
     EODHD_API_KEY = Config.TOKENS["EODHD_API_KEY"]
-    SEC_API_KEY = Config.TOKENS["SEC_API_KEY"]
     FMP_API_URL = Config.API_ENDPOINTS["FMP_API_URL"]
     EODHD_API_URL = Config.API_ENDPOINTS["EODHD_API_URL"]
-    SEC_API_URL = Config.API_ENDPOINTS["SEC_API_URL"]
 
     PWD = Config.PROJECT_DIR
     TIMEOUT = 50

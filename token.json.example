@@ -20,7 +20,6 @@
   },
   "COINGECKO_API_KEY": "<API Token>",
   "FMP_API_KEY": "<API Token>",
-  "SEC_API_KEY": "<API Token>",
   "EODHD_API_KEY": "<API Token>",
   "PERPLEXITY_API_KEY": "<API Token>",
   "GMAIL": {

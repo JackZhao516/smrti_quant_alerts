@@ -6,7 +6,7 @@ from typing import Dict, Any, List
 import pytz
 import datetime
 
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
 
 class Config:
@@ -17,7 +17,6 @@ class Config:
         "FMP_API_URL": "https://financialmodelingprep.com/api",
         "EODHD_API_URL": "https://eodhd.com/api",
         "PERPLEXITY_API_URL": "https://api.perplexity.ai",
-        "SEC_API_URL": "https://api.sec-api.io",
     }
     IS_SETUP = False
 
@@ -62,11 +61,7 @@ class Config:
             exit(1)
         if "FMP_API_KEY" not in self.TOKENS or "EODHD_API_KEY" not in self.TOKENS:
             logging.warning('token.json does not contain FMP_API_KEY/EODHD_API_KEY '
-                            'cannot run "stock_alert"')
-
-        if "SEC_API_KEY" not in self.TOKENS:
-            logging.warning('token.json does not contain SEC_API_KEY '
-                            'cannot run "file_8k_alert"')
+                            'cannot run "stock related alerts"')
 
         if "PERPLEXITY_API_KEY" not in self.TOKENS:
             logging.warning('token.json does not contain PERPLEXITY_API_KEY '
