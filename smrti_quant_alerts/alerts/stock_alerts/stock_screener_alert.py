@@ -253,7 +253,7 @@ class StockScreenerAlert(BaseAlert, StockApi):
     # ---------------------------main--------------------------------
     def run(self) -> None:
         stocks = self._get_stocks()
-        print(f"Total stocks: {len(stocks)}")
+        logging.info(f"Total stocks: {len(stocks)}")
 
         with ThreadPoolExecutor(max_workers=8) as executor:
             screener_1_res = executor.submit(self._growth_score_filter, stocks)
