@@ -492,14 +492,15 @@ class StockApi:
         return filtered_res
 
     @error_handling("financialmodelingprep", default_val=defaultdict(list))
-    def get_floating_shares(self, stock_list: List[StockSymbol]) -> Dict[StockSymbol, List[Union[str, float]]]:
+    def get_floating_shares_change(self, stock_list: List[StockSymbol]) \
+            -> Dict[StockSymbol, Dict[str, FinancialMetricsData]]:
         """
         Get outstanding shares
 
         :param stock_list: [StockSymbol, ...]
         :return: {StockSymbol: [date_new, shares_new, date_old, shares_old]}
         """
-        res = defaultdict(list)
+        res = defaultdict(dict)
         for stock in stock_list:
             api_url = f"{self.FMP_API_URL}/v4/historical/shares_float?symbol={stock.ticker}&apikey={self.FMP_API_KEY}"
             response = requests.get(api_url, timeout=self.TIMEOUT).json()
@@ -507,21 +508,22 @@ class StockApi:
                 try:
                     date_now, floating_shares_now = \
                         response[0].get("date", ""), int(response[0].get("floatShares", "0"))
-                    target_date_previous = \
-                        datetime.datetime.strptime(date_now, "%Y-%m-%d") - datetime.timedelta(days=90)
+                    for target_days in [7, 90]:
+                        res[stock][f"{target_days}d"] = FinancialMetricsData(has_percentage=True)
+                        target_date_previous = \
+                            datetime.datetime.strptime(date_now, "%Y-%m-%d") - datetime.timedelta(days=target_days)
+
+                        for i in range(1, len(response)):
+                            date_previous_str, floating_shares_previous = response[i].get("date", ""), int(
+                                response[i].get("floatShares", "0"))
+                            date_previous = datetime.datetime.strptime(date_previous_str, "%Y-%m-%d")
+                            if date_previous <= target_date_previous:
+                                res[stock][f"{target_days}d"] = FinancialMetricsData(
+                                    floating_shares_now / floating_shares_previous - 1, has_percentage=True
+                                )
+                                break
                 except ValueError:
                     continue
-
-                for i in range(1, len(response)):
-                    try:
-                        date_previous_str, floating_shares_previous = response[i].get("date", ""), int(
-                            response[i].get("floatShares", "0"))
-                        date_previous = datetime.datetime.strptime(date_previous_str, "%Y-%m-%d")
-                    except ValueError:
-                        continue
-                    if date_previous <= target_date_previous:
-                        res[stock] = [date_now, floating_shares_now, date_previous_str, floating_shares_previous]
-                        break
 
         return res
 

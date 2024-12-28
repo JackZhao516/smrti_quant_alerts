@@ -11,7 +11,7 @@ import pandas as pd
 from smrti_quant_alerts.email_api import EmailApi
 from smrti_quant_alerts.stock_crypto_api import StockApi
 from smrti_quant_alerts.alerts.base_alert import BaseAlert
-from smrti_quant_alerts.data_type import StockSymbol
+from smrti_quant_alerts.data_type import StockSymbol, FinancialMetricsData
 
 logging.basicConfig(level=logging.INFO)
 
@@ -52,7 +52,7 @@ class FloatingSharesAlert(BaseAlert, StockApi):
         self.get_stock_info(stocks)
 
     def _generate_floating_shares(self, symbols: List[StockSymbol]) \
-            -> Tuple[str, Dict[StockSymbol, List[Union[str, float]]]]:
+            -> Tuple[str, Dict[StockSymbol, Dict[str, FinancialMetricsData]]]:
         """
         Generate outstanding shares for the list of symbols
 
@@ -60,14 +60,16 @@ class FloatingSharesAlert(BaseAlert, StockApi):
 
         :return: outstanding shares formatted email content
         """
-        floating_shares = self.get_floating_shares(symbols)
+        floating_shares = self.get_floating_shares_change(symbols)
         shares_content = ""
 
         for symbol, shares in floating_shares.items():
-            if shares and len(shares) == 4:
-                has_increased = shares[1] > shares[3]
-                shares_content += f"~ {symbol}: {shares[3]} ({shares[2]}) -> {shares[1]} ({shares[0]}) " \
-                                  f"{'+' if has_increased else '-'}\n\n"
+            if shares:
+                shares_content += f"~ {symbol}:\n"
+                for metric, data in shares.items():
+                    shares_content += f"    · {metric}: {data}\n"
+                shares_content += "\n"
+
         return shares_content, floating_shares
 
     def _generate_file_8k_summary_csv(self) -> None:
@@ -83,17 +85,16 @@ class FloatingSharesAlert(BaseAlert, StockApi):
         df.to_csv(self._file_8k_summary_filename, index=False)
 
     def _generate_floating_shares_summary_xlsx(
-            self, floating_shares: Dict[StockSymbol, List[Union[str, float]]]) -> None:
+            self, floating_shares: Dict[StockSymbol, Dict[str, FinancialMetricsData]]) -> None:
         """
         Generate the floating shares summary xlsx
         """
         self._load_stocks_info_thread.join()
         industry_stock_floating_shares_mapping = defaultdict(list)
-        headers = ["stock", "previous date", "previous floating shares",
-                   "current date", "current floating shares", "has increased"]
+        headers = ["stock", "7d change %", "90d change %"]
         for stock, floating_share in floating_shares.items():
             industry_stock_floating_shares_mapping[stock.gics_sector].append(
-                [stock.ticker] + floating_share + [str(floating_share[1] > floating_share[3])]
+                [stock.ticker] + [str(floating_share["7d"]), str(floating_share["90d"])]
             )
         with pd.ExcelWriter(self._floating_shares_summary_filename) as writer:
             for industry, rows in industry_stock_floating_shares_mapping.items():
