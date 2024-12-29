@@ -260,8 +260,11 @@ class StockScreenerAlert(BaseAlert, StockApi):
             screener_4_res = executor.submit(self._quarterly_revenue_yoy_growth_filter, stocks)
             self._get_stock_info_thread.join()
 
-            xlsx_files = self._build_growth_filter_docs(*screener_1_res.result()) + \
-                [self._build_standard_filter_xlsx(screener_2_res.result(),
+            screener_1_res_stocks, growth_scores = screener_1_res.result()
+            xlsx_files = self._build_growth_filter_docs(screener_1_res_stocks, growth_scores) + \
+                [self._build_standard_filter_xlsx(screener_1_res_stocks,
+                                                  "screener_1_8-quarters_stats"),
+                 self._build_standard_filter_xlsx(screener_2_res.result(),
                                                   "screener_2_quarter_rev_yoy_growth_operating_margin"),
                  self._build_standard_filter_xlsx(screener_3_res.result(),
                                                   "screener_3_quarter_rev_yoy_growth_revenue_cagr"),
