@@ -31,7 +31,7 @@ class StockScreenerAlert(BaseAlert, StockApi):
         """
         Get stocks from the initial filter
         """
-        return self.get_top_market_cap_stocks_by_market_cap_threshold(10 ** 6)
+        return self.get_top_market_cap_stocks_by_market_cap_threshold(10 ** 8)
 
     def _get_all_stock_info(self) -> None:
         """

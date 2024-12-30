@@ -3,7 +3,6 @@
 
 [![License](https://img.shields.io/badge/license-MIT-green)](https://github.com/JackZhao516/smrti_quant_alerts/blob/main/LICENSE)
 ![smrti_quant_alert Python Versions](https://img.shields.io/pypi/pyversions/python-bitget?logo=pypi)
-[![Coverage Status](https://coveralls.io/repos/github/JackZhao516/smrti_quant_alerts/badge.png?branch=main)](https://coveralls.io/github/JackZhao516/smrti_quant_alerts?branch=main)
 
 This repo includes several real-time alerts for crypto/stock trading, built with 
 [CoinGecko](https://www.coingecko.com/), [Binance](https://www.binance.com/en), 
