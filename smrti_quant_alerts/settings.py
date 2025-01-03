@@ -6,7 +6,7 @@ from typing import Dict, Any, List
 import pytz
 import datetime
 
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+logging.basicConfig(level=logging.WARN, format='%(asctime)s - %(levelname)s - %(message)s')
 
 
 class Config:
@@ -102,13 +102,13 @@ class Config:
             if alert_type == "price_volume":
                 self._validate_individual_configs(["15m_volume_usd", "1h_volume_usd",
                                                    "15m_price_change_percentage", "1h_price_change_percentage"],
-                                                  ["alert_name", "tg_types", "alert_types"],
+                                                  ["tg_types", "alert_types"],
                                                   alert_setting, alert_name)
             elif alert_type == "price_increase_alert":
                 self._validate_individual_configs([], ["top_range", "top_n", "timeframe", "tg_type"],
                                                   alert_setting, alert_name)
             elif alert_type == "stock_price_outperformer":
-                self._validate_individual_configs([], ["alert_name", "tg_type", "timeframe_list", "email",
+                self._validate_individual_configs([], ["tg_type", "timeframe_list", "email",
                                                        "time_frame_sma_filter_ai_analysis",
                                                        "newly_added_stock_ai_analysis",
                                                        "growth_score_filter_ai_analysis"],
@@ -116,9 +116,19 @@ class Config:
             elif alert_type == "alts_alert":
                 self._validate_individual_configs([], ["tg_type"],
                                                   alert_setting, alert_name)
+            elif alert_type == "floating_shares":
+                self._validate_individual_configs([], ["tg_type", "symbols_file"],
+                                                  alert_setting, alert_name)
+            elif alert_type == "stock_screener":
+                self._validate_individual_configs([], ["market_cap_threshold", "email"],
+                                                  alert_setting, alert_name)
+            elif alert_type == "stock_screener":
+                self._validate_individual_configs([], ["timeframe_list", "symbols_file", "tg_type",
+                                                       "add_on_timeframe_list", "email", "xlsx"],
+                                                  alert_setting, alert_name)
             elif alert_type in ["sequential", "alert_100", "alert_300", "alert_500", "meme_alert"]:
                 self._validate_individual_configs([], ["tg_type", "timeframe", "window", "alert_type",
-                                                       "alert_name", "alert_coins_info"],
+                                                       "alert_coins_info"],
                                                   alert_setting, alert_name)
             elif alert_type == "market_cap":
                 self._validate_individual_configs([], ["top_n", "tg_type"], alert_setting, alert_name)

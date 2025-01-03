@@ -28,12 +28,11 @@ class MACDAlert(BaseAlert):
         :param email: send email or not
         :param tg_type: telegram type
         """
-        super().__init__(tg_type)
+        super().__init__(alert_name, tg_type)
         self._sectors = defaultdict(dict)
         self._symbol_pairs = self._parse_symbols_file(symbols_file)
         self._email = email
         self._xlsx = xlsx
-        self._alert_name = alert_name
         self._timeframe_list = timeframe_list
         self._add_on_timeframe_list = add_on_timeframe_list
         self._stock_api = StockApi()

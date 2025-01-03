@@ -9,7 +9,7 @@ from abc import ABC, abstractmethod
 from smrti_quant_alerts.alerts.base_alert import BaseAlert
 from smrti_quant_alerts.stock_crypto_api import CryptoComprehensiveApi
 from smrti_quant_alerts.data_type import CoingeckoCoin, BinanceExchange, TradingSymbol
-from smrti_quant_alerts.db import init_database_runtime, close_database, SpotOverMaDBUtils
+from smrti_quant_alerts.db import close_database, SpotOverMaDBUtils
 from smrti_quant_alerts.alerts.crypto_alerts.utility import send_coins_info_to_telegram
 
 db_utils = SpotOverMaDBUtils()
@@ -171,9 +171,8 @@ class SpotOverMAAlert(BaseAlert, CryptoComprehensiveApi):
         :param tg_type: telegram channel/group type
         """
 
-        BaseAlert.__init__(self, tg_type)
+        BaseAlert.__init__(self, alert_name, tg_type)
         CryptoComprehensiveApi.__init__(self)
-        self._alert_name = alert_name
         self._alert_type = alert_type
 
         self._timeframe = timeframe
@@ -284,8 +283,6 @@ class SpotOverMAAlert(BaseAlert, CryptoComprehensiveApi):
         self.get_all_coingecko_coins()
         self.get_all_binance_exchanges()
 
-        database_name = f"{self.CONFIG.SETTINGS[self._alert_name]['database_name']}.db"
-        init_database_runtime(database_name)
         start_timestamp = time()
 
         if self._alert_type == "sequential":

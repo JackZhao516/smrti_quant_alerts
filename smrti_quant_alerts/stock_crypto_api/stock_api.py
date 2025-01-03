@@ -13,6 +13,8 @@ from smrti_quant_alerts.exception import error_handling
 from smrti_quant_alerts.settings import Config
 from smrti_quant_alerts.data_type import StockSymbol, FinancialMetricsData, FinancialDataType, FinancialMetricType
 from smrti_quant_alerts.stock_crypto_api.utility import get_datetime_now, get_date_from_timestamp
+from smrti_quant_alerts.db import StockAlertDBUtils, init_database_runtime, is_database_runtime_initialized
+
 
 warnings.filterwarnings('ignore', category=RuntimeWarning)
 
@@ -32,7 +34,8 @@ class StockApi:
     timeframe_dict_reverse = {v: k for k, v in timeframe_dict.items()}
 
     def __init__(self) -> None:
-        super().__init__()
+        if not is_database_runtime_initialized():
+            init_database_runtime("test.db")
 
     @staticmethod
     def _parse_eodhd_symbol(symbol: StockSymbol) -> str:
@@ -45,6 +48,9 @@ class StockApi:
 
         :return: [StockSymbol, ...]
         """
+        if StockSymbol.sp500_set:
+            stocks_with_info, _ = StockAlertDBUtils.get_stocks_info(StockSymbol.sp500_set)
+            return stocks_with_info
         api_url = f"{self.FMP_API_URL}/v3/sp500_constituent?apikey={self.FMP_API_KEY}"
         response = requests.get(api_url, timeout=self.TIMEOUT)
         response = response.json()
@@ -53,16 +59,19 @@ class StockApi:
                                   stock["subSector"], stock['headQuarter'], stock["cik"], stock["founded"],
                                   sp500=True) for stock in response
                       if stock["symbol"] and stock["name"]]
-
+        StockAlertDBUtils.add_stocks_info(stock_list)
         return sorted(stock_list, key=lambda x: x.ticker)
 
-    @error_handling("financialmodelingprep", default_val=[])
+    # @error_handling("financialmodelingprep", default_val=[])
     def get_nasdaq_list(self) -> List[StockSymbol]:
         """
         Get all stocks in NASDAQ 100
 
         :return: [StockSymbol, ...]
         """
+        if StockSymbol.nasdaq_set:
+            stocks_with_info, _ = StockAlertDBUtils.get_stocks_info(StockSymbol.nasdaq_set)
+            return stocks_with_info
         api_url = f"{self.FMP_API_URL}/v3/available-traded/list?apikey={self.FMP_API_KEY}"
         response = requests.get(api_url, timeout=self.TIMEOUT)
         response = response.json()
@@ -70,7 +79,7 @@ class StockApi:
         stock_list = [StockSymbol(stock["symbol"], stock["name"], nasdaq=True) for stock in response
                       if stock["exchangeShortName"] and stock["exchangeShortName"].upper() == "NASDAQ"
                       and stock["type"] and stock["type"] == "stock"]
-
+        StockAlertDBUtils.add_stocks_info(stock_list)
         return sorted(stock_list, key=lambda x: x.ticker)
 
     @error_handling("financialmodelingprep", default_val=[])
@@ -80,14 +89,17 @@ class StockApi:
 
         :return: [StockSymbol, ...]
         """
+        if StockSymbol.nyse_set:
+            stocks_with_info, _ = StockAlertDBUtils.get_stocks_info(StockSymbol.nyse_set)
+            return stocks_with_info
         api_url = f"{self.FMP_API_URL}/v3/available-traded/list?apikey={self.FMP_API_KEY}"
         response = requests.get(api_url, timeout=self.TIMEOUT)
         response = response.json()
 
-        stock_list = [StockSymbol(stock["symbol"], stock["name"], nasdaq=True) for stock in response
+        stock_list = [StockSymbol(stock["symbol"], stock["name"], nyse=True) for stock in response
                       if stock["exchangeShortName"] and stock["exchangeShortName"].upper() == "NYSE"
                       and stock["type"] and stock["type"] == "stock"]
-
+        StockAlertDBUtils.add_stocks_info(stock_list)
         return sorted(stock_list, key=lambda x: x.ticker)
 
     @error_handling("eodhd", default_val=({}, {}))
@@ -149,7 +161,7 @@ class StockApi:
             history_price_dicts[timeframe_list[i]], _ = \
                 self.get_all_stock_price_volume_by_day_delta(timeframe_delta)
 
-        # post processing
+        # post-processing
         for stock, today_price in today_price_dict.items():
             price_change = {}
             for timeframe, history_price_dict in history_price_dicts.items():
@@ -161,7 +173,7 @@ class StockApi:
             res[stock] = price_change
         return res
 
-    @error_handling("financialmodelingprep", default_val=[])
+    # @error_handling("financialmodelingprep", default_val=[])
     def get_stock_info(self, stock_list: Iterable[StockSymbol]) -> List[StockSymbol]:
         """
         Get stock info, including gics_sector, gics_subsector, etc, ...
@@ -170,10 +182,19 @@ class StockApi:
 
         :return: [StockSymbol, ...] with all info
         """
-        # preprocess the StockSymbol list
         res = []
+        # fetch stock info from database
+        stocks_with_info, stocks_without_info = StockAlertDBUtils.get_stocks_info(stock_list, full=True)
+
+        if not stocks_without_info:
+            # preserve the order
+            for stock in stock_list:
+                res.append(stocks_with_info[stocks_with_info.index(stock)])
+            return res
+
+        # preprocess the StockSymbol list
         stocks = []
-        for stock in stock_list:
+        for stock in stocks_without_info:
             if stock.has_stock_info:
                 res.append(stock)
             else:
@@ -192,8 +213,9 @@ class StockApi:
                                 stock["industry"], f"{stock['city']}, {stock['state']}, {stock['country']}",
                                 stock["cik"], stock["ipoDate"])
                     for stock in response]
-
+        StockAlertDBUtils.add_stocks_info(res)
         # preserve the order
+        res += stocks_with_info
         result = []
         for stock in stock_list:
             result.append(res[res.index(stock)])
@@ -626,3 +648,11 @@ class StockApi:
                 res[stock][i].update_data(revenue_growth, FinancialDataType.FLOAT)
 
         return res
+
+
+if __name__ == "__main__":
+    import pprint
+    stock_api = StockApi()
+    pprint.pp(stock_api.get_stocks_stats_by_num_of_timeframe([StockSymbol("SATS")], "quarter", 6))
+
+

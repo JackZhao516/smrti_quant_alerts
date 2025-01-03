@@ -8,7 +8,7 @@ from smrti_quant_alerts.alerts.crypto_alerts.utility import send_coins_info_to_t
 
 
 class CoingeckoPriceIncreaseAlert(BaseAlert, CoingeckoApi):
-    def __init__(self, top_range: Union[Sequence[int], Sequence[Sequence[int]]] = (0, 500),
+    def __init__(self, alert_name: str, top_range: Union[Sequence[int], Sequence[Sequence[int]]] = (0, 500),
                  top_n: int = 100, timeframe: str = "14d", coin_info: bool = True,
                  tg_type: str = "CG_PRICE_INCREASE") -> None:
         """
@@ -23,7 +23,7 @@ class CoingeckoPriceIncreaseAlert(BaseAlert, CoingeckoApi):
         :param tg_type: telegram type
 
         """
-        BaseAlert.__init__(self, tg_type)
+        BaseAlert.__init__(self, alert_name, tg_type)
         CoingeckoApi.__init__(self)
 
         self._top_ranges = top_range if isinstance(top_range[0], Sequence) else [top_range]
@@ -113,6 +113,6 @@ class CoingeckoPriceIncreaseAlert(BaseAlert, CoingeckoApi):
 
 if __name__ == '__main__':
     start = time.time()
-    CoingeckoPriceIncreaseAlert(top_range=[(0, 300), (300, 500), (500, 1000)], top_n=40,
-                                timeframe="3m", tg_type="TEST").run()
+    CoingeckoPriceIncreaseAlert(alert_name="price_increase_alert", top_range=[(0, 300), (300, 500), (500, 1000)],
+                                top_n=40, timeframe="3m", tg_type="TEST").run()
     print(time.time() - start)

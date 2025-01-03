@@ -12,8 +12,8 @@ from smrti_quant_alerts.stock_crypto_api import CoingeckoApi
 
 
 class CoingeckoMarketCapAlert(BaseAlert, CoingeckoApi):
-    def __init__(self, top_n: Union[Iterable[int], int] = 200, tg_type: str = "CG_MAR_CAP") -> None:
-        BaseAlert.__init__(self, tg_type)
+    def __init__(self, alert_name: str, top_n: Union[Iterable[int], int] = 200, tg_type: str = "CG_MAR_CAP") -> None:
+        BaseAlert.__init__(self, alert_name, tg_type)
         CoingeckoApi.__init__(self)
         if isinstance(top_n, int):
             top_n = [top_n]
@@ -50,5 +50,5 @@ class CoingeckoMarketCapAlert(BaseAlert, CoingeckoApi):
 
 if __name__ == '__main__':
     nums = [100, 200, 300, 400, 500]
-    cmc_alert = CoingeckoMarketCapAlert(top_n=nums, tg_type="TEST")
+    cmc_alert = CoingeckoMarketCapAlert(alert_name="market_cap", top_n=nums, tg_type="TEST")
     cmc_alert.run()

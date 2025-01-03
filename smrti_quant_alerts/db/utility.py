@@ -5,7 +5,7 @@ from threading import RLock
 
 
 from smrti_quant_alerts.db.database import database_runtime, init_database
-from smrti_quant_alerts.db.models import LastCount, ExchangeCount, StockAlertCount, MACDAlertValue
+from smrti_quant_alerts.db.models import LastCount, ExchangeCount, StockAlertCount, MACDAlertValue, StockInfo
 from smrti_quant_alerts.data_type import TradingSymbol, get_class, BinanceExchange, StockSymbol
 
 # ------------ general utilities -------------
@@ -13,7 +13,11 @@ from smrti_quant_alerts.data_type import TradingSymbol, get_class, BinanceExchan
 
 def init_database_runtime(db_name: str) -> None:
     database_runtime.initialize(init_database(db_name))
-    database_runtime.create_tables([LastCount, ExchangeCount, StockAlertCount, MACDAlertValue], safe=True)
+    database_runtime.create_tables([LastCount, ExchangeCount, StockAlertCount, MACDAlertValue, StockInfo], safe=True)
+
+
+def is_database_runtime_initialized() -> bool:
+    return database_runtime.obj is not None
 
 
 def close_database() -> None:
@@ -206,8 +210,57 @@ class StockAlertDBUtils:
         with database_runtime.atomic():
             StockAlertCount.delete().execute()
 
+    @staticmethod
+    def get_stocks_info(stocks: Union[Iterable[StockSymbol], Iterable[str]], full: bool = True) \
+            -> Tuple[List[StockSymbol], List[StockSymbol]]:
+        """
+        get stock info
+        :param stocks: list of stock symbols
+        :param full: if True, stocks without full info will be counted as without info
 
-class MACDAlertDBUtils:
+        :return: list of stock symbols with info, list of stock symbols without info
+        """
+        if not stocks:
+            return [], []
+
+        if isinstance(stocks, set):
+            stocks = list(stocks)
+        if isinstance(stocks[0], str):
+            stocks = [StockSymbol(i) for i in stocks]
+
+        stocks_with_info, stocks_without_info = [], []
+        with database_runtime.atomic():
+            res = StockInfo.select().where(StockInfo.symbol.in_([i.ticker for i in stocks])).dicts()
+            for i in res:
+                stock = StockSymbol(
+                    i["symbol"], i["security_name"], i["gics_sector"], i["gics_sub_industry"],
+                    i["location"], i["cik"], i["founded_time"])
+                if full:
+                    if stock.has_stock_info:
+                        stocks_with_info.append(stock)
+                    else:
+                        stocks_without_info.append(stock)
+                stocks_with_info.append(stock)
+        stocks_with_info_set = set(stocks_with_info)
+        for stock in stocks:
+            if stock not in stocks_with_info_set:
+                stocks_without_info.append(stock)
+        return stocks_with_info, stocks_without_info
+
+    @staticmethod
+    def add_stocks_info(stocks: Iterable[StockSymbol]) -> None:
+        """
+        add stock info
+        :param stocks: list of stock symbols
+        """
+        with database_runtime.atomic():
+            StockInfo.replace_many([{"symbol": i.ticker, "security_name": i.security_name,
+                                    "gics_sector": i.gics_sector, "gics_sub_industry": i.gics_sub_industry,
+                                     "location": i.location, "cik": i.cik, "founded_time": i.founded_time}
+                                   for i in stocks]).execute()
+
+
+class MACDAlertDBUtils(StockAlertDBUtils):
     @staticmethod
     def get_last_week_value(symbol_left: str, symbol_right: str) -> Optional[float]:
         """

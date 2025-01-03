@@ -16,12 +16,13 @@ from smrti_quant_alerts.alerts.base_alert import BaseAlert
 
 
 class StockScreenerAlert(BaseAlert, StockApi):
-    def __init__(self, alert_name: str, email: bool = True):
-        BaseAlert.__init__(self)
+    def __init__(self, alert_name: str, email: bool = True, market_cap_threshold: int = 10 ** 8) -> None:
+        BaseAlert.__init__(self, alert_name)
         StockApi.__init__(self)
-        self._alert_name = alert_name
+
         self._email_api = EmailApi()
         self._email = email
+        self._market_cap_threshold = market_cap_threshold
         self._stocks_ev_over_revenue = defaultdict(float)
         self._stocks_eight_quarters_stats = defaultdict(list)
         self._get_stock_info_thread = threading.Thread(target=self._get_all_stock_info)
@@ -31,7 +32,7 @@ class StockScreenerAlert(BaseAlert, StockApi):
         """
         Get stocks from the initial filter
         """
-        return self.get_top_market_cap_stocks_by_market_cap_threshold(10 ** 8)
+        return self.get_top_market_cap_stocks_by_market_cap_threshold(self._market_cap_threshold)
 
     def _get_all_stock_info(self) -> None:
         """
@@ -281,7 +282,7 @@ class StockScreenerAlert(BaseAlert, StockApi):
 
 if __name__ == "__main__":
     start_time = time.time()
-    alert = StockScreenerAlert("StockScreenerAlert")
+    alert = StockScreenerAlert("stock_screener", True, 10 ** 11)
     alert.run()
 
     print(f"Time taken: {time.time() - start_time}")

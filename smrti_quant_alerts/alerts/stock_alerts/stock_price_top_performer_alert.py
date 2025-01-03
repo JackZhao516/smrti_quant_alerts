@@ -13,7 +13,7 @@ from smrti_quant_alerts.stock_crypto_api import StockApi
 from smrti_quant_alerts.alerts.base_alert import BaseAlert
 from smrti_quant_alerts.llm_api import PerplexityAPI
 from smrti_quant_alerts.pdf_api import PDFApi
-from smrti_quant_alerts.db import init_database_runtime, close_database, StockAlertDBUtils
+from smrti_quant_alerts.db import close_database, StockAlertDBUtils
 
 logging.basicConfig(level=logging.INFO)
 
@@ -37,9 +37,8 @@ class StockPriceTopPerformerAlert(BaseAlert, StockApi):
         :param growth_score_filter_ai_analysis: whether to send ai analysis for growth score filtered stocks
         :param daily_volume_threshold: daily volume threshold
         """
-        BaseAlert.__init__(self, tg_type=tg_type)
+        BaseAlert.__init__(self, alert_name, tg_type=tg_type)
         StockApi.__init__(self)
-        self._alert_name = alert_name
         self._timeframe_list = [timeframe.upper() for timeframe in timeframe_list] \
             if timeframe_list else ["1D", "5D", "1M", "3M", "6M", "1Y", "3Y", "5Y"]
         self._daily_volume_threshold = daily_volume_threshold
@@ -289,7 +288,7 @@ class StockPriceTopPerformerAlert(BaseAlert, StockApi):
             for i in range(0, len(sp500_nasdaq_nyse_stocks), 40):
                 stocks_price_increase = sp500_nasdaq_nyse_stocks[i:i + 40]
                 stocks = {stock: percentage for stock, percentage in stocks_price_increase}
-                stock_info = self.get_stock_info(stocks.keys())
+                stock_info = self.get_stock_info(list(stocks.keys()))
                 for stock in stock_info:
                     if not stock.security_name:
                         logging.warning(f"Stock {stock.ticker} does not have security name")
@@ -310,8 +309,6 @@ class StockPriceTopPerformerAlert(BaseAlert, StockApi):
         This function is used to send daily report of top 50 stocks with the highest price increase
         """
         logging.info("Running Stock Alert")
-        database_name = f"{self.CONFIG.SETTINGS[self._alert_name]['database_name']}.db"
-        init_database_runtime(database_name)
         n = 50
         top_stocks = self.get_sorted_price_increased_stocks()
         _, self._daily_volume = self.get_all_stock_price_volume_by_day_delta(1)

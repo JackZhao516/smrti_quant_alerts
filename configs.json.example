@@ -2,7 +2,6 @@
   "<price_volume_alert_example_name>": {
     "alert_type": "<price_volume_alert_example_name>",
     "alert_input_args": {
-      "alert_name": "price_volume",
       "tg_types": ["PRICE_15M", "PRICE_1H", "VOLUME_15M", "VOLUME_1H"],
       "alert_types": ["binance_price_15m", "binance_price_1h",
         "binance_volume_15m", "binance_volume_1h"]
@@ -41,7 +40,6 @@
   "<stock_alert_example_name>": {
     "alert_type": "stock_price_outperformer",
     "alert_input_args": {
-      "alert_name": "<stock_alert_example_name>",
       "timeframe_list": ["1d", "5d", "1M", "3M", "6M", "1y", "3y", "5y"],
       "tg_type": "STOCK",
       "email": true/false,
@@ -61,7 +59,6 @@
    "<floating_shares_example_name>": {
     "alert_type": "floating_shares",
     "alert_input_args": {
-      "alert_name": "<floating_shares_example_name>",
       "symbols_file": "floating_shares_symbols_example.txt",
       "tg_type": "TEST"
     },
@@ -77,8 +74,8 @@
   "<stock_screener_example_name>": {
     "alert_type": "stock_screener",
     "alert_input_args": {
-      "alert_name": "<stock_screener_example_name>",
-      "email":  true/false
+      "email":  true/false,
+      "market_cap_threshold": 100000000
     },
     "alert_params": {},
     "run_time_input_args": {
@@ -92,7 +89,6 @@
   "<macd_alert_example_name>": {
     "alert_type": "macd_alert",
     "alert_input_args": {
-      "alert_name": "<macd_alert_example_name>",
       "timeframe_list": ["1d", "5d", "1M", "3M", "6M", "1y", "3y", "5y"],
       "add_on_timeframe_list": ["1d", "5d", "1M", "3M", "6M", "1y", "3y", "5y"],
       "symbols_file": "macd_symbols_example.csv",
@@ -116,7 +112,6 @@
       "window": 200,
       "tg_type": "CG_SUM",
       "alert_type": "sequential",
-      "alert_name": "<sequential_example_name>",
       "alert_coins_info": true
     },
     "alert_params": {},
@@ -135,7 +130,6 @@
       "window": 200,
       "tg_type": "MEME",
       "alert_type": "meme_alert",
-      "alert_name": "<meme_alert_example_name>",
       "alert_coins_info": true
     },
     "alert_params": {},
@@ -154,7 +148,6 @@
       "window": 200,
       "tg_type": "CG_SUM",
       "alert_type": "alert_100",
-      "alert_name": "<alert_100_example_name>",
       "alert_coins_info": true
     },
     "alert_params": {},

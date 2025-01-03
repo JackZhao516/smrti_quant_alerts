@@ -7,8 +7,8 @@ from smrti_quant_alerts.stock_crypto_api import CoingeckoApi
 
 
 class CGAltsAlert(BaseAlert, CoingeckoApi):
-    def __init__(self, tg_type: str = "ALTS") -> None:
-        BaseAlert.__init__(self, tg_type)
+    def __init__(self, alert_name: str, tg_type: str = "ALTS") -> None:
+        BaseAlert.__init__(self, alert_name, tg_type)
         CoingeckoApi.__init__(self)
 
         # alts coins are from market cap 500 - 3000
@@ -58,4 +58,4 @@ class CGAltsAlert(BaseAlert, CoingeckoApi):
 
 
 if __name__ == "__main__":
-    CGAltsAlert(tg_type="TEST").run()
+    CGAltsAlert(alert_name="alts_alert").run()

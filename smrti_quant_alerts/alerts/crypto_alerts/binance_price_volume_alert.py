@@ -12,7 +12,7 @@ from binance.websocket.spot.websocket_stream import SpotWebsocketStreamClient
 from smrti_quant_alerts.alerts.base_alert import BaseAlert
 from smrti_quant_alerts.stock_crypto_api import BinanceApi
 from smrti_quant_alerts.data_type import BinanceExchange, ExchangeTick
-from smrti_quant_alerts.db import init_database_runtime, PriceVolumeDBUtils
+from smrti_quant_alerts.db import PriceVolumeDBUtils
 from smrti_quant_alerts.utility import run_task_at_daily_time
 
 
@@ -21,11 +21,10 @@ class BinancePriceVolumeBase(ABC, BaseAlert, BinanceApi):
 
     def __init__(self, alert_name: str, alert_type: str = "binance_price_15m",
                  tg_type: str = "TEST", timeframe: str = "15m") -> None:
-        BaseAlert.__init__(self, tg_type)
+        BaseAlert.__init__(self, alert_name, tg_type)
         BinanceApi.__init__(self)
 
         # alert info and settings
-        self._alert_name = alert_name
         self._timeframe = timeframe
         self._alert_type = alert_type
         self._params = self.CONFIG.SETTINGS[alert_name]["alert_params"]
@@ -329,13 +328,11 @@ class BinancePriceVolumeAlert(BaseAlert):
     def __init__(self, alert_name: str, alert_types: Sequence[str] = ("binance_price_15m", "binance_price_1h",
                                                                       "binance_volume_15m", "binance_volume_1h"),
                  tg_types: Sequence[str] = ("TEST", "TEST", "TEST", "TEST")) -> None:
-        BaseAlert.__init__(self, tg_types[0])
-        self._alert_name = alert_name
+        BaseAlert.__init__(self, alert_name, tg_types[0])
         self._alert_types = alert_types
         self._tg_types = tg_types
 
     def run(self) -> None:
-        init_database_runtime(f'{self.CONFIG.SETTINGS[self._alert_name]["database_name"]}.db')
         alert_type_to_class = {
             "binance_price_15m": BinancePrice15mAlert,
             "binance_price_1h": BinancePrice1hAlert,

@@ -23,8 +23,9 @@ class FloatingSharesAlert(BaseAlert, StockApi):
         :param symbols_file: stock symbols file
         :param tg_type: telegram type
         """
-        super().__init__(tg_type)
-        self._alert_name = alert_name
+        BaseAlert.__init__(self, alert_name, tg_type)
+        StockApi.__init__(self)
+
         self._email_api = EmailApi()
         self._symbols = []
         self._file_8k_summary_filename = f"file_8k_summary_{uuid.uuid4()}.csv"
@@ -129,7 +130,7 @@ class FloatingSharesAlert(BaseAlert, StockApi):
 
 if __name__ == "__main__":
     start = time.time()
-    alert = FloatingSharesAlert("FloatingSharesAlert", symbols_file="floating_shares_symbols.txt")
+    alert = FloatingSharesAlert("floating_shares", symbols_file="floating_shares_symbols.txt")
     alert.run()
 
     print(f"time taken: {time.time() - start} seconds")
