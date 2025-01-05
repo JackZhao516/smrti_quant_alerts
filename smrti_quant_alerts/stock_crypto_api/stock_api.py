@@ -48,9 +48,6 @@ class StockApi:
 
         :return: [StockSymbol, ...]
         """
-        if StockSymbol.sp500_set:
-            stocks_with_info, _ = StockAlertDBUtils.get_stocks_info(StockSymbol.sp500_set)
-            return stocks_with_info
         api_url = f"{self.FMP_API_URL}/v3/sp500_constituent?apikey={self.FMP_API_KEY}"
         response = requests.get(api_url, timeout=self.TIMEOUT)
         response = response.json()
@@ -62,16 +59,13 @@ class StockApi:
         StockAlertDBUtils.add_stocks_info(stock_list)
         return sorted(stock_list, key=lambda x: x.ticker)
 
-    # @error_handling("financialmodelingprep", default_val=[])
+    @error_handling("financialmodelingprep", default_val=[])
     def get_nasdaq_list(self) -> List[StockSymbol]:
         """
         Get all stocks in NASDAQ 100
 
         :return: [StockSymbol, ...]
         """
-        if StockSymbol.nasdaq_set:
-            stocks_with_info, _ = StockAlertDBUtils.get_stocks_info(StockSymbol.nasdaq_set)
-            return stocks_with_info
         api_url = f"{self.FMP_API_URL}/v3/available-traded/list?apikey={self.FMP_API_KEY}"
         response = requests.get(api_url, timeout=self.TIMEOUT)
         response = response.json()
@@ -89,9 +83,6 @@ class StockApi:
 
         :return: [StockSymbol, ...]
         """
-        if StockSymbol.nyse_set:
-            stocks_with_info, _ = StockAlertDBUtils.get_stocks_info(StockSymbol.nyse_set)
-            return stocks_with_info
         api_url = f"{self.FMP_API_URL}/v3/available-traded/list?apikey={self.FMP_API_KEY}"
         response = requests.get(api_url, timeout=self.TIMEOUT)
         response = response.json()
@@ -101,6 +92,21 @@ class StockApi:
                       and stock["type"] and stock["type"] == "stock"]
         StockAlertDBUtils.add_stocks_info(stock_list)
         return sorted(stock_list, key=lambda x: x.ticker)
+
+    def get_all_non_etf_stocks_by_gics_sector(self) -> Dict[str, List[StockSymbol]]:
+        """
+        Get all stocks in a specific GICS sector
+
+        :return: {sector: [StockSymbol, ...]}
+        """
+        all_stocks = self.get_nasdaq_list() + self.get_nyse_list()
+        sector_dict = defaultdict(list)
+        self.get_stock_info(all_stocks)
+        for stock in all_stocks:
+            if (stock.security_name and " ETF" not in stock.security_name
+               or not stock.security_name) and len(stock.ticker) < 5:
+                sector_dict[stock.gics_sector].append(stock)
+        return sector_dict
 
     @error_handling("eodhd", default_val=({}, {}))
     def get_all_stock_price_volume_by_day_delta(self, day_delta: int = 0) \
@@ -173,7 +179,34 @@ class StockApi:
             res[stock] = price_change
         return res
 
-    # @error_handling("financialmodelingprep", default_val=[])
+    def get_all_non_etf_stocks_price_change_percentage_by_gics_sector_timeframes(
+            self, timeframes: List[str]) -> Dict[str, Dict[str, List[Tuple[StockSymbol, Decimal]]]]:
+        """
+        Get sorted price change percentage for all non-ETF stocks grouped by GICS sector
+
+        :param timeframes: ["1D", "5D", "1M", "3M", "6M", "1Y", "3Y", "5Y"]
+
+        :return: {timeframe: {sector: [(StockSymbol, price_change_percentage), ...], ...}}
+        """
+        all_stocks = self.get_all_non_etf_stocks_by_gics_sector()
+        price_change_percentage = defaultdict(dict)
+        stock_price_change_percentage = self.get_all_stock_price_change_percentage(timeframes)
+        for sector, stock_list in all_stocks.items():
+            for stock in stock_list:
+                if stock in stock_price_change_percentage:
+                    for timeframe in timeframes:
+                        if sector not in price_change_percentage[timeframe]:
+                            price_change_percentage[timeframe][sector] = []
+
+                        price_change_percentage[timeframe][sector].append(
+                            (stock, stock_price_change_percentage[stock][timeframe]))
+        for timeframe in timeframes:
+            for sector in price_change_percentage[timeframe]:
+                price_change_percentage[timeframe][sector] = sorted(price_change_percentage[timeframe][sector],
+                                                                    key=lambda x: x[1], reverse=True)
+        return price_change_percentage
+
+    @error_handling("financialmodelingprep", default_val=[])
     def get_stock_info(self, stock_list: Iterable[StockSymbol]) -> List[StockSymbol]:
         """
         Get stock info, including gics_sector, gics_subsector, etc, ...
@@ -691,11 +724,3 @@ class StockApi:
                 res[stock][i].update_data(revenue_growth, FinancialDataType.FLOAT)
 
         return res
-
-
-if __name__ == "__main__":
-    import pprint
-    stock_api = StockApi()
-    pprint.pp(stock_api.get_stocks_valuation_score([StockSymbol("AAPL")]))
-
-

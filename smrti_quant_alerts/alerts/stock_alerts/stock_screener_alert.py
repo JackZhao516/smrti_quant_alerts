@@ -17,19 +17,28 @@ from smrti_quant_alerts.db import StockAlertDBUtils
 
 
 class StockScreenerAlert(BaseAlert, StockApi):
-    def __init__(self, alert_name: str, email: bool = True, market_cap_threshold: int = 10 ** 8) -> None:
+    def __init__(self, alert_name: str, price_top_percent: 20, top_performer_exclude_sectors: List[str] = None,
+                 email: bool = True, market_cap_threshold: int = 10 ** 8) -> None:
         BaseAlert.__init__(self, alert_name)
         StockApi.__init__(self)
 
         self._email_api = EmailApi()
         self._email = email
+        self._price_top_percent = price_top_percent
+        self._top_performer_exclude_sectors = top_performer_exclude_sectors
         self._market_cap_threshold = market_cap_threshold
         self._stocks_ev_over_revenue = defaultdict(float)
         self._stocks_valuation_score = defaultdict(FinancialMetricsData)
         self._stocks_eight_quarters_stats = defaultdict(list)
         self._screener_name_to_stocks = defaultdict(list)
+        self._stock_price_top_performer_by_gics_sector_timeframe = {}
+
         self._get_stock_info_thread = threading.Thread(target=self._get_all_stock_info)
         self._get_stock_info_thread.start()
+
+        self._get_price_top_performer_thread = \
+            threading.Thread(target=self.get_top_percent_stock_price_top_performer_by_gics_sector_timeframe)
+        self._get_price_top_performer_thread.start()
 
     def _get_stocks(self) -> List[StockSymbol]:
         """
@@ -97,6 +106,23 @@ class StockScreenerAlert(BaseAlert, StockApi):
                       FinancialMetricType.FREE_CASH_FLOW_MARGIN:
                           stock_stats[stock][i][FinancialMetricType.FREE_CASH_FLOW_MARGIN]} for i in range(8)]
             self._stocks_eight_quarters_stats[stock] = stats
+
+    def get_top_percent_stock_price_top_performer_by_gics_sector_timeframe(self) -> None:
+        """
+        Get top percent stock price top performer by gics sector timeframe
+        """
+        all_non_etf_stocks = self.get_all_non_etf_stocks_by_gics_sector()
+        self._stock_price_top_performer_by_gics_sector_timeframe = \
+            self.get_all_non_etf_stocks_price_change_percentage_by_gics_sector_timeframes(["5D", "1M"])
+        if self._top_performer_exclude_sectors:
+            for sector in self._top_performer_exclude_sectors:
+                for key in self._stock_price_top_performer_by_gics_sector_timeframe.keys():
+                    del self._stock_price_top_performer_by_gics_sector_timeframe[key][sector]
+        for timeframe, value in self._stock_price_top_performer_by_gics_sector_timeframe.items():
+            for key, _ in value.items():
+                num_kept = int(len(all_non_etf_stocks[key]) * self._price_top_percent / 100)
+                self._stock_price_top_performer_by_gics_sector_timeframe[timeframe][key] = \
+                    self._stock_price_top_performer_by_gics_sector_timeframe[timeframe][key][:num_kept]
 
     # ---------------------------screener rules--------------------------------
     def _growth_score_filter(self, stocks: List[StockSymbol]) \
@@ -167,24 +193,44 @@ class StockScreenerAlert(BaseAlert, StockApi):
                 filtered_stocks.append(stock)
         return filtered_stocks
 
-    # -------------------find newly added stocks----------------------
-    @staticmethod
-    def _get_newly_added_stocks_str(stocks: List[StockSymbol], screener_name: str) -> str:
+    # -------------------enrich email content----------------------
+    def _get_newly_added_stocks_str(self) -> str:
         """
         Find newly added stocks
 
-        :param stocks: list of stocks
-        :param screener_name: screener name
-
-        :return: list of stocks
+        :return: enriched email content
         """
-        last_stocks = StockAlertDBUtils.get_stocks(screener_name)
-        new_stocks = set(stocks) - set(last_stocks)
-        StockAlertDBUtils.reset_stocks(screener_name)
-        StockAlertDBUtils.add_stocks(stocks, screener_name)
-        if not new_stocks:
-            return f"{screener_name} no newly added stocks"
-        return f"{screener_name} newly added stocks: {new_stocks}"
+        content = "~Newly added stocks:\n"
+        for screener_name, stocks in self._screener_name_to_stocks.items():
+            last_stocks = StockAlertDBUtils.get_stocks(screener_name)
+            new_stocks = set(stocks) - set(last_stocks)
+            StockAlertDBUtils.reset_stocks(screener_name)
+            StockAlertDBUtils.add_stocks(stocks, screener_name)
+            if not new_stocks:
+                content += f"  ·{screener_name} no newly added stocks\n"
+            else:
+                content += f"   ·{screener_name} newly added stocks: {new_stocks}\n"
+        return content + "\n"
+
+    def _get_screener_stocks_in_top_performer(self) -> str:
+        """
+        Get screener stocks in top performer
+
+        :return: enriched email content
+        """
+        self._get_price_top_performer_thread.join()
+        content = ""
+        for timeframe, value in self._stock_price_top_performer_by_gics_sector_timeframe.items():
+            content += f"~Top {self._price_top_percent}% price performer in {timeframe}:\n"
+            for screener_name, screener_stocks in self._screener_name_to_stocks.items():
+                screener_stocks = set(screener_stocks)
+                content += f"   ·{screener_name} top performer: \n"
+                for sector, top_performers in value.items():
+                    chosen_stocks = [stock[0] for stock in top_performers if stock[0] in screener_stocks]
+                    if chosen_stocks:
+                        content += f"       ·{sector}: {chosen_stocks}\n"
+
+        return content + "\n"
 
     # ---------------------------build csv/xlsx-----------------------
     def _build_growth_filter_docs(self, stocks: List[StockSymbol],
@@ -313,9 +359,10 @@ class StockScreenerAlert(BaseAlert, StockApi):
                                                   "screener_3_quarter_rev_yoy_growth_revenue_cagr"),
                  self._build_standard_filter_xlsx(screener_4_res.result(),
                                                   "screener_4_quarter_rev_yoy_growth")]
-        email_content_add_on = ""
-        for screener_name, stocks in self._screener_name_to_stocks.items():
-            email_content_add_on += self._get_newly_added_stocks_str(stocks, screener_name) + "\n"
+
+        # after this point, all stocks are already calculated
+        email_content_add_on = self._get_newly_added_stocks_str()
+        email_content_add_on += self._get_screener_stocks_in_top_performer()
 
         if self._email:
             self._send_email(pdf_xlsx_files=xlsx_files, email_content_add_on=email_content_add_on)
@@ -327,7 +374,7 @@ class StockScreenerAlert(BaseAlert, StockApi):
 
 if __name__ == "__main__":
     start_time = time.time()
-    alert = StockScreenerAlert("stock_screener", True, 10 ** 12)
+    alert = StockScreenerAlert("stock_screener", 20, ["Energy"], email=True, market_cap_threshold=10 ** 11)
     alert.run()
 
     print(f"Time taken: {time.time() - start_time}")

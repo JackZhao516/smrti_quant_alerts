@@ -75,6 +75,8 @@
     "alert_type": "stock_screener",
     "alert_input_args": {
       "email":  true/false,
+      "price_top_percent": 20,
+      "top_performer_exclude_sectors": ["Energy", "Basic Materials"],
       "market_cap_threshold": 100000000
     },
     "alert_params": {},
