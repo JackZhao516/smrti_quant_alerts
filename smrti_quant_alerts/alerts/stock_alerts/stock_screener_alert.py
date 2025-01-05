@@ -117,7 +117,8 @@ class StockScreenerAlert(BaseAlert, StockApi):
         if self._top_performer_exclude_sectors:
             for sector in self._top_performer_exclude_sectors:
                 for key in self._stock_price_top_performer_by_gics_sector_timeframe.keys():
-                    del self._stock_price_top_performer_by_gics_sector_timeframe[key][sector]
+                    if sector in self._stock_price_top_performer_by_gics_sector_timeframe[key]:
+                        del self._stock_price_top_performer_by_gics_sector_timeframe[key][sector]
         for timeframe, value in self._stock_price_top_performer_by_gics_sector_timeframe.items():
             for key, _ in value.items():
                 num_kept = int(len(all_non_etf_stocks[key]) * self._price_top_percent / 100)
@@ -374,7 +375,7 @@ class StockScreenerAlert(BaseAlert, StockApi):
 
 if __name__ == "__main__":
     start_time = time.time()
-    alert = StockScreenerAlert("stock_screener", 20, ["Energy"], email=True, market_cap_threshold=10 ** 11)
+    alert = StockScreenerAlert("stock_screener", 20, ["Energy"], email=True, market_cap_threshold=10 ** 8)
     alert.run()
 
     print(f"Time taken: {time.time() - start_time}")
