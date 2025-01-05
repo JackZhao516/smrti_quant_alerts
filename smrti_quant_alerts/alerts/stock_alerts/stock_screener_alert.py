@@ -13,6 +13,7 @@ from smrti_quant_alerts.email_api import EmailApi
 from smrti_quant_alerts.data_type import StockSymbol, FinancialMetricType, FinancialMetricsData
 from smrti_quant_alerts.stock_crypto_api import StockApi
 from smrti_quant_alerts.alerts.base_alert import BaseAlert
+from smrti_quant_alerts.db import StockAlertDBUtils
 
 
 class StockScreenerAlert(BaseAlert, StockApi):
@@ -24,7 +25,9 @@ class StockScreenerAlert(BaseAlert, StockApi):
         self._email = email
         self._market_cap_threshold = market_cap_threshold
         self._stocks_ev_over_revenue = defaultdict(float)
+        self._stocks_valuation_score = defaultdict(FinancialMetricsData)
         self._stocks_eight_quarters_stats = defaultdict(list)
+        self._screener_name_to_stocks = defaultdict(list)
         self._get_stock_info_thread = threading.Thread(target=self._get_all_stock_info)
         self._get_stock_info_thread.start()
 
@@ -56,6 +59,21 @@ class StockScreenerAlert(BaseAlert, StockApi):
 
         self._stocks_ev_over_revenue.update(
             {stock: (enterprise_values[stock] / revenues[stock]) for stock in stocks})
+
+    def _parallel_get_stocks_valuation_score(self, stocks: List[StockSymbol]) -> None:
+        """
+        Get stocks valuation score
+
+        :param stocks: list of stocks
+        """
+        stocks = [stock for stock in stocks if stock not in self._stocks_valuation_score]
+        valuation_scores_res = []
+        with ThreadPoolExecutor(max_workers=8) as executor:
+            for i in range(8):
+                valuation_scores_res.append(executor.submit(self.get_stocks_valuation_score, stocks[i*8:(i+1)*8]))
+            valuation_scores_res = [res.result() for res in valuation_scores_res]
+        for res in valuation_scores_res:
+            self._stocks_valuation_score.update(res)
 
     def _get_stocks_eight_quarters_stats(self, stocks: List[StockSymbol]) -> None:
         """
@@ -149,6 +167,25 @@ class StockScreenerAlert(BaseAlert, StockApi):
                 filtered_stocks.append(stock)
         return filtered_stocks
 
+    # -------------------find newly added stocks----------------------
+    @staticmethod
+    def _get_newly_added_stocks_str(stocks: List[StockSymbol], screener_name: str) -> str:
+        """
+        Find newly added stocks
+
+        :param stocks: list of stocks
+        :param screener_name: screener name
+
+        :return: list of stocks
+        """
+        last_stocks = StockAlertDBUtils.get_stocks(screener_name)
+        new_stocks = set(stocks) - set(last_stocks)
+        StockAlertDBUtils.reset_stocks(screener_name)
+        StockAlertDBUtils.add_stocks(stocks, screener_name)
+        if not new_stocks:
+            return f"{screener_name} no newly added stocks"
+        return f"{screener_name} newly added stocks: {new_stocks}"
+
     # ---------------------------build csv/xlsx-----------------------
     def _build_growth_filter_docs(self, stocks: List[StockSymbol],
                                   growth_scores: Dict[StockSymbol, Dict[str, FinancialMetricsData]],
@@ -200,16 +237,18 @@ class StockScreenerAlert(BaseAlert, StockApi):
         :param stocks: list of stocks
         :param screener_name: screener name
 
-        :return: file name
+        :return: file name, email content add on
         """
+        self._screener_name_to_stocks[screener_name] = stocks
         file_name = f"{screener_name}_{self._alert_name}_{uuid.uuid4()}.xlsx"
         self._get_enterprise_value_over_revenue(stocks)
         self._get_stocks_eight_quarters_stats(stocks)
+        self._parallel_get_stocks_valuation_score(stocks)
 
         industry_to_stock_stats = defaultdict(list)
         for stock in stocks:
-            rows = [[], [], [stock.ticker, f"{FinancialMetricType.ENTERPRISE_VALUE}/{FinancialMetricType.REVENUE}: ",
-                             f"{self._stocks_ev_over_revenue[stock]}", stock.gics_sector],
+            rows = [[], [], [stock.ticker, f"EV/Sales: {self._stocks_ev_over_revenue[stock]}", "",
+                             f"Stock Valuation Score: {self._stocks_valuation_score[stock]}"],
                     ["quarter index (from newest to oldest)", "Quarterly Revenue YoY Growth",
                      "Operating Margin", "Gross Margin", "FCF Margin"]]
             for i, stats in enumerate(self._stocks_eight_quarters_stats[stock]):
@@ -230,12 +269,14 @@ class StockScreenerAlert(BaseAlert, StockApi):
         return file_name
 
     # ---------------------------send email--------------------------------
-    def _send_email(self, csv_files: List[str] = None, pdf_xlsx_files: List[str] = None) -> None:
+    def _send_email(self, csv_files: List[str] = None,
+                    pdf_xlsx_files: List[str] = None, email_content_add_on: str = "") -> None:
         """
         Send email
 
         :param csv_files: csv file names
         :param pdf_xlsx_files: pdf file names
+        :param email_content_add_on: email content add on
         """
         content = "Stock Screener 1: Growth Score Filter\n" \
                   "  - growth score = last two quarterly revenue yoy growth + avg (last two quarters) FCF margin\n" \
@@ -247,6 +288,7 @@ class StockScreenerAlert(BaseAlert, StockApi):
                   "  - 3Y revenue CAGR > 30% or avg (last 6 quarterly revenue yoy growth) > 30%\n\n" \
                   "Stock Screener 4: Quarterly Revenue YoY Growth Filter\n" \
                   "  - latest quarterly revenue yoy growth > 30% and avg(last 3 quarterly revenue yoy growth) > 30%\n\n"
+        content += email_content_add_on
         self._email_api.send_email(self._alert_name, content, csv_files, pdf_xlsx_files)
 
     # ---------------------------main--------------------------------
@@ -271,9 +313,12 @@ class StockScreenerAlert(BaseAlert, StockApi):
                                                   "screener_3_quarter_rev_yoy_growth_revenue_cagr"),
                  self._build_standard_filter_xlsx(screener_4_res.result(),
                                                   "screener_4_quarter_rev_yoy_growth")]
+        email_content_add_on = ""
+        for screener_name, stocks in self._screener_name_to_stocks.items():
+            email_content_add_on += self._get_newly_added_stocks_str(stocks, screener_name) + "\n"
 
         if self._email:
-            self._send_email(pdf_xlsx_files=xlsx_files)
+            self._send_email(pdf_xlsx_files=xlsx_files, email_content_add_on=email_content_add_on)
 
         for file in xlsx_files:
             if os.path.exists(file):
@@ -282,7 +327,7 @@ class StockScreenerAlert(BaseAlert, StockApi):
 
 if __name__ == "__main__":
     start_time = time.time()
-    alert = StockScreenerAlert("stock_screener", True, 10 ** 11)
+    alert = StockScreenerAlert("stock_screener", True, 10 ** 12)
     alert.run()
 
     print(f"Time taken: {time.time() - start_time}")

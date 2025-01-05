@@ -37,6 +37,7 @@ class LastCount(BaseModel):
 # -------------- stock_alert ----------------
 class StockAlertCount(BaseModel):
     stock_symbol = CharField()
+    alert_type = CharField()
 
 
 # -------------- macd_alert ----------------

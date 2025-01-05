@@ -24,6 +24,9 @@ class FinancialMetricType(StrEnum):
     FREE_CASH_FLOW_MARGIN_LATEST = "free_cash_flow_margin_latest"
     FREE_CASH_FLOW_MARGIN_SECOND_LATEST = "free_cash_flow_margin_second_latest"
     FREE_CASH_FLOW_MARGIN_AVG = "free_cash_flow_margin_avg"
+    VALUATION_SCORE = "valuation_score"
+    GROSS_PROFIT = "gross_profit"
+    OPERATING_INCOME = "operating_income"
 
 
 class FinancialDataType(Enum):
@@ -58,23 +61,23 @@ class FinancialMetricsData:
 
     @property
     def float_data(self) -> float:
-        return round(self._float_data, 4)
+        return round(self._float_data, 6)
 
     @property
     def percentage_data(self) -> float:
         if not self._has_percentage:
             return 0.0
-        return round(self._float_data * 100, 2)
+        return round(self._float_data * 100, 4)
 
     @property
     def string_float_data(self) -> str:
-        return str(round(self._float_data, 4))
+        return str(round(self._float_data, 6))
 
     @property
     def string_percentage_data(self) -> str:
         if not self._has_percentage:
             return ""
-        return f"{round(self._float_data * 100, 2)}%"
+        return f"{round(self._float_data * 100, 4)}%"
 
     def update_data(self, data: Union[float, str], data_type: FinancialDataType) -> None:
         self._float_data = self._convert_to_float(data, data_type)

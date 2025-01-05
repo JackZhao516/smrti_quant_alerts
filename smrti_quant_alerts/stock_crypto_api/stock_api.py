@@ -348,6 +348,7 @@ class StockApi:
                      FinancialMetricType.FREE_CASH_FLOW_MARGIN: FinancialMetricsData(has_percentage=True),
                      FinancialMetricType.REVENUE: FinancialMetricsData(has_percentage=False),
                      FinancialMetricType.GROSS_MARGIN: FinancialMetricsData(has_percentage=True),
+                     FinancialMetricType.GROSS_PROFIT: FinancialMetricsData(has_percentage=False),
                      FinancialMetricType.OPERATING_MARGIN: FinancialMetricsData(has_percentage=True)}]
 
         @error_handling("financialmodelingprep", default_val=None)
@@ -358,14 +359,17 @@ class StockApi:
             if not response:
                 res[stock] = empty_res * num
                 return
-            revenues, net_incomes, gross_margins, operating_margins = \
+            revenues, net_incomes, gross_profits, operating_incomes = \
                 np.zeros(num), np.zeros(num), np.zeros(num), np.zeros(num)
 
             for i, quarter in enumerate(response):
                 revenues[i // timeframes[timeframe]] += quarter.get("revenue", 0)
                 net_incomes[i // timeframes[timeframe]] += quarter.get("netIncome", 0)
-                gross_margins[i // timeframes[timeframe]] += quarter.get("grossProfitRatio", 0)
-                operating_margins[i // timeframes[timeframe]] += quarter.get("operatingIncomeRatio", 0)
+                gross_profits[i // timeframes[timeframe]] += quarter.get("grossProfit", 0)
+                operating_incomes[i // timeframes[timeframe]] += quarter.get("operatingIncome", 0)
+
+            gross_margins = gross_profits / revenues
+            operating_margins = operating_incomes / revenues
 
             api_url = f"{self.FMP_API_URL}/v3/cash-flow-statement/{stock.ticker}?" \
                       f"period=quarter&limit={timeframes[timeframe] * num}&apikey={self.FMP_API_KEY}"
@@ -384,12 +388,13 @@ class StockApi:
                                FinancialMetricsData(free_cash_flow_margin, has_percentage=True),
                            FinancialMetricType.REVENUE: FinancialMetricsData(revenue),
                            FinancialMetricType.GROSS_MARGIN: FinancialMetricsData(gross_margin, has_percentage=True),
+                           FinancialMetricType.GROSS_PROFIT: FinancialMetricsData(gross_profit),
                            FinancialMetricType.OPERATING_MARGIN:
                                FinancialMetricsData(operating_margin, has_percentage=True)}
                           for free_cash_flow, net_income, free_cash_flow_margin,
-                          revenue, gross_margin, operating_margin in
+                          revenue, gross_margin, gross_profit, operating_margin in
                           zip(free_cash_flows, net_incomes, free_cash_flow_margins,
-                              revenues, gross_margins, operating_margins)]
+                              revenues, gross_margins, gross_profits, operating_margins)]
         pool = ThreadPool(8)
         pool.map(get_stock_stats_by_num_of_quarter, stock_list)
         pool.close()
@@ -550,19 +555,57 @@ class StockApi:
         return res
 
     @error_handling("financialmodelingprep", default_val=defaultdict(lambda: 0))
-    def get_stocks_enterprise_value(self, stock_list: List[StockSymbol]) -> Dict[StockSymbol, FinancialMetricsData]:
+    def get_stocks_enterprise_value(self, stock_list: List[StockSymbol],
+                                    period: str = "quarter") -> Dict[StockSymbol, FinancialMetricsData]:
         """
         Get enterprise value
 
         :param stock_list: [StockSymbol, ...]
+        :param period: str, "quarter" or "annual"
         :return: {StockSymbol: enterprise_value}
         """
         res = defaultdict(FinancialMetricsData)
         for stock in stock_list:
-            api_url = f"{self.FMP_API_URL}/v3/enterprise-value/{stock.ticker}?period=quarter&apikey={self.FMP_API_KEY}"
+            api_url = f"{self.FMP_API_URL}/v3/enterprise-value/{stock.ticker}?period={period}&apikey={self.FMP_API_KEY}"
             response = requests.get(api_url, timeout=self.TIMEOUT).json()
             if response and len(response) > 0:
                 res[stock] = FinancialMetricsData(response[0].get("enterpriseValue", 0))
+        return res
+
+    @error_handling("financialmodelingprep", default_val=defaultdict(lambda: 0))
+    def get_stocks_valuation_score(self, stock_list: List[StockSymbol]) -> Dict[StockSymbol, FinancialMetricsData]:
+        """
+        Get stock valuation score
+        valuation score = enterprise value / (gross profit * estimated revenue growth * 100)
+        """
+        enterprise_values = self.get_stocks_enterprise_value(stock_list, "annual")
+        stock_stats = self.get_stocks_stats_by_num_of_timeframe(stock_list, "annual", 1)
+        gross_profits = defaultdict(FinancialMetricsData)
+        revenue = defaultdict(FinancialMetricsData)
+        for stock, stats in stock_stats.items():
+            if stats and len(stats) > 0:
+                gross_profits[stock] = stats[0].get(FinancialMetricType.GROSS_PROFIT, 0)
+                revenue[stock] = stats[0].get(FinancialMetricType.REVENUE, 0)
+        estimated_revenue_growth = defaultdict(lambda: FinancialMetricsData(0, has_percentage=True))
+        for stock in stock_list:
+            if gross_profits[stock] == 0 or revenue[stock] == 0 or enterprise_values[stock] == 0:
+                continue
+            estimated_revenue_url = f"{self.FMP_API_URL}/v3/analyst-estimates/" \
+                                    f"{stock.ticker}?apikey={self.FMP_API_KEY}"
+            response = requests.get(estimated_revenue_url, timeout=self.TIMEOUT).json()
+            if response and len(response) > 0:
+                for estimate in response:
+                    if estimate.get("date", "").startswith(get_datetime_now().strftime("%Y")):
+                        estimated_revenue_growth[stock].update_data(
+                            estimate.get("estimatedRevenueAvg", 0) / revenue[stock].float_data - 1,
+                            FinancialDataType.FLOAT)
+                        break
+        res = defaultdict(FinancialMetricsData)
+        for stock in stock_list:
+            if gross_profits[stock] == 0 or enterprise_values[stock] == 0 or estimated_revenue_growth[stock] == 0:
+                continue
+            res[stock] = enterprise_values[stock] / \
+                (gross_profits[stock] * estimated_revenue_growth[stock].percentage_data)
         return res
 
     @error_handling("financialmodelingprep", default_val=defaultdict(lambda: 0))
@@ -653,6 +696,6 @@ class StockApi:
 if __name__ == "__main__":
     import pprint
     stock_api = StockApi()
-    pprint.pp(stock_api.get_stocks_stats_by_num_of_timeframe([StockSymbol("SATS")], "quarter", 6))
+    pprint.pp(stock_api.get_stocks_valuation_score([StockSymbol("AAPL")]))
 
 

@@ -186,29 +186,34 @@ class SpotOverMaDBUtils:
 
 class StockAlertDBUtils:
     @staticmethod
-    def get_stocks() -> Set[StockSymbol]:
+    def get_stocks(alert_type: str = "") -> Set[StockSymbol]:
         """
         get all stocks
+        :param alert_type: alert type
         """
         with database_runtime.atomic():
-            return {StockSymbol.get_symbol_object(i.stock_symbol) for i in StockAlertCount.select()}
+            return {StockSymbol.get_symbol_object(i.stock_symbol) for i in StockAlertCount.select().where(
+                StockAlertCount.alert_type == alert_type)}
 
     @staticmethod
-    def add_stocks(stock_symbols: Iterable[StockSymbol]) -> None:
+    def add_stocks(stock_symbols: Iterable[StockSymbol], alert_type: str = "") -> None:
         """
         add stock symbols to the database
         :param stock_symbols: list of stock symbols
+        :param alert_type: alert type
         """
         with database_runtime.atomic():
-            StockAlertCount.insert_many([{"stock_symbol": i.ticker} for i in stock_symbols]).execute()
+            StockAlertCount.insert_many([{"stock_symbol": i.ticker, "alert_type": alert_type}
+                                         for i in stock_symbols]).execute()
 
     @staticmethod
-    def reset_stocks() -> None:
+    def reset_stocks(alert_type: str = "") -> None:
         """
         reset all stocks
+        :param alert_type: alert type
         """
         with database_runtime.atomic():
-            StockAlertCount.delete().execute()
+            StockAlertCount.delete().where(StockAlertCount.alert_type == alert_type).execute()
 
     @staticmethod
     def get_stocks_info(stocks: Union[Iterable[StockSymbol], Iterable[str]], full: bool = True) \
