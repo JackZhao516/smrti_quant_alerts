@@ -211,9 +211,9 @@ class StockScreenerAlert(BaseAlert, StockApi):
             StockAlertDBUtils.reset_stocks(screener_name)
             StockAlertDBUtils.add_stocks(stocks, screener_name)
             if not new_stocks:
-                content += f"  ·{screener_name} no newly added stocks\n"
+                content += f"  ~{screener_name} no newly added stocks\n"
             else:
-                content += f"   ·{screener_name} newly added stocks:\n"
+                content += f"   ~{screener_name} newly added stocks:\n"
                 for sector, sector_stocks in sector_to_stocks.items():
                     sector_stocks_set = set(sector_stocks)
                     chosen_stocks = [stock.ticker for stock in new_stocks if stock in sector_stocks_set]
@@ -221,8 +221,9 @@ class StockScreenerAlert(BaseAlert, StockApi):
                         if sector == "":
                             sector = "Others"
                         content += f"       ·{sector}: {chosen_stocks}\n"
+            content += "\n\n"
 
-        return content + "\n"
+        return content + "\n\n"
 
     def _get_screener_stocks_in_top_performer(self) -> str:
         """
@@ -236,11 +237,15 @@ class StockScreenerAlert(BaseAlert, StockApi):
             content += f"~Top {self._price_top_percent}% price performer in {timeframe}:\n"
             for screener_name, screener_stocks in self._screener_name_to_stocks.items():
                 screener_stocks = set(screener_stocks)
-                content += f"   ·{screener_name} top performer: \n"
+                content += f"   ~{screener_name} top performer: \n"
                 for sector, top_performers in value.items():
                     chosen_stocks = [stock[0] for stock in top_performers if stock[0] in screener_stocks]
                     if chosen_stocks:
+                        if sector == "":
+                            sector = "Others"
                         content += f"       ·{sector}: {chosen_stocks}\n"
+                content += "\n\n"
+            content += "\n\n"
 
         return content + "\n"
 
