@@ -383,6 +383,7 @@ class StockScreenerAlert(BaseAlert, StockApi):
             if os.path.exists(file):
                 os.remove(file)
         close_database()
+        logging.warning("Stock Screener Alert finished")
 
 
 if __name__ == "__main__":
