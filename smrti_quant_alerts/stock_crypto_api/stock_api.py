@@ -588,21 +588,23 @@ class StockApi:
         return res
 
     @error_handling("financialmodelingprep", default_val=defaultdict(lambda: 0))
-    def get_stocks_enterprise_value(self, stock_list: List[StockSymbol],
-                                    period: str = "quarter") -> Dict[StockSymbol, FinancialMetricsData]:
+    def get_stocks_enterprise_value(self, stock_list: List[StockSymbol]) -> Dict[StockSymbol, FinancialMetricsData]:
         """
         Get enterprise value
 
         :param stock_list: [StockSymbol, ...]
-        :param period: str, "quarter" or "annual"
         :return: {StockSymbol: enterprise_value}
         """
         res = defaultdict(FinancialMetricsData)
+        market_caps = self.get_stocks_market_cap(stock_list)
         for stock in stock_list:
-            api_url = f"{self.FMP_API_URL}/v3/enterprise-value/{stock.ticker}?period={period}&apikey={self.FMP_API_KEY}"
+            api_url = f"{self.FMP_API_URL}/v3/balance-sheet-statement/{stock.ticker}?" \
+                      f"period=quarter&apikey={self.FMP_API_KEY}"
             response = requests.get(api_url, timeout=self.TIMEOUT).json()
-            if response and len(response) > 0:
-                res[stock] = FinancialMetricsData(response[0].get("enterpriseValue", 0))
+            if response:
+                res[stock] = FinancialMetricsData(
+                    response[0].get("totalLiabilities", 0) + market_caps[stock].float_data -
+                    response[0].get("cashAndCashEquivalents", 0))
         return res
 
     @error_handling("financialmodelingprep", default_val=defaultdict(lambda: 0))
@@ -611,7 +613,7 @@ class StockApi:
         Get stock valuation score
         valuation score = enterprise value / (gross profit * estimated revenue growth * 100)
         """
-        enterprise_values = self.get_stocks_enterprise_value(stock_list, "annual")
+        enterprise_values = self.get_stocks_enterprise_value(stock_list)
         stock_stats = self.get_stocks_stats_by_num_of_timeframe(stock_list, "annual", 1)
         gross_profits = defaultdict(FinancialMetricsData)
         revenue = defaultdict(FinancialMetricsData)

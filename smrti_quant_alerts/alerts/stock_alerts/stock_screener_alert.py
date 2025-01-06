@@ -27,7 +27,7 @@ class StockScreenerAlert(BaseAlert, StockApi):
         self._price_top_percent = price_top_percent
         self._top_performer_exclude_sectors = top_performer_exclude_sectors
         self._market_cap_threshold = market_cap_threshold
-        self._stocks_ev_over_revenue = defaultdict(float)
+        self._stocks_ev_over_gross_profit = defaultdict(float)
         self._stocks_valuation_score = defaultdict(FinancialMetricsData)
         self._stocks_eight_quarters_stats = defaultdict(list)
         self._screener_name_to_stocks = defaultdict(list)
@@ -53,21 +53,22 @@ class StockScreenerAlert(BaseAlert, StockApi):
         stocks = self.get_nyse_list() + self.get_nasdaq_list()
         self.get_stock_info(stocks)
 
-    def _get_enterprise_value_over_revenue(self, stocks: List[StockSymbol]) -> None:
+    def _get_enterprise_value_over_gross_profit(self, stocks: List[StockSymbol]) -> None:
         """
         Get enterprise value over revenue
         """
         # filter out already calculated stocks
-        stocks = [stock for stock in stocks if stock not in self._stocks_ev_over_revenue]
+        stocks = [stock for stock in stocks if stock not in self._stocks_ev_over_gross_profit]
 
         with ThreadPoolExecutor(max_workers=8) as executor:
             enterprise_values = executor.submit(self.get_stocks_enterprise_value, stocks)
-            revenues = executor.submit(self.get_stocks_revenue, stocks)
+            stocks_stats = executor.submit(self.get_stocks_stats_by_num_of_timeframe, stocks, "annual", 1)
             enterprise_values = enterprise_values.result()
-            revenues = revenues.result()
+            stocks_stats = stocks_stats.result()
 
-        self._stocks_ev_over_revenue.update(
-            {stock: (enterprise_values[stock] / revenues[stock]) for stock in stocks})
+        self._stocks_ev_over_gross_profit.update(
+            {stock: (enterprise_values[stock] / stocks_stats[stock][0][FinancialMetricType.GROSS_PROFIT])
+             for stock in stocks if len(stocks_stats[stock]) > 0})
 
     def _parallel_get_stocks_valuation_score(self, stocks: List[StockSymbol]) -> None:
         """
@@ -77,9 +78,10 @@ class StockScreenerAlert(BaseAlert, StockApi):
         """
         stocks = [stock for stock in stocks if stock not in self._stocks_valuation_score]
         valuation_scores_res = []
+        step = len(stocks) // 8
         with ThreadPoolExecutor(max_workers=8) as executor:
             for i in range(8):
-                valuation_scores_res.append(executor.submit(self.get_stocks_valuation_score, stocks[i*8:(i+1)*8]))
+                valuation_scores_res.append(executor.submit(self.get_stocks_valuation_score, stocks[i*step:(i+1)*step]))
             valuation_scores_res = [res.result() for res in valuation_scores_res]
         for res in valuation_scores_res:
             self._stocks_valuation_score.update(res)
@@ -201,6 +203,7 @@ class StockScreenerAlert(BaseAlert, StockApi):
 
         :return: enriched email content
         """
+        sector_to_stocks = self.get_all_non_etf_stocks_by_gics_sector()
         content = "~Newly added stocks:\n"
         for screener_name, stocks in self._screener_name_to_stocks.items():
             last_stocks = StockAlertDBUtils.get_stocks(screener_name)
@@ -210,7 +213,15 @@ class StockScreenerAlert(BaseAlert, StockApi):
             if not new_stocks:
                 content += f"  ·{screener_name} no newly added stocks\n"
             else:
-                content += f"   ·{screener_name} newly added stocks: {new_stocks}\n"
+                content += f"   ·{screener_name} newly added stocks:\n"
+                for sector, sector_stocks in sector_to_stocks.items():
+                    sector_stocks_set = set(sector_stocks)
+                    chosen_stocks = [stock.ticker for stock in new_stocks if stock in sector_stocks_set]
+                    if chosen_stocks:
+                        if sector == "":
+                            sector = "Others"
+                        content += f"       ·{sector}: {chosen_stocks}\n"
+
         return content + "\n"
 
     def _get_screener_stocks_in_top_performer(self) -> str:
@@ -288,13 +299,13 @@ class StockScreenerAlert(BaseAlert, StockApi):
         """
         self._screener_name_to_stocks[screener_name] = stocks
         file_name = f"{screener_name}_{self._alert_name}_{uuid.uuid4()}.xlsx"
-        self._get_enterprise_value_over_revenue(stocks)
+        self._get_enterprise_value_over_gross_profit(stocks)
         self._get_stocks_eight_quarters_stats(stocks)
         self._parallel_get_stocks_valuation_score(stocks)
 
         industry_to_stock_stats = defaultdict(list)
         for stock in stocks:
-            rows = [[], [], [stock.ticker, f"EV/Sales: {self._stocks_ev_over_revenue[stock]}", "",
+            rows = [[], [], [stock.ticker, f"EV/Gross Profit: {self._stocks_ev_over_gross_profit[stock]}", "",
                              f"Stock Valuation Score: {self._stocks_valuation_score[stock]}"],
                     ["quarter index (from newest to oldest)", "Quarterly Revenue YoY Growth",
                      "Operating Margin", "Gross Margin", "FCF Margin"]]
@@ -375,7 +386,8 @@ class StockScreenerAlert(BaseAlert, StockApi):
 
 if __name__ == "__main__":
     start_time = time.time()
-    alert = StockScreenerAlert("stock_screener", 20, ["Energy"], email=True, market_cap_threshold=10 ** 8)
+    alert = StockScreenerAlert("stock_screener", 20,
+                               ["Energy", "Basic Materials"], email=True, market_cap_threshold=10 ** 9)
     alert.run()
 
     print(f"Time taken: {time.time() - start_time}")
