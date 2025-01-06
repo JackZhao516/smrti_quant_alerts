@@ -13,7 +13,7 @@ from smrti_quant_alerts.email_api import EmailApi
 from smrti_quant_alerts.data_type import StockSymbol, FinancialMetricType, FinancialMetricsData
 from smrti_quant_alerts.stock_crypto_api import StockApi
 from smrti_quant_alerts.alerts.base_alert import BaseAlert
-from smrti_quant_alerts.db import StockAlertDBUtils
+from smrti_quant_alerts.db import StockAlertDBUtils, close_database
 
 
 class StockScreenerAlert(BaseAlert, StockApi):
@@ -382,6 +382,7 @@ class StockScreenerAlert(BaseAlert, StockApi):
         for file in xlsx_files:
             if os.path.exists(file):
                 os.remove(file)
+        close_database()
 
 
 if __name__ == "__main__":
