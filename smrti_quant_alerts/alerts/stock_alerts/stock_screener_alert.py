@@ -78,7 +78,7 @@ class StockScreenerAlert(BaseAlert, StockApi):
         """
         stocks = [stock for stock in stocks if stock not in self._stocks_valuation_score]
         valuation_scores_res = []
-        step = len(stocks) // 8
+        step = len(stocks) // 8 + 1
         with ThreadPoolExecutor(max_workers=8) as executor:
             for i in range(8):
                 valuation_scores_res.append(executor.submit(self.get_stocks_valuation_score, stocks[i*step:(i+1)*step]))
