@@ -28,7 +28,7 @@ class StockScreenerAlert(BaseAlert, StockApi):
         self._top_performer_exclude_sectors = top_performer_exclude_sectors
         self._market_cap_threshold = market_cap_threshold
         self._stocks_ev_over_gross_profit = defaultdict(float)
-        self._stocks_valuation_score = defaultdict(FinancialMetricsData)
+        self._stocks_valuation_score = defaultdict(lambda: "2025 Revenue Prediction N/A")
         self._stocks_eight_quarters_stats = defaultdict(list)
         self._screener_name_to_stocks = defaultdict(list)
         self._stock_price_top_performer_by_gics_sector_timeframe = {}

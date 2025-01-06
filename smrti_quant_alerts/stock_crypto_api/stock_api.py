@@ -635,7 +635,7 @@ class StockApi:
                             estimate.get("estimatedRevenueAvg", 0) / revenue[stock].float_data - 1,
                             FinancialDataType.FLOAT)
                         break
-        res = defaultdict(lambda: "2025 Revenue Prediction N/A")
+        res = defaultdict(FinancialMetricsData)
         for stock in stock_list:
             if gross_profits[stock] == 0 or enterprise_values[stock] == 0 or estimated_revenue_growth[stock] == 0:
                 continue
