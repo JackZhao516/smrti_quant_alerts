@@ -616,25 +616,28 @@ class StockApi:
         enterprise_values = self.get_stocks_enterprise_value(stock_list)
         stock_stats = self.get_stocks_stats_by_num_of_timeframe(stock_list, "annual", 1)
         gross_profits = defaultdict(FinancialMetricsData)
-        revenue = defaultdict(FinancialMetricsData)
+
         for stock, stats in stock_stats.items():
             if stats and len(stats) > 0:
                 gross_profits[stock] = stats[0].get(FinancialMetricType.GROSS_PROFIT, 0)
-                revenue[stock] = stats[0].get(FinancialMetricType.REVENUE, 0)
         estimated_revenue_growth = defaultdict(lambda: FinancialMetricsData(0, has_percentage=True))
         for stock in stock_list:
-            if gross_profits[stock] == 0 or revenue[stock] == 0 or enterprise_values[stock] == 0:
+            if gross_profits[stock] == 0 or enterprise_values[stock] == 0:
                 continue
             estimated_revenue_url = f"{self.FMP_API_URL}/v3/analyst-estimates/" \
                                     f"{stock.ticker}?apikey={self.FMP_API_KEY}"
             response = requests.get(estimated_revenue_url, timeout=self.TIMEOUT).json()
+            top, bottom = 0, 0
+
             if response and len(response) > 0:
                 for estimate in response:
-                    if estimate.get("date", "").startswith(get_datetime_now().strftime("%Y")):
-                        estimated_revenue_growth[stock].update_data(
-                            estimate.get("estimatedRevenueAvg", 0) / revenue[stock].float_data - 1,
-                            FinancialDataType.FLOAT)
-                        break
+                    if estimate.get("date", "").startswith(str(int(get_datetime_now().strftime("%Y")) + 1)):
+                        top = estimate.get("estimatedRevenueAvg", 0)
+                    elif estimate.get("date", "").startswith(get_datetime_now().strftime("%Y")):
+                        bottom = estimate.get("estimatedRevenueAvg", 0)
+            if bottom != 0:
+                estimated_revenue_growth[stock] = FinancialMetricsData((top - bottom) / bottom, has_percentage=True)
+
         res = defaultdict(FinancialMetricsData)
         for stock in stock_list:
             if gross_profits[stock] == 0 or enterprise_values[stock] == 0 or estimated_revenue_growth[stock] == 0:
