@@ -3,7 +3,7 @@ import time
 import os
 import uuid
 import threading
-from typing import List, Dict, Tuple
+from typing import List, Dict, Tuple, Set
 from collections import defaultdict
 from concurrent.futures import ThreadPoolExecutor
 
@@ -52,6 +52,20 @@ class StockScreenerAlert(BaseAlert, StockApi):
         """
         stocks = self.get_nyse_list() + self.get_nasdaq_list()
         self.get_stock_info(stocks)
+
+    @staticmethod
+    def _get_newly_added_stocks_str(stocks: List[StockSymbol], screener_name: str) -> Set[StockSymbol]:
+        """
+        Find newly added stocks
+
+        :param stocks: list of stocks
+        :return: list of newly added stocks
+        """
+        last_stocks = StockAlertDBUtils.get_stocks(screener_name)
+        new_stocks = set(stocks) - set(last_stocks)
+        StockAlertDBUtils.reset_stocks(screener_name)
+        StockAlertDBUtils.add_stocks(stocks, screener_name)
+        return new_stocks
 
     def _get_enterprise_value_over_gross_profit(self, stocks: List[StockSymbol]) -> None:
         """
@@ -197,33 +211,6 @@ class StockScreenerAlert(BaseAlert, StockApi):
         return filtered_stocks
 
     # -------------------enrich email content----------------------
-    def _get_newly_added_stocks_str(self) -> str:
-        """
-        Find newly added stocks
-
-        :return: enriched email content
-        """
-        sector_to_stocks = self.get_all_non_etf_stocks_by_gics_sector()
-        content = "~Newly added stocks:\n"
-        for screener_name, stocks in self._screener_name_to_stocks.items():
-            last_stocks = StockAlertDBUtils.get_stocks(screener_name)
-            new_stocks = set(stocks) - set(last_stocks)
-            StockAlertDBUtils.reset_stocks(screener_name)
-            StockAlertDBUtils.add_stocks(stocks, screener_name)
-            if not new_stocks:
-                content += f"  ~{screener_name} no newly added stocks\n"
-            else:
-                content += f"   ~{screener_name} newly added stocks:\n"
-                for sector, sector_stocks in sector_to_stocks.items():
-                    sector_stocks_set = set(sector_stocks)
-                    chosen_stocks = [stock.ticker for stock in new_stocks if stock in sector_stocks_set]
-                    if chosen_stocks:
-                        if sector == "":
-                            sector = "Others"
-                        content += f"       ·{sector}: {chosen_stocks}\n"
-            content += "\n\n"
-
-        return content + "\n\n"
 
     def _get_screener_stocks_in_top_performer(self) -> str:
         """
@@ -302,6 +289,8 @@ class StockScreenerAlert(BaseAlert, StockApi):
 
         :return: file name, email content add on
         """
+        new_stocks = self._get_newly_added_stocks_str(stocks, screener_name)
+
         self._screener_name_to_stocks[screener_name] = stocks
         file_name = f"{screener_name}_{self._alert_name}_{uuid.uuid4()}.xlsx"
         self._get_enterprise_value_over_gross_profit(stocks)
@@ -310,7 +299,8 @@ class StockScreenerAlert(BaseAlert, StockApi):
 
         industry_to_stock_stats = defaultdict(list)
         for stock in stocks:
-            rows = [[], [], [stock.ticker, f"EV/Gross Profit: {self._stocks_ev_over_gross_profit[stock]}", "",
+            stock_name = f"{stock.ticker} * " if stock in new_stocks else stock.ticker
+            rows = [[], [], [stock_name, f"EV/Gross Profit: {self._stocks_ev_over_gross_profit[stock]}", "",
                              f"Stock Valuation Score: {self._stocks_valuation_score[stock]}"],
                     ["quarter index (from newest to oldest)", "Quarterly Revenue YoY Growth",
                      "Operating Margin", "Gross Margin", "FCF Margin"]]
@@ -350,7 +340,10 @@ class StockScreenerAlert(BaseAlert, StockApi):
                   "  - latest quarterly revenue yoy growth > 30% and\n" \
                   "  - 3Y revenue CAGR > 30% or avg (last 6 quarterly revenue yoy growth) > 30%\n\n" \
                   "Stock Screener 4: Quarterly Revenue YoY Growth Filter\n" \
-                  "  - latest quarterly revenue yoy growth > 30% and avg(last 3 quarterly revenue yoy growth) > 30%\n\n"
+                  "  - latest quarterly revenue yoy growth > 30% and " \
+                  "avg(last 3 quarterly revenue yoy growth) > 30%\n\n" \
+                  "·Newly added stocks are marked with *.\n\n"
+
         content += email_content_add_on
         self._email_api.send_email(self._alert_name, content, csv_files, pdf_xlsx_files)
 
@@ -366,20 +359,23 @@ class StockScreenerAlert(BaseAlert, StockApi):
             screener_4_res = executor.submit(self._quarterly_revenue_yoy_growth_filter, stocks)
             self._get_stock_info_thread.join()
 
+            current_stocks = set()
             screener_1_res_stocks, growth_scores = screener_1_res.result()
-            xlsx_files = self._build_growth_filter_docs(screener_1_res_stocks, growth_scores) + \
-                [self._build_standard_filter_xlsx(screener_1_res_stocks,
-                                                  "screener_1_8-quarters_stats"),
-                 self._build_standard_filter_xlsx(screener_2_res.result(),
-                                                  "screener_2_quarter_rev_yoy_growth_operating_margin"),
-                 self._build_standard_filter_xlsx(screener_3_res.result(),
-                                                  "screener_3_quarter_rev_yoy_growth_revenue_cagr"),
-                 self._build_standard_filter_xlsx(screener_4_res.result(),
-                                                  "screener_4_quarter_rev_yoy_growth")]
+            xlsx_files = self._build_growth_filter_docs(screener_1_res_stocks, growth_scores)
+            xlsx_files.append(self._build_standard_filter_xlsx(screener_1_res_stocks,
+                              "screener_1_8-quarters_stats"))
+            screener_2_res = screener_2_res.result()
+            xlsx_files.append(self._build_standard_filter_xlsx(screener_2_res,
+                              "screener_2_quarter_rev_yoy_growth_operating_margin"))
+            current_stocks.update(screener_1_res_stocks + screener_2_res)
+            for stocks_res, screener_name in [(screener_3_res, "screener_3_quarter_rev_yoy_growth_revenue_cagr"),
+                                              (screener_4_res, "screener_4_quarter_rev_yoy_growth")]:
+                stocks = set(stocks_res.result()) - current_stocks
+                xlsx_files.append(self._build_standard_filter_xlsx(list(stocks), screener_name))
+                current_stocks.update(stocks)
 
         # after this point, all stocks are already calculated
-        email_content_add_on = self._get_newly_added_stocks_str()
-        email_content_add_on += self._get_screener_stocks_in_top_performer()
+        email_content_add_on = self._get_screener_stocks_in_top_performer()
 
         if self._email:
             self._send_email(pdf_xlsx_files=xlsx_files, email_content_add_on=email_content_add_on)
@@ -394,7 +390,7 @@ class StockScreenerAlert(BaseAlert, StockApi):
 if __name__ == "__main__":
     start_time = time.time()
     alert = StockScreenerAlert("stock_screener", 20,
-                               ["Energy", "Basic Materials"], email=True, market_cap_threshold=10 ** 9)
+                               ["Energy", "Basic Materials"], email=True, market_cap_threshold=10 ** 11)
     alert.run()
 
     print(f"Time taken: {time.time() - start_time}")
