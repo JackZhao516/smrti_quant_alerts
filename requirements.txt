@@ -13,4 +13,3 @@ fpdf2==2.7.9
 pycodestyle
 pytest
 pytest-cov
-TA-Lib
