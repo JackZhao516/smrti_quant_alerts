@@ -32,6 +32,7 @@ jobs:
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
+        pip install TA-Lib --global-option=build_ext --global-option="-L/usr/lib/"
         pip install -r requirements.txt
         pip install binance-connector==3.5.0
         python3 setup.py develop
