@@ -4,7 +4,7 @@ import uuid
 import csv
 import os
 from decimal import Decimal
-from typing import List, Dict, Tuple, Optional
+from typing import List, Dict, Tuple, Optional, Set
 from collections import defaultdict
 
 from smrti_quant_alerts.email_api import EmailApi
@@ -13,7 +13,7 @@ from smrti_quant_alerts.stock_crypto_api import StockApi
 from smrti_quant_alerts.alerts.base_alert import BaseAlert
 from smrti_quant_alerts.llm_api import PerplexityAPI
 from smrti_quant_alerts.pdf_api import PDFApi
-from smrti_quant_alerts.db import close_database, StockAlertDBUtils
+from smrti_quant_alerts.db import close_database, StockAlertDBUtils, init_database_runtime
 
 logging.basicConfig(level=logging.INFO)
 
@@ -25,7 +25,8 @@ class StockPriceTopPerformerAlert(BaseAlert, StockApi):
                  time_frame_sma_filter_ai_analysis: bool = False,
                  newly_added_stock_ai_analysis: bool = False,
                  growth_score_filter_ai_analysis: bool = False,
-                 daily_volume_threshold: int = 0) -> None:
+                 daily_volume_threshold: int = 0,
+                 stock_screener_alert_db_name: str = None) -> None:
         """
         StockPriceTopPerformerAlert class for sending
         :param alert_name: alert name
@@ -50,11 +51,36 @@ class StockPriceTopPerformerAlert(BaseAlert, StockApi):
         self._newly_added_stock_ai_analysis = newly_added_stock_ai_analysis
         self._growth_score_filter_ai_analysis = growth_score_filter_ai_analysis
 
+        self._stock_screener_alert_stocks = \
+            self._get_stock_screener_alert_results(f"{stock_screener_alert_db_name}.db")
+
         self._ai_api = PerplexityAPI()
         self._pdf_api = PDFApi()
 
         self._daily_volume = {}
 
+    def _get_stock_screener_alert_results(self, stock_screener_alert_db_name: str) -> Set[StockSymbol]:
+        """
+        Get stock screener alert results
+        :param stock_screener_alert_db_name: stock screener alert db name
+
+        :return: set of stock symbols
+        """
+        if not stock_screener_alert_db_name:
+            return set()
+        try:
+            close_database()
+            init_database_runtime(stock_screener_alert_db_name)
+            stocks = set(StockAlertDBUtils.get_all_stocks())
+            close_database()
+            database_name = f"{self.CONFIG.SETTINGS[self._alert_name].get('database_name', self._alert_name)}.db"
+            init_database_runtime(database_name)
+            return stocks
+        except Exception as e:
+            logging.error(f"Failed to get stock screener alert results: {e}")
+            return set()
+
+    # ----------------- get stock info -----------------
     def send_stocks_info_as_csv(self, is_newly_added_dict: Dict[StockSymbol, bool],
                                 timeframe_stocks_dict: Dict[str, List[StockSymbol]], email_message: str) -> None:
         """
@@ -96,7 +122,10 @@ class StockPriceTopPerformerAlert(BaseAlert, StockApi):
         for timeframe, timeframe_stocks in timeframe_stocks_dict.items():
             for stock in timeframe_stocks:
                 stock_timeframes[stock].append(timeframe)
-        stock_info = [[stock.ticker, stock.security_name, stock.gics_sector,
+
+        stock_symbol = [f"{stock.ticker} *" if stock in self._stock_screener_alert_stocks
+                        else stock.ticker for stock in stocks]
+        stock_info = [[stock_symbol[i], stock.security_name, stock.gics_sector,
                        stock.gics_sub_industry, stock.location, stock.founded_time,
                        stock.is_sp500, stock.is_nasdaq, stock.is_nyse,
                        is_newly_added_dict[stock], stock_timeframes[stock],
@@ -109,7 +138,7 @@ class StockPriceTopPerformerAlert(BaseAlert, StockApi):
                        stock_stats[stock][FinancialMetricType.GROWTH_SCORE],
                        self._daily_volume.get(stock, 0), market_caps[stock],
                        stock_sma_data[stock].get("4hour", "SMA Data Unavailable"),
-                       stock_sma_data[stock].get("1day", "SMA Data Unavailable")] for stock in stocks]
+                       stock_sma_data[stock].get("1day", "SMA Data Unavailable")] for i, stock in enumerate(stocks)]
 
         self._tg_bot.send_data_as_csv_file(csv_file_name, headers=header, data=stock_info)
 
@@ -130,6 +159,11 @@ class StockPriceTopPerformerAlert(BaseAlert, StockApi):
             pdf_files.append(self.get_stocks_ai_analysis_for_growth_score(stock_timeframes, stock_stats, 0.8))
             self._tg_bot.send_file(pdf_files[-1], "Stock AI Analysis With Growth Score Filter.pdf")
 
+        if self._stock_screener_alert_stocks:
+            pdf_files.append(self.get_stocks_ai_analysis_for_stock_screener_alert_intersection(
+                stock_timeframes, stock_stats))
+            self._tg_bot.send_file(pdf_files[-1], "Stock AI Analysis With Stock Screener Alert Filter.pdf")
+
         # send email
         if self._send_email:
             with open(csv_file_name, "w", newline="", encoding="utf-8") as csv_file:
@@ -144,6 +178,25 @@ class StockPriceTopPerformerAlert(BaseAlert, StockApi):
         for pdf_file in pdf_files:
             if os.path.exists(pdf_file):
                 os.remove(pdf_file)
+
+    # ----------------- generate ai analysis -----------------
+    def _get_stock_increase_reason(self, stock: StockSymbol, timeframes: List[str],
+                                  stock_stats: Dict[StockSymbol, Dict[str, FinancialMetricsData]]) -> None:
+        """
+        Get stock increase reason
+
+        :param stock: StockSymbol
+        :param timeframes: list of timeframes
+        :param stock_stats: {StockSymbol: {stat_name: stat_value, ...}}
+
+        :return: stock increase reason
+        """
+        stock_increase_reason = \
+            ["Stock Stats: " + ", ".join([f"{k}: {v}" for k, v in stock_stats[stock].items()]),
+             "Timeframes: " + ", ".join(timeframes)]
+        stock_increase_reason.extend(self._ai_api.
+                                     get_stock_increase_reason(stock, timeframes).strip().split("\n"))
+        self._pdf_api.append_stock_info(stock, stock_increase_reason)
 
     def get_stocks_ai_analysis_for_newly_added(self, timeframe_stocks_dict: Dict[str, List[StockSymbol]],
                                                is_newly_added_dict: Dict[StockSymbol, bool],
@@ -180,12 +233,7 @@ class StockPriceTopPerformerAlert(BaseAlert, StockApi):
         """
         self._pdf_api.start_new_pdf(f"Stock AI Analysis With Timeframe SMA Filter_{uuid.uuid4()}.pdf")
         for stock, timeframes in stock_timeframe_dict.items():
-            stock_increase_reason = \
-                ["Stock Stats: " + ", ".join([f"{k}: {v}" for k, v in stock_stats[stock].items()]),
-                 "Timeframes: " + ", ".join(timeframes)]
-            stock_increase_reason.extend(self._ai_api.
-                                         get_stock_increase_reason(stock, timeframes).strip().split("\n"))
-            self._pdf_api.append_stock_info(stock, stock_increase_reason)
+            self._get_stock_increase_reason(stock, timeframes, stock_stats)
         self._pdf_api.save_pdf()
         return self._pdf_api.file_name
 
@@ -207,13 +255,26 @@ class StockPriceTopPerformerAlert(BaseAlert, StockApi):
                 break
 
             timeframes = stock_timeframe_dict[stock]
-            stock_increase_reason = \
-                ["Stock Stats: " + ", ".join([f"{k}: {v}" for k, v in stock_stats[stock].items()]),
-                 "Timeframes: " + ", ".join(timeframes)]
-            stock_increase_reason.extend(self._ai_api.
-                                         get_stock_increase_reason(stock, timeframes).strip().split("\n"))
-            self._pdf_api.append_stock_info(stock, stock_increase_reason)
+            self._get_stock_increase_reason(stock, timeframes, stock_stats)
 
+        self._pdf_api.save_pdf()
+        return self._pdf_api.file_name
+
+    def get_stocks_ai_analysis_for_stock_screener_alert_intersection(
+            self, stock_timeframe_dict: Dict[StockSymbol, List[str]],
+            stock_stats: Dict[StockSymbol, Dict[str, FinancialMetricsData]]) -> str:
+        """
+        Send stock ai analysis based on the intersection of stock screener alert results
+
+        :param stock_timeframe_dict: {StockSymbol: [timeframe, ...]}
+        :param stock_stats: {StockSymbol: {stat_name: stat_value, ...}}
+        :return: saved pdf file name
+        """
+        self._pdf_api.start_new_pdf(f"Stock AI Analysis With Stock Screener Alert Filter_{uuid.uuid4()}.pdf")
+
+        for stock, timeframes in stock_timeframe_dict.items():
+            if stock in self._stock_screener_alert_stocks:
+                self._get_stock_increase_reason(stock, timeframes, stock_stats)
         self._pdf_api.save_pdf()
         return self._pdf_api.file_name
 
@@ -241,6 +302,7 @@ class StockPriceTopPerformerAlert(BaseAlert, StockApi):
                     break
         return res
 
+    # ----------------- pre-trieve stock list -----------------
     def get_sorted_price_increased_stocks(self) -> Dict[str, List[Tuple[StockSymbol, Decimal]]]:
         """
         Get the stocks with in the price increase percentage order for different timeframes
@@ -304,6 +366,7 @@ class StockPriceTopPerformerAlert(BaseAlert, StockApi):
 
         return top_stocks
 
+    # ----------------- run -----------------
     def run(self) -> None:
         """
         This function is used to send daily report of top 50 stocks with the highest price increase
@@ -318,7 +381,7 @@ class StockPriceTopPerformerAlert(BaseAlert, StockApi):
         timeframe_stocks_dict = defaultdict(list)
 
         last_stocks = StockAlertDBUtils.get_stocks()
-        email_msg = ""
+        email_msg = "* means the stock is in the stock screener alert result\n\n"
         for timeframe in self._timeframe_list:
             # send message and stock info file to telegram
             cur_top_stocks = []
@@ -328,6 +391,8 @@ class StockPriceTopPerformerAlert(BaseAlert, StockApi):
                 if stock.ticker not in last_stocks:
                     stock_str = f"{stock_str} (New)"
                     is_newly_added_stock[stock] = True
+                if stock in self._stock_screener_alert_stocks:
+                    stock_str = f"{stock_str} *"
                 cur_top_stocks.append(stock_str)
                 timeframe_stocks_dict[timeframe].append(stock)
             msg = f"Top {n} stocks from SP500 and Nasdaq with the " \
@@ -353,9 +418,10 @@ if __name__ == '__main__':
                                               timeframe_list=["1m"],
                                               # timeframe_list=["1m", "3m", "6m", "1y", "3y", "5y", "10y"],
                                               # timeframe_list=["3m", "6m", "1y"],
-                                              time_frame_sma_filter_ai_analysis=True,
-                                              newly_added_stock_ai_analysis=True,
-                                              growth_score_filter_ai_analysis=True,
-                                              daily_volume_threshold=0)
+                                              time_frame_sma_filter_ai_analysis=False,
+                                              newly_added_stock_ai_analysis=False,
+                                              growth_score_filter_ai_analysis=False,
+                                              daily_volume_threshold=0,
+                                              stock_screener_alert_db_name="stock_screener")
     stock_alert.run()
     print(f"Time taken: {round(time.time() - start, 2)} seconds")

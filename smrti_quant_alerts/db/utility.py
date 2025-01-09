@@ -196,6 +196,14 @@ class StockAlertDBUtils:
                 StockAlertCount.alert_type == alert_type)}
 
     @staticmethod
+    def get_all_stocks() -> Set[StockSymbol]:
+        """
+        get all stocks
+        """
+        with database_runtime.atomic():
+            return {StockSymbol.get_symbol_object(i.stock_symbol) for i in StockAlertCount.select()}
+
+    @staticmethod
     def add_stocks(stock_symbols: Iterable[StockSymbol], alert_type: str = "") -> None:
         """
         add stock symbols to the database

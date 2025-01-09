@@ -45,7 +45,8 @@
       "email": true/false,
       "time_frame_sma_filter_ai_analysis": true/false,
       "newly_added_stock_ai_analysis": true/false,
-      "growth_score_filter_ai_analysis": true/false
+      "growth_score_filter_ai_analysis": true/false,
+      "stock_screener_alert_db_name": "stock_screener"
     },
     "alert_params": {},
     "run_time_input_args": {
