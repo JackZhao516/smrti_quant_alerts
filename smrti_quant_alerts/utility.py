@@ -51,6 +51,7 @@ def run_alert(alert_name: str, alert_class: Callable) -> None:
 
     def task():
         config.reload_settings()
+        config.SETTINGS[alert_name]["alert_input_args"]["alert_name"] = alert_name
         alert = alert_class(**config.SETTINGS[alert_name]["alert_input_args"])
         return alert.run
 
