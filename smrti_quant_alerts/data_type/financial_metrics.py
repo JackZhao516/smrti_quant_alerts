@@ -2,6 +2,8 @@ from __future__ import annotations
 from enum import Enum, StrEnum
 from typing import Union
 
+import numpy as np
+
 
 class FinancialMetricType(StrEnum):
     REVENUE = "revenue"
@@ -43,6 +45,9 @@ class FinancialMetricsData:
                  has_percentage: bool = False) -> None:
         if isinstance(data, FinancialMetricsData):
             data = data.float_data
+        if np.isnan(data) or np.isinf(data):
+            data = 0.0
+
         self._has_percentage = has_percentage
         self._float_data = self._convert_to_float(data, data_type)
 
