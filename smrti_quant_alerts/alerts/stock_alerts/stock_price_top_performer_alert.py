@@ -421,7 +421,7 @@ if __name__ == '__main__':
                                               time_frame_sma_filter_ai_analysis=False,
                                               newly_added_stock_ai_analysis=False,
                                               growth_score_filter_ai_analysis=False,
-                                              daily_volume_threshold=0,
+                                              daily_volume_threshold=500000,
                                               stock_screener_alert_db_name="stock_screener")
     stock_alert.run()
     print(f"Time taken: {round(time.time() - start, 2)} seconds")

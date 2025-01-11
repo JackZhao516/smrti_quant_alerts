@@ -55,5 +55,5 @@ def run_alert(alert_name: str, alert_class: Callable) -> None:
         alert = alert_class(**config.SETTINGS[alert_name]["alert_input_args"])
         return alert.run
 
-    run_task_at_daily_time(task, **settings["run_time_input_args"])
+    run_task_at_daily_time(task(), **settings["run_time_input_args"])
     logging.info(f"{alert_name} finished")
