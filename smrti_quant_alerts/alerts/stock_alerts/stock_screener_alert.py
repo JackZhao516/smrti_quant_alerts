@@ -32,6 +32,7 @@ class StockScreenerAlert(BaseAlert, StockApi):
         self._stocks_eight_quarters_stats = defaultdict(list)
         self._screener_name_to_stocks = defaultdict(list)
         self._stock_price_top_performer_by_gics_sector_timeframe = {}
+        self._newly_added_stocks = set()
 
         self._get_stock_info_thread = threading.Thread(target=self._get_all_stock_info)
         self._get_stock_info_thread.start()
@@ -228,9 +229,14 @@ class StockScreenerAlert(BaseAlert, StockApi):
                 for sector, top_performers in value.items():
                     chosen_stocks = [stock[0] for stock in top_performers if stock[0] in screener_stocks]
                     if chosen_stocks:
+                        chosen_stocks_with_newly_added_mark = []
+                        for stock in chosen_stocks:
+                            if stock in self._newly_added_stocks:
+                                stock = f"{stock} *"
+                            chosen_stocks_with_newly_added_mark.append(stock)
                         if sector == "":
                             sector = "Others"
-                        content += f"       ·{sector}: {chosen_stocks}\n"
+                        content += f"       ·{sector}: {chosen_stocks_with_newly_added_mark}\n"
                 content += "\n\n"
             content += "\n\n"
 
@@ -290,6 +296,7 @@ class StockScreenerAlert(BaseAlert, StockApi):
         :return: file name, email content add on
         """
         new_stocks = self._get_newly_added_stocks_str(stocks, screener_name)
+        self._newly_added_stocks.update(new_stocks)
 
         self._screener_name_to_stocks[screener_name] = stocks
         file_name = f"{screener_name}_{self._alert_name}_{uuid.uuid4()}.xlsx"
@@ -390,7 +397,7 @@ class StockScreenerAlert(BaseAlert, StockApi):
 if __name__ == "__main__":
     start_time = time.time()
     alert = StockScreenerAlert("stock_screener", 20,
-                               ["Energy", "Basic Materials"], email=True, market_cap_threshold=10 ** 11)
+                               ["Energy", "Basic Materials"], email=True, market_cap_threshold=10 ** 10)
     alert.run()
 
     print(f"Time taken: {time.time() - start_time}")
