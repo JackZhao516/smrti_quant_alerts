@@ -232,7 +232,7 @@ class StockScreenerAlert(BaseAlert, StockApi):
                         chosen_stocks_with_newly_added_mark = []
                         for stock in chosen_stocks:
                             if stock in self._newly_added_stocks:
-                                stock = f"{stock} *"
+                                stock = f"{stock} (new)"
                             chosen_stocks_with_newly_added_mark.append(stock)
                         if sector == "":
                             sector = "Others"
