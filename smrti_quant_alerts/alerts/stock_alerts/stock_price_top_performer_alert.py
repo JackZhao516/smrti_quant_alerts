@@ -11,7 +11,7 @@ from smrti_quant_alerts.email_api import EmailApi
 from smrti_quant_alerts.data_type import StockSymbol, FinancialMetricType, FinancialMetricsData
 from smrti_quant_alerts.stock_crypto_api import StockApi
 from smrti_quant_alerts.alerts.base_alert import BaseAlert
-from smrti_quant_alerts.llm_api import PerplexityAPI
+from smrti_quant_alerts.llm_api import LLMAPI
 from smrti_quant_alerts.pdf_api import PDFApi
 from smrti_quant_alerts.db import close_database, StockAlertDBUtils, init_database_runtime
 
@@ -54,7 +54,7 @@ class StockPriceTopPerformerAlert(BaseAlert, StockApi):
         self._stock_screener_alert_stocks = \
             self._get_stock_screener_alert_results(f"{stock_screener_alert_db_name}.db")
 
-        self._ai_api = PerplexityAPI()
+        self._ai_api = LLMAPI()
         self._pdf_api = PDFApi()
 
         self._daily_volume = {}
@@ -414,7 +414,7 @@ class StockPriceTopPerformerAlert(BaseAlert, StockApi):
 
 if __name__ == '__main__':
     start = time.time()
-    stock_alert = StockPriceTopPerformerAlert("stock_alert", tg_type="TEST", email=False,
+    stock_alert = StockPriceTopPerformerAlert("stock_alert", tg_type="TEST", email=True,
                                               timeframe_list=["1m"],
                                               # timeframe_list=["1m", "3m", "6m", "1y", "3y", "5y", "10y"],
                                               # timeframe_list=["3m", "6m", "1y"],

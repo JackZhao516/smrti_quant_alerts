@@ -17,6 +17,7 @@ class Config:
         "FMP_API_URL": "https://financialmodelingprep.com/api",
         "EODHD_API_URL": "https://eodhd.com/api",
         "PERPLEXITY_API_URL": "https://api.perplexity.ai",
+        "XAI_API_URL": "https://api.x.ai/v1",
     }
     IS_SETUP = False
 

@@ -8,16 +8,17 @@ from smrti_quant_alerts.exception import error_handling
 from smrti_quant_alerts.data_type import StockSymbol
 
 
-class PerplexityAPI:
+class LLMAPI:
     _rate_limit_per_minute = 20
     _last_request_time = 0
     _current_count = 0
+    _default_source = "PERPLEXITY"
 
     def __init__(self) -> None:
         config = Config()
-        self._perplexity_client = openai.OpenAI(api_key=config.TOKENS["PERPLEXITY_API_KEY"],
-                                                base_url=config.API_ENDPOINTS["PERPLEXITY_API_URL"])
-        self._model = "llama-3.1-sonar-large-128k-online"
+        self._llm_client = openai.OpenAI(api_key=config.TOKENS[f"{self._default_source}_API_KEY"],
+                                         base_url=config.API_ENDPOINTS[f"{self._default_source}_API_URL"])
+        self._model = "grok-2-latest" if self._default_source == "XAI" else "llama-3.1-sonar-large-128k-online"
 
     @staticmethod
     def build_chat_message(system_message: str, user_message: str) -> list:
@@ -84,7 +85,7 @@ class PerplexityAPI:
             f"Why did {company_stock_code} stock appreciate so much since "
             f"{self._get_max_timeframe(timeframe)} timeframe ago?"
         )
-        response = self._perplexity_client.chat.completions.create(
+        response = self._llm_client.chat.completions.create(
             model=self._model,
             messages=message,
         )

@@ -1,1 +1,1 @@
-from .perplexity_api import PerplexityAPI
+from .llm_api import LLMAPI

@@ -6,7 +6,7 @@ from unittest.mock import patch, create_autospec
 
 import openai
 
-from smrti_quant_alerts.llm_api import PerplexityAPI
+from smrti_quant_alerts.llm_api import LLMAPI
 from smrti_quant_alerts.settings import Config
 
 
@@ -25,14 +25,14 @@ class OpenAIResponse:
     choices: List[OpenAIMessageWrapper]
 
 
-class TestPerplexityApi(unittest.TestCase):
+class TestLLMApi(unittest.TestCase):
     PWD = os.path.dirname(os.path.abspath(__file__))
     Config.PROJECT_DIR = os.path.join(os.path.dirname(PWD), "test_settings")
 
     def setUp(self) -> None:
         self.openai_mock = create_autospec(openai.OpenAI)
         with patch("openai.OpenAI", side_effect=lambda **kwargs: self.openai_mock):
-            self.perplexity_api = PerplexityAPI()
+            self.perplexity_api = LLMAPI()
 
     def test_build_chat_message(self) -> None:
         system_message = "test_system_message"
