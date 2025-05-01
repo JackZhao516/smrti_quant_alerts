@@ -1,5 +1,6 @@
 import logging
 import uuid
+import time
 import os
 import csv
 
@@ -172,6 +173,7 @@ class MACDAlert(BaseAlert):
             elif isinstance(symbol_pair[1], BinanceExchange):
                 right_close_prices = []
                 for date, _ in left_close_prices:
+                    time.sleep(0.2)
                     right_close_prices.append((date, self._binance_api.get_exchange_close_price_on_timestamp(
                         symbol_pair[1], get_stock_market_close_timestamp_from_date(date))))
                     if right_close_prices[-1][1] == 0:
@@ -180,9 +182,11 @@ class MACDAlert(BaseAlert):
         else:
             left_close_prices = self._binance_api.get_exchange_close_prices_by_timeframe_num_of_ticks(
                 symbol_pair[0], timeframe, 200)
+            time.sleep(0.2)
             if isinstance(symbol_pair[1], BinanceExchange):
                 right_close_prices = self._binance_api.get_exchange_close_prices_by_timeframe_num_of_ticks(
                     symbol_pair[1], timeframe, 200)
+                time.sleep(0.2)
             elif isinstance(symbol_pair[1], StockSymbol):
                 left_close_prices = []
                 right_close_prices = self._stock_api.get_stock_close_prices_by_timeframe_num_of_ticks(
