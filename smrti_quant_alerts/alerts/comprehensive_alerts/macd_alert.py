@@ -328,6 +328,7 @@ class MACDAlert(BaseAlert):
         """
         Run the alert
         """
+        logging.warn(f"Running {self._alert_name} alert")
         macd_dict = self._get_past_number_of_macd(self._symbol_pairs, self._timeframe_list)
         self._tg_bot.send_message(f"MACD values for {list(macd_dict.keys())}")
         if self._xlsx:
