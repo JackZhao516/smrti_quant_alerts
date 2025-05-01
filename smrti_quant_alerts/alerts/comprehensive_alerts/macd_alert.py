@@ -335,7 +335,7 @@ class MACDAlert(BaseAlert):
         self._excel_file_paths.append(fire_path)
         # send email
         if self._email:
-            name_prefix = "Pair " if self._use_stock_screener_symbols else ""
+            name_prefix = "Pair " if not self._use_stock_screener_symbols else ""
             self._email_api.send_email(name_prefix + self._alert_name, email_content, [], self._excel_file_paths)
 
         # send telegram message
