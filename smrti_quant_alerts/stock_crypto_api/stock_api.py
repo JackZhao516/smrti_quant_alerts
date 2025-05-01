@@ -498,7 +498,8 @@ class StockApi:
 
         # prepend latest close price
         latest_close = self.get_stock_current_close_price(stock)
-        if (latest_close[0] != res[0][0] and timeframe[-1] != "m") or latest_close[0][:7] != res[0][0][:7]:
+        if latest_close[0] and ((latest_close[0] != res[0][0] and timeframe[-1] != "m")
+                                or latest_close[0][:7] != res[0][0][:7]):
             res.insert(0, latest_close)
         return res
 
@@ -513,6 +514,8 @@ class StockApi:
         api_url = f"{self.EODHD_API_URL}/real-time/{self._parse_eodhd_symbol(stock)}?api_token={self.EODHD_API_KEY}" \
                   f"&fmt=json"
         response = requests.get(api_url, timeout=self.TIMEOUT).json()
+        if not isinstance(response["timestamp"], int):
+            return "", 0
         return get_date_from_timestamp(response["timestamp"] * 1000), float(response["close"])
 
     @error_handling("financialmodelingprep", default_val=[])
