@@ -371,7 +371,7 @@ class StockPriceTopPerformerAlert(BaseAlert, StockApi):
         """
         This function is used to send daily report of top 50 stocks with the highest price increase
         """
-        logging.info("Running Stock Alert")
+        logging.warning("Running Stock Alert")
         n = 50
         top_stocks = self.get_sorted_price_increased_stocks()
         _, self._daily_volume = self.get_all_stock_price_volume_by_day_delta(1)

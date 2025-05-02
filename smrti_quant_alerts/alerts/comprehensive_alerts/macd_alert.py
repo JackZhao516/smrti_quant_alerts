@@ -39,6 +39,7 @@ class MACDAlert(BaseAlert):
         self._binance_api = BinanceApi()
         self._email_api = EmailApi()
         self._sectors = defaultdict(dict)
+        self._stock_pair_name = defaultdict(lambda: "")
         self._symbol_pairs = self._parse_symbols_file(symbols_file) if symbols_file else []
         if stock_screener_alert_db_name:
             self._symbol_pairs = self._get_stock_screener_alert_results(stock_screener_alert_db_name + ".db")
@@ -72,6 +73,7 @@ class MACDAlert(BaseAlert):
                     self._sectors[row["sector"]][row["sub_sector"]].append(symbol)
                 else:
                     self._sectors[row["sector"]][row["sub_sector"]] = [symbol]
+                self._stock_pair_name[symbol] = row["name"]
         return symbols
 
     def _get_stock_screener_alert_results(self, stock_screener_alert_db_name: str) -> List[Tuple[TradingSymbol, TradingSymbol]]:
@@ -290,11 +292,13 @@ class MACDAlert(BaseAlert):
         if r_to_f:
             rising_to_falling.append(
                 f"{space}·{symbol_pair_encoded} {r_to_f}\n"
-                f"{space * 2}-{self._process_timeframe_for_changed_macd(symbol_pair, r_to_f, pos, neg)}")
+                f"{space * 2}-{self._process_timeframe_for_changed_macd(symbol_pair, r_to_f, pos, neg)}"
+                f"\n{space * 2} {self._stock_pair_name[symbol_pair]}\n")
         if f_to_r:
             falling_to_rising.append(
                 f"{space}·{symbol_pair_encoded} {f_to_r}\n"
-                f"{space * 2}-{self._process_timeframe_for_changed_macd(symbol_pair, f_to_r, pos, neg)}")
+                f"{space * 2}-{self._process_timeframe_for_changed_macd(symbol_pair, f_to_r, pos, neg)}"
+                f"\n{space * 2} {self._stock_pair_name[symbol_pair]}\n")
         return res
 
     def _generate_email_content(self, macd_dict: Dict[str, Dict[str, List[Tuple[str, float]]]]) -> Tuple[str, str]:
@@ -311,11 +315,11 @@ class MACDAlert(BaseAlert):
         with pd.ExcelWriter(file_name) as writer:
             for _, sub_sectors in self._sectors.items():
                 for sub_sector, symbol_pairs in sub_sectors.items():
-                    res = [["", *self._timeframe_list]]
+                    res = [["", *self._timeframe_list, "name"]]
                     for symbol_pair in symbol_pairs:
                         row = self._generate_individual_symbol_xlsx_content(
                             symbol_pair, rising_to_falling, falling_to_rising, macd_dict)
-                        res.append(row)
+                        res.append([*row, self._stock_pair_name[symbol_pair]])
                     df = pd.DataFrame(res, dtype=str)
                     if sub_sector is None or sub_sector == "":
                         sub_sector = "others"
@@ -328,7 +332,7 @@ class MACDAlert(BaseAlert):
         """
         Run the alert
         """
-        logging.warn(f"Running {self._alert_name} alert")
+        logging.warning(f"Running {self._alert_name} alert")
         macd_dict = self._get_past_number_of_macd(self._symbol_pairs, self._timeframe_list)
         self._tg_bot.send_message(f"MACD values for {list(macd_dict.keys())}")
         if self._xlsx:
