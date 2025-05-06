@@ -238,7 +238,7 @@ class MACDAlert(BaseAlert):
             add_on_timeframe_macd = self._get_past_number_of_macd(
                 [symbol_pair], self._add_on_timeframe_list)[self._encode_symbol_pair(symbol_pair)]
             for timeframe, values in add_on_timeframe_macd.items():
-                if np.isnan(values[0][1]):
+                if not values or np.isnan(values[0][1]):
                     continue
                 if values[0][1] > 0:
                     positive_timeframes.append(timeframe)
