@@ -267,7 +267,7 @@ class MACDAlert(BaseAlert):
 
         :return: file path
         """
-        space = " " * 4
+        space = "&nbsp;&nbsp;&nbsp;&nbsp;"
         symbol_pair_encoded = self._encode_symbol_pair(symbol_pair)
         r_to_f, f_to_r, pos, neg = [], [], [], []
         res = [symbol_pair_encoded]
@@ -291,14 +291,14 @@ class MACDAlert(BaseAlert):
                 res[0] += f" *"
         if r_to_f:
             rising_to_falling.append(
-                f"{space}·{symbol_pair_encoded} {r_to_f}\n"
-                f"{space * 2}-{self._process_timeframe_for_changed_macd(symbol_pair, r_to_f, pos, neg)}"
-                f"\n{space * 2} {self._stock_pair_name[symbol_pair]}\n")
+                f"{space}·{symbol_pair_encoded}{space}{r_to_f}<br>"
+                f"{space * 2}-{space}{self._process_timeframe_for_changed_macd(symbol_pair, r_to_f, pos, neg)}<br>"
+                f"{space * 2}-{space}{self._stock_pair_name[symbol_pair]}<br>")
         if f_to_r:
             falling_to_rising.append(
-                f"{space}·{symbol_pair_encoded} {f_to_r}\n"
-                f"{space * 2}-{self._process_timeframe_for_changed_macd(symbol_pair, f_to_r, pos, neg)}"
-                f"\n{space * 2} {self._stock_pair_name[symbol_pair]}\n")
+                f"{space}·{symbol_pair_encoded}{space}{f_to_r}<br>"
+                f"{space * 2}-{space}{self._process_timeframe_for_changed_macd(symbol_pair, f_to_r, pos, neg)}<br>"
+                f"{space * 2}-{space}{self._stock_pair_name[symbol_pair]}<br>")
         return res
 
     def _generate_email_content(self, macd_dict: Dict[str, Dict[str, List[Tuple[str, float]]]]) -> Tuple[str, str]:
@@ -309,8 +309,8 @@ class MACDAlert(BaseAlert):
 
         :return: email content, xlsx file paths
         """
-        rising_to_falling = ["·Rising to Falling"]
-        falling_to_rising = ["·Falling to Rising"]
+        rising_to_falling = ["<b>·Rising to Falling</b>"]
+        falling_to_rising = ["<b>·Falling to Rising</b>"]
         file_name = f"macd_alert_{uuid.uuid4()}.xlsx"
         with pd.ExcelWriter(file_name) as writer:
             for _, sub_sectors in self._sectors.items():
@@ -325,8 +325,8 @@ class MACDAlert(BaseAlert):
                         sub_sector = "others"
                     df.to_excel(writer, sheet_name=sub_sector, header=False, index=False)
 
-        return "Summary\n\n" + "\n".join(rising_to_falling) + "\n" + \
-               "\n".join(falling_to_rising), file_name
+        return "<b>Summary</b><br><br>" + "<br>".join(rising_to_falling) + "<br><br>" + \
+               "<br>".join(falling_to_rising), file_name
 
     def run(self) -> None:
         """
@@ -345,7 +345,8 @@ class MACDAlert(BaseAlert):
         # send email
         if self._email:
             name_prefix = "Pair " if not self._use_stock_screener_symbols else ""
-            self._email_api.send_email(name_prefix + self._alert_name, email_content, [], self._excel_file_paths)
+            self._email_api.send_email(name_prefix + self._alert_name, email_content, [], self._excel_file_paths,
+                                       user_html=True)
 
         # send telegram message
         self._tg_bot.send_message(email_content)
