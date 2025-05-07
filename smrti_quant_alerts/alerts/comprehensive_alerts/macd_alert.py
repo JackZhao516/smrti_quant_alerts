@@ -271,7 +271,8 @@ class MACDAlert(BaseAlert):
         symbol_pair_encoded = self._encode_symbol_pair(symbol_pair)
         r_to_f, f_to_r, pos, neg = [], [], [], []
         res = [symbol_pair_encoded]
-        for timeframe, values in sorted(macd_dict[symbol_pair_encoded].items()):
+        for timeframe in self._timeframe_list:
+            values = macd_dict[symbol_pair_encoded][timeframe]
             current_macd, previous_macd = values[0][1], values[1][1]
 
             if np.isnan(current_macd) or np.isnan(previous_macd):
@@ -293,12 +294,12 @@ class MACDAlert(BaseAlert):
             rising_to_falling.append(
                 f"{space}·{symbol_pair_encoded}{space}{r_to_f}<br>"
                 f"{space * 2}-{space}{self._process_timeframe_for_changed_macd(symbol_pair, r_to_f, pos, neg)}<br>"
-                f"{space * 2}-{space}{self._stock_pair_name[symbol_pair]}<br>")
+                f"{space * 2}{space}{self._stock_pair_name[symbol_pair]}<br>")
         if f_to_r:
             falling_to_rising.append(
                 f"{space}·{symbol_pair_encoded}{space}{f_to_r}<br>"
                 f"{space * 2}-{space}{self._process_timeframe_for_changed_macd(symbol_pair, f_to_r, pos, neg)}<br>"
-                f"{space * 2}-{space}{self._stock_pair_name[symbol_pair]}<br>")
+                f"{space * 2}{space}{self._stock_pair_name[symbol_pair]}<br>")
         return res
 
     def _generate_email_content(self, macd_dict: Dict[str, Dict[str, List[Tuple[str, float]]]]) -> Tuple[str, str]:
