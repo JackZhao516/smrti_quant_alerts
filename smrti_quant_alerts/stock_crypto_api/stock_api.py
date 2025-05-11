@@ -474,7 +474,7 @@ class StockApi:
 
         return res
 
-    @error_handling("eodhd", default_val=[])
+    # @error_handling("eodhd", default_val=[])
     def get_stock_close_prices_by_timeframe_num_of_ticks(
             self, stock: StockSymbol, timeframe: str, num_of_ticks: int) -> List[Tuple[str, float]]:
         """
@@ -498,7 +498,7 @@ class StockApi:
 
         # prepend latest close price
         latest_close = self.get_stock_current_close_price(stock)
-        if latest_close[0] and ((latest_close[0] != res[0][0] and timeframe[-1] != "m")
+        if latest_close[0] and (len(res) == 0 or (latest_close[0] != res[0][0] and timeframe[-1] != "m")
                                 or latest_close[0][:7] != res[0][0][:7]):
             res.insert(0, latest_close)
         return res

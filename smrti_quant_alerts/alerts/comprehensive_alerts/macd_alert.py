@@ -273,7 +273,8 @@ class MACDAlert(BaseAlert):
         res = [symbol_pair_encoded]
         for timeframe in self._timeframe_list:
             values = macd_dict[symbol_pair_encoded][timeframe]
-            current_macd, previous_macd = values[0][1], values[1][1]
+            current_macd = values[0][1] if values else np.nan
+            previous_macd = values[1][1] if len(values) > 1 else np.nan
 
             if np.isnan(current_macd) or np.isnan(previous_macd):
                 res.append("No enough data to calculate MACD")
