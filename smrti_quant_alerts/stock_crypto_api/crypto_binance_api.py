@@ -1,5 +1,6 @@
 import time
 from decimal import Decimal
+from datetime import datetime
 from typing import List, Union, Set, Optional, Tuple
 
 from binance.spot import Spot
@@ -192,8 +193,15 @@ class BinanceApi:
         response = self._binance_spot_client.klines(symbol=exchange, interval=binance_timeframe,
                                                     startTime=start_time, limit=1000)
 
-        return [p for i, p in enumerate([(get_date_from_timestamp(i[0]), float(i[4]))
-                for i in response][::-1]) if i % int(timeframe[0]) == 0][:num_of_tick]
+        close_prices_in_days = [p for i, p in enumerate([(get_date_from_timestamp(i[0]), float(i[4]))
+                                for i in response][::-1])]
+
+        if timeframe[-1] == "w":
+            return [x for x in close_prices_in_days if datetime.strptime(x[0], "%Y-%m-%d").date().weekday() == 0]
+        elif timeframe[-1] == "m":
+            return [x for x in close_prices_in_days if x[0][-2:] == "01"]
+        else:
+            return close_prices_in_days
 
     @error_handling("binance", default_val=0)
     def get_exchange_close_price_on_timestamp(self, exchange: BinanceExchange, timestamp: int) -> float:

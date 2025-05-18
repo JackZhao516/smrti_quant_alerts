@@ -1,6 +1,23 @@
-symbol_left,type_left,symbol_right,type_right,sector,sub_sector
-SOL,BinanceExchange,BTC,BinanceExchange,Pair,
-WIF,BinanceExchange,,,Crypto,Meme
-BTC,BinanceExchange,,,Crypto,
-TSLA,StockSymbol,,,Share,
-NVDA,StockSymbol,,,Share,Semi
+symbol_left,type_left,symbol_right,type_right,sector,sub_sector,name
+BTC,BinanceExchange,QQQ,StockSymbol,Pair,Pair,Bitcoin / Invesco QQQ Trust
+BTC,BinanceExchange,SPY,StockSymbol,Pair,Pair,Bitcoin / SPDR S&P 500 ETF Trust
+BTC,BinanceExchange,GLD,StockSymbol,Pair,Pair,Bitcoin / SPDR Gold Trust
+TSLA,StockSymbol,BTC,BinanceExchange,Pair,Pair,Tesla / Bitcoin
+NVDA,StockSymbol,BTC,BinanceExchange,Pair,Pair,Nvidia / Bitcoin
+GLD,StockSymbol,SLV,StockSymbol,Pair,Pair,SPDR Gold Trust / iShares Silver Trust
+GLD,StockSymbol,QQQ,StockSymbol,Pair,Pair,SPDR Gold Trust / Invesco QQQ Trust
+000300@SHG,StockSymbol,SPY,StockSymbol,country,CN-US,CSI 300 Index / SPDR S&P 500 ETF Trust
+000688@SHE,StockSymbol,QQQ,StockSymbol,country,CN-US,SSE STAR 50 Index / Invesco QQQ Trust
+512660@SHG,StockSymbol,ITA,StockSymbol,country,CN-US,CSI 300 Real Estate ETF / iShares U.S. Aerospace & Defense ETF
+FEZ,StockSymbol,SPY,StockSymbol,country,EU-US,SPDR Euro Stoxx 50 ETF / SPDR S&P 500 ETF Trust
+ISF@LSE,StockSymbol,SPY,StockSymbol,country,EU-US,iShares Core FTSE 100 UCITS ETF / SPDR S&P 500 ETF Trust
+EXV3@XETRA,StockSymbol,QQQ,StockSymbol,country,EU-US,iShares STOXX Europe 600 Technology UCITS ETF / Invesco QQQ Trust
+EUAD,StockSymbol,ITA,StockSymbol,country,EU-US,Select STOXX Europe Aerospace & Defense ETF / iShares U.S. Aerospace & Defense ETF
+2800@HK,StockSymbol,SPY,StockSymbol,country,HK-US,Tracker Fund of Hong Kong / SPDR S&P 500 ETF Trust
+3067@HK,StockSymbol,QQQ,StockSymbol,country,HK-US,iShares Hang Seng TECH ETF / Invesco QQQ Trust
+XDJP@LSE,StockSymbol,SPY,StockSymbol,country,JP-US,Xtrackers Nikkei 225 UCITS ETF / SPDR S&P 500 ETF Trust
+INDA,StockSymbol,SPY,StockSymbol,country,IN-US,iShares MSCI India ETF / SPDR S&P 500 ETF Trust
+INQQ,StockSymbol,QQQ,StockSymbol,country,IN-US,India Internet & Ecommerce ETF / Invesco QQQ Trust
+EIDO,StockSymbol,SPY,StockSymbol,country,ID-US,iShares MSCI Indonesia ETF / SPDR S&P 500 ETF Trust
+EWZ,StockSymbol,SPY,StockSymbol,country,BR-US,iShares MSCI Brazil ETF / SPDR S&P 500 ETF Trust
+KSA,StockSymbol,SPY,StockSymbol,country,SA-US,iShares MSCI Saudi Arabia ETF / SPDR S&P 500 ETF Trust

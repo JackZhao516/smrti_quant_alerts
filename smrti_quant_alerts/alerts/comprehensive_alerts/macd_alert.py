@@ -3,6 +3,7 @@ import uuid
 import time
 import os
 import csv
+from datetime import datetime
 
 import pandas as pd
 import numpy as np
@@ -20,6 +21,8 @@ logging.basicConfig(level=logging.INFO)
 
 
 class MACDAlert(BaseAlert):
+    TIMEFRAME_DAYS = {"1D": 1, "2D": 2, "3D": 3, "1W": 5, "2W": 10, "3W": 15, "1M": 20}
+
     def __init__(self, alert_name: str, timeframe_list: List[str], symbols_file: str,
                  add_on_timeframe_list: List[str] = None, email: bool = False,
                  stock_screener_alert_db_name: str = None,
@@ -123,19 +126,23 @@ class MACDAlert(BaseAlert):
         for symbol_pair in symbol_pairs:
             for timeframe in timeframe_list:
                 left_close_prices, right_close_prices = self._get_left_right_close_prices(symbol_pair, timeframe)
-                res = self._get_macd_for_stocks_or_cryptos(left_close_prices, right_close_prices, num_of_macd)
+                res = self._get_macd_for_stocks_or_cryptos(left_close_prices, right_close_prices,
+                                                           timeframe, num_of_macd)
                 macd_dict[self._encode_symbol_pair(symbol_pair)][timeframe] = res
         return macd_dict
 
     @staticmethod
     def _get_macd_for_stocks_or_cryptos(left_close_prices: List[Tuple[str, float]],
-                                        right_close_prices: List[Tuple[str, float]], num_of_macd: int = 14) \
+                                        right_close_prices: List[Tuple[str, float]],
+                                        timeframe: str = "1D",
+                                        num_of_macd: int = 14) \
             -> List[Tuple[str, float]]:
         """
         Get the MACD values for the stocks
 
         :param left_close_prices: left close prices
         :param right_close_prices: right close prices
+        :param timeframe: timeframe
         :param num_of_macd: number of MACD values
 
         :return: list of MACD values
@@ -143,20 +150,20 @@ class MACDAlert(BaseAlert):
         if not right_close_prices:
             macds = calculate_macd([close_price for _, close_price in left_close_prices[::-1]])[:num_of_macd]
             return [(date, macd) for date, macd in zip([date for date, _ in left_close_prices], macds)]
+        left_close_prices = MACDAlert._enrich_close_prices_with_previous_day_price(
+            left_close_prices, right_close_prices)
+        right_close_prices = MACDAlert._enrich_close_prices_with_previous_day_price(
+            right_close_prices, left_close_prices)
+
+        left_close_prices = [x for i, x in enumerate(left_close_prices) if i % int(timeframe[:-1]) == 0]
+        right_close_prices = [x for i, x in enumerate(right_close_prices) if i % int(timeframe[:-1]) == 0]
+
         close_prices = []
         dates = []
-        index_left, index_right = 0, 0
-        while index_left < len(left_close_prices) and index_right < len(right_close_prices):
-            if left_close_prices[index_left][0] == right_close_prices[index_right][0]:
-                if right_close_prices[index_right][1] != 0:
-                    close_prices.append(left_close_prices[index_left][1] / right_close_prices[index_right][1])
-                    dates.append(left_close_prices[index_left][0])
-                index_left += 1
-                index_right += 1
-            elif left_close_prices[index_left][0] > right_close_prices[index_right][0]:
-                index_left += 1
-            else:
-                index_right += 1
+        for left_price, right_price in zip(left_close_prices, right_close_prices):
+            if right_price[1] != 0:
+                close_prices.append(left_price[1] / right_price[1])
+                dates.append(left_price[0])
         macds = calculate_macd(close_prices[::-1])[:num_of_macd]
         return [(date, macd) for date, macd in zip(dates, macds)]
 
@@ -165,13 +172,16 @@ class MACDAlert(BaseAlert):
         """
         Get the close prices for the left and right symbols
         """
-        right_close_prices = None
+        left_close_prices = []
+        right_close_prices = []
+        num_of_sticks = int(timeframe[:-1]) * 200
+
         if isinstance(symbol_pair[0], StockSymbol):
             left_close_prices = self._stock_api.get_stock_close_prices_by_timeframe_num_of_ticks(
-                symbol_pair[0], timeframe, 200)
+                symbol_pair[0], timeframe, num_of_sticks)
             if isinstance(symbol_pair[1], StockSymbol):
                 right_close_prices = self._stock_api.get_stock_close_prices_by_timeframe_num_of_ticks(
-                    symbol_pair[1], timeframe, 200)
+                    symbol_pair[1], timeframe, num_of_sticks)
             elif isinstance(symbol_pair[1], BinanceExchange):
                 right_close_prices = []
                 for date, _ in left_close_prices:
@@ -182,25 +192,57 @@ class MACDAlert(BaseAlert):
                         right_close_prices.pop()
                         break
         else:
-            left_close_prices = self._binance_api.get_exchange_close_prices_by_timeframe_num_of_ticks(
-                symbol_pair[0], timeframe, 200)
-            time.sleep(0.2)
-            if isinstance(symbol_pair[1], BinanceExchange):
-                right_close_prices = self._binance_api.get_exchange_close_prices_by_timeframe_num_of_ticks(
-                    symbol_pair[1], timeframe, 200)
-                time.sleep(0.2)
-            elif isinstance(symbol_pair[1], StockSymbol):
-                left_close_prices = []
+            if isinstance(symbol_pair[1], StockSymbol):
                 right_close_prices = self._stock_api.get_stock_close_prices_by_timeframe_num_of_ticks(
-                    symbol_pair[1], timeframe, 200)
+                    symbol_pair[1], timeframe, num_of_sticks)
+
                 for date, _ in right_close_prices:
+                    time.sleep(0.2)
                     left_close_prices.append((date, self._binance_api.get_exchange_close_price_on_timestamp(
                         symbol_pair[0], get_stock_market_close_timestamp_from_date(date))))
                     if left_close_prices[-1][1] == 0:
                         left_close_prices.pop()
                         break
+            elif isinstance(symbol_pair[0], BinanceExchange):
+                left_close_prices = self._binance_api.get_exchange_close_prices_by_timeframe_num_of_ticks(
+                    symbol_pair[0], timeframe, num_of_sticks)
+                time.sleep(0.2)
+
+                right_close_prices = self._binance_api.get_exchange_close_prices_by_timeframe_num_of_ticks(
+                    symbol_pair[1], timeframe, num_of_sticks)
 
         return left_close_prices, right_close_prices
+
+    @staticmethod
+    def _enrich_close_prices_with_previous_day_price(
+            close_prices: List[Tuple[str, float]], second_close_prices: List[Tuple[str, float]]) -> List[Tuple[str, float]]:
+        """
+        Enrich the close prices with the previous day price
+
+        :param close_prices: list of close prices
+        :param second_close_prices: list of closes prices and dates
+
+        :return: list of close prices with enriched dates
+        """
+        index_left, index_right = 0, 0
+        res = []
+        while index_left < len(close_prices) and index_right < len(second_close_prices):
+            left_date = datetime.strptime(close_prices[index_left][0], "%Y-%m-%d")
+            right_date = datetime.strptime(second_close_prices[index_right][0], "%Y-%m-%d")
+            if left_date == right_date:
+                res.append((close_prices[index_left][0], close_prices[index_left][1]))
+                index_left += 1
+                index_right += 1
+            elif left_date > right_date:
+                res.append((close_prices[index_left][0], close_prices[index_left][1]))
+                index_left += 1
+            else:
+                res.append((second_close_prices[index_right][0], close_prices[index_left][1]))
+                index_right += 1
+        while index_left < len(close_prices):
+            res.append((close_prices[index_left][0], close_prices[index_left][1]))
+            index_left += 1
+        return res
 
     @staticmethod
     def _generate_xlsx(symbol_pair_encoded: str, macd_dict: Dict[str, List[Tuple[str, float]]]) -> str:

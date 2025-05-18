@@ -474,7 +474,7 @@ class StockApi:
 
         return res
 
-    # @error_handling("eodhd", default_val=[])
+    @error_handling("eodhd", default_val=[])
     def get_stock_close_prices_by_timeframe_num_of_ticks(
             self, stock: StockSymbol, timeframe: str, num_of_ticks: int) -> List[Tuple[str, float]]:
         """
@@ -485,21 +485,18 @@ class StockApi:
         :param num_of_ticks: int
         :return: [(date, close_price), ...], with the newest date first
         """
-        timeframe_int = int(timeframe[0])
-        timeframe = timeframe.lower()
+        timeframe = timeframe[-1].lower()
         from_date = get_datetime_now() - \
-            datetime.timedelta(days=2 * (self.timeframe_dict[timeframe[-1]] * num_of_ticks * timeframe_int + 1))
+            datetime.timedelta(days=self.timeframe_dict[timeframe] * num_of_ticks * 2)
         from_str = from_date.strftime("%Y-%m-%d")
         api_url = f"{self.EODHD_API_URL}/eod/{self._parse_eodhd_symbol(stock)}?api_token={self.EODHD_API_KEY}" \
-                  f"&fmt=json&from={from_str}&period={timeframe[-1]}"
-        response = requests.get(api_url, timeout=self.TIMEOUT).json()
+                  f"&fmt=json&from={from_str}&period={timeframe}"
+        response = requests.get(api_url, timeout=self.TIMEOUT).json()[::-1]
         res = [(tick["date"], float(tick["adjusted_close"]))
-               for i, tick in enumerate(response[::-1]) if i % timeframe_int == 0][:num_of_ticks]
-
+               for i, tick in enumerate(response)][:num_of_ticks]
         # prepend latest close price
         latest_close = self.get_stock_current_close_price(stock)
-        if latest_close[0] and (len(res) == 0 or (latest_close[0] != res[0][0] and timeframe[-1] != "m")
-                                or latest_close[0][:7] != res[0][0][:7]):
+        if latest_close[0] and (len(res) == 0 or latest_close[0][:7] != res[0][0][:7]):
             res.insert(0, latest_close)
         return res
 
