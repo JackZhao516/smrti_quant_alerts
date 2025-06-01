@@ -187,7 +187,7 @@ class MACDAlert(BaseAlert):
                 for date, _ in left_close_prices:
                     time.sleep(0.2)
                     right_close_prices.append((date, self._binance_api.get_exchange_close_price_on_timestamp(
-                        symbol_pair[1], get_stock_market_close_timestamp_from_date(date))))
+                        symbol_pair[1], get_stock_market_close_timestamp_from_date(date) - 60000)))
                     if right_close_prices[-1][1] == 0:
                         right_close_prices.pop()
                         break
@@ -199,7 +199,7 @@ class MACDAlert(BaseAlert):
                 for date, _ in right_close_prices:
                     time.sleep(0.2)
                     left_close_prices.append((date, self._binance_api.get_exchange_close_price_on_timestamp(
-                        symbol_pair[0], get_stock_market_close_timestamp_from_date(date))))
+                        symbol_pair[0], get_stock_market_close_timestamp_from_date(date) - 60000)))
                     if left_close_prices[-1][1] == 0:
                         left_close_prices.pop()
                         break
