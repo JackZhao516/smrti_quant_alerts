@@ -3,7 +3,7 @@ import uuid
 import time
 import os
 import csv
-from datetime import datetime
+from datetime import datetime, timedelta
 
 import pandas as pd
 import numpy as np
@@ -150,10 +150,6 @@ class MACDAlert(BaseAlert):
         if not right_close_prices:
             macds = calculate_macd([close_price for _, close_price in left_close_prices[::-1]])[:num_of_macd]
             return [(date, macd) for date, macd in zip([date for date, _ in left_close_prices], macds)]
-        left_close_prices = MACDAlert._enrich_close_prices_with_previous_day_price(
-            left_close_prices, right_close_prices)
-        right_close_prices = MACDAlert._enrich_close_prices_with_previous_day_price(
-            right_close_prices, left_close_prices)
 
         left_close_prices = [x for i, x in enumerate(left_close_prices) if i % int(timeframe[:-1]) == 0]
         right_close_prices = [x for i, x in enumerate(right_close_prices) if i % int(timeframe[:-1]) == 0]
@@ -179,9 +175,13 @@ class MACDAlert(BaseAlert):
         if isinstance(symbol_pair[0], StockSymbol):
             left_close_prices = self._stock_api.get_stock_close_prices_by_timeframe_num_of_ticks(
                 symbol_pair[0], timeframe, num_of_sticks)
+            if timeframe[-1] == "D":
+                left_close_prices = self._enrich_close_prices_with_previous_day_price(left_close_prices)
             if isinstance(symbol_pair[1], StockSymbol):
                 right_close_prices = self._stock_api.get_stock_close_prices_by_timeframe_num_of_ticks(
                     symbol_pair[1], timeframe, num_of_sticks)
+                if timeframe[-1] == "D":
+                    right_close_prices = self._enrich_close_prices_with_previous_day_price(right_close_prices)
             elif isinstance(symbol_pair[1], BinanceExchange):
                 right_close_prices = []
                 for date, _ in left_close_prices:
@@ -195,6 +195,8 @@ class MACDAlert(BaseAlert):
             if isinstance(symbol_pair[1], StockSymbol):
                 right_close_prices = self._stock_api.get_stock_close_prices_by_timeframe_num_of_ticks(
                     symbol_pair[1], timeframe, num_of_sticks)
+                if timeframe[-1] == "D":
+                    right_close_prices = self._enrich_close_prices_with_previous_day_price(right_close_prices)
 
                 for date, _ in right_close_prices:
                     time.sleep(0.2)
@@ -203,7 +205,7 @@ class MACDAlert(BaseAlert):
                     if left_close_prices[-1][1] == 0:
                         left_close_prices.pop()
                         break
-            elif isinstance(symbol_pair[0], BinanceExchange):
+            else:
                 left_close_prices = self._binance_api.get_exchange_close_prices_by_timeframe_num_of_ticks(
                     symbol_pair[0], timeframe, num_of_sticks)
                 time.sleep(0.2)
@@ -215,6 +217,32 @@ class MACDAlert(BaseAlert):
 
     @staticmethod
     def _enrich_close_prices_with_previous_day_price(
+            close_prices: List[Tuple[str, float]]) -> List[Tuple[str, float]]:
+        """
+        Enrich the close prices with the previous day price
+
+        :param close_prices: list of close prices
+        :return: list of close prices with enriched dates
+        """
+        if not close_prices:
+            return []
+        reversed_prices = close_prices[::-1]
+        res = [(reversed_prices[0][0], reversed_prices[0][1])]
+        i = 1
+        previous_date = datetime.strptime(reversed_prices[0][0], "%Y-%m-%d")
+        while i < len(reversed_prices):
+            current_date = datetime.strptime(reversed_prices[i][0], "%Y-%m-%d")
+            if previous_date + timedelta(days=1) == current_date:
+                res.append((reversed_prices[i][0], reversed_prices[i][1]))
+                previous_date = current_date
+                i += 1
+            else:
+                previous_date += timedelta(days=1)
+                res.append((previous_date.strftime("%Y-%m-%d"), res[-1][1]))
+        return res[::-1]
+
+    @staticmethod
+    def _enrich_close_prices_with_previous_day_price_and_second_ticker(
             close_prices: List[Tuple[str, float]], second_close_prices: List[Tuple[str, float]]) -> List[Tuple[str, float]]:
         """
         Enrich the close prices with the previous day price

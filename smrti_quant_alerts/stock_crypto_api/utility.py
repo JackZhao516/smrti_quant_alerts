@@ -61,9 +61,9 @@ def get_stock_market_close_timestamp_from_date(date: str) -> int:
     :param date: str
     :return: timestamp in ms
     """
-    timezone = pytz.timezone("US/Eastern")
-    return int(timezone.localize(datetime.datetime.strptime(
-        date, "%Y-%m-%d")).replace(hour=16, minute=0).timestamp()) * 1000
+    timezone_utc = pytz.timezone("UTC")
+    return int(timezone_utc.localize(datetime.datetime.strptime(
+        date, "%Y-%m-%d")).replace(hour=23, minute=59, second=59).timestamp()) * 1000
 
 
 def get_date_from_timestamp(timestamp: int) -> str:
