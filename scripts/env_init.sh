@@ -11,11 +11,17 @@ fi
 
 # install ta-lib c library
 source scripts/install_ta_lib.sh
+sudo ln -sf /usr/lib/libta-lib.so.0.6.4 /usr/lib/libta_lib.so.0
+sudo ln -sf /usr/lib/libta-lib.so.0.6.4 /usr/lib/libta_lib.so
 
 python3 -m venv env
 source env/bin/activate
 pip install setuptools
-pip install TA-Lib --global-option=build_ext --global-option="-L/usr/lib/"
+pip install numpy==1.26.4  # Pin numpy version to avoid conflicts
+# Set environment variables for TA-Lib C library paths
+export TA_INCLUDE_PATH=/usr/include
+export TA_LIBRARY_PATH=/usr/lib
+pip install TA-Lib
 pip install -r requirements.txt --no-cache-dir
 pip install binance-connector==3.5.0 # Have to install this separately to avoid a dependency conflict
 python3 setup.py develop
