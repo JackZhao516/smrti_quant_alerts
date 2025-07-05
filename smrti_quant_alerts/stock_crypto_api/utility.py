@@ -88,5 +88,5 @@ def calculate_macd(close: List[float], fastperiod: int = 12,
     :param signalperiod: int
     :return: MACD histogram, from newest to oldest
     """
-    close = np.array(close)
+    close = np.array(close, dtype=np.float64)
     return (MACD(close, fastperiod=fastperiod, slowperiod=slowperiod, signalperiod=signalperiod)[2])[::-1]
