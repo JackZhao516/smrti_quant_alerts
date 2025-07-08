@@ -9,11 +9,6 @@ This repo includes several real-time alerts for crypto/stock trading, built with
 [EODHD](https://eodhd.com/), and [Financial Modeling Prep](https://site.financialmodelingprep.com/) APIs. 
 Alerts are sent to [Telegram](https://telegram.org/) groups/channels.
 
-## BONUS
-* Contact telegram user ``@zaozen_quant`` to get a trial of all the alerts for 1 month.
-  * You don't need to set up anything, just join the telegram group/channel and you will receive alerts.
-  * If you like the alerts, I can help you set up your own alerts.
-
 ## Next Steps
 * Improve test coverage. [*In Progress*]
 * Write examples for each alert.
@@ -113,12 +108,6 @@ top 100/200/300/400/500 market cap coins.
   * Coins/exchanges newly added this time compared to last time
   * Coins/exchanges newly deleted this time compared to last time
   * Counts of each captured coin/exchange for how many times it has been sequentially captured
-
-## Donate / Sponsor
-I develop and maintain these alerts on my own in my spare time. 
-Donations are greatly appreciated. 
-
-* **Web3 Address**:  `0xbe7E9903cE3E4A0e717d2F71EBd8d4A4576B91D5`
 
 ## Contribution
 * Star/Watch/Fork this repository.
