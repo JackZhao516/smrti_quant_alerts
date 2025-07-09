@@ -7,7 +7,7 @@ from smrti_quant_alerts.data_type import CoingeckoCoin
 
 class TestCGAltsAlert(unittest.TestCase):
     def setUp(self) -> None:
-        self.alert = CGAltsAlert(tg_type="TEST")
+        self.alert = CGAltsAlert("<alts_alert_example_name>", tg_type="TEST")
 
     def test_run(self) -> None:
         with patch.object(self.alert._tg_bot, "send_message") as mock_send_message:

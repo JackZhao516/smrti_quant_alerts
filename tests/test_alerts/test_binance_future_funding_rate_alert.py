@@ -7,7 +7,7 @@ from smrti_quant_alerts.data_type import BinanceExchange
 
 class TestFutureFundingRate(unittest.TestCase):
     def setUp(self) -> None:
-        self.alert = FutureFundingRate(rate_threshold=0.001, tg_type="TEST")
+        self.alert = FutureFundingRate("<funding_rate_example_name>", rate_threshold=0.001, tg_type="TEST")
 
     def test_exchange_funding_rate_over_threshold(self) -> None:
         with patch.object(FutureFundingRate, 'get_future_exchange_funding_rate', return_value=0.0002):

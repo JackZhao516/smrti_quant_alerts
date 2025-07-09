@@ -138,7 +138,7 @@ class StockPriceTopPerformerAlert(BaseAlert, StockApi):
                        stock_stats[stock][FinancialMetricType.GROWTH_SCORE],
                        self._daily_volume.get(stock, 0), market_caps[stock],
                        stock_sma_data[stock].get("4hour", "SMA Data Unavailable"),
-                       stock_sma_data[stock].get("1day", "SMA Data Unavailable")] 
+                       stock_sma_data[stock].get("1day", "SMA Data Unavailable")]
                       for i, stock in enumerate(stocks) if stock in stock_stats]
 
         self._tg_bot.send_data_as_csv_file(csv_file_name, headers=header, data=stock_info)

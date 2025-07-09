@@ -13,7 +13,7 @@ class TestMarketCapAlert(unittest.TestCase):
         with patch.object(CoingeckoMarketCapAlert, "get_top_n_market_cap_coins") as mock_get_coins:
             top_coins = [coin1, coin2, coin4]
             mock_get_coins.return_value = top_coins
-            alert = CoingeckoMarketCapAlert(3)
+            alert = CoingeckoMarketCapAlert("<market_cap_example_name>", 3)
             self.assertEqual(alert._top_n_list[3], top_coins)
 
             with patch.object(alert._tg_bot, "send_message") as mock_send_message:

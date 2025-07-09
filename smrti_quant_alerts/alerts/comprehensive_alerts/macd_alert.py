@@ -244,7 +244,7 @@ class MACDAlert(BaseAlert):
 
     @staticmethod
     def _enrich_close_prices_with_previous_day_price_and_second_ticker(
-            close_prices: List[Tuple[str, float]], 
+            close_prices: List[Tuple[str, float]],
             second_close_prices: List[Tuple[str, float]]) -> List[Tuple[str, float]]:
         """
         Enrich the close prices with the previous day price

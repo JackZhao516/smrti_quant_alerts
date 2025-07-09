@@ -7,7 +7,7 @@ from smrti_quant_alerts.data_type import StockSymbol
 
 class TestStockAlert(unittest.TestCase):
     def setUp(self) -> None:
-        self.alert = StockPriceTopPerformerAlert("Stock_Alert", "TEST", ["1D"])
+        self.alert = StockPriceTopPerformerAlert("<stock_alert_example_name>", "TEST", ["1D"])
 
     def test_placeholder(self) -> None:
         pass

@@ -7,7 +7,7 @@ from smrti_quant_alerts.utility import run_task_at_daily_time, run_alert
 from smrti_quant_alerts.settings import Config
 
 
-class TestAlert:
+class MockAlert:
     def __init__(self, **kwargs):
         pass
 
@@ -39,9 +39,9 @@ class TestUtility(unittest.TestCase):
         Config.SETTINGS = {"test": {"alert_input_args": {}, "run_time_input_args": {}}}
         with patch('smrti_quant_alerts.utility.run_task_at_daily_time', side_effect=lambda x: exit(1)):
             with self.assertRaises(SystemExit) as cm:
-                run_alert("test", TestAlert)
+                run_alert("test", MockAlert)
                 self.assertEqual(cm.exception.code, 1)
         with patch('smrti_quant_alerts.utility.run_task_at_daily_time', side_effect=lambda x: print("")):
             with patch("logging.info") as mock_info:
-                run_alert("test", TestAlert)
+                run_alert("test", MockAlert)
             mock_info.assert_called()

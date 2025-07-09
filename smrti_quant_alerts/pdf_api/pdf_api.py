@@ -63,7 +63,7 @@ class PDFApi:
         # pdf.add_font(fname='unifont.ttf')
         # pdf.set_font("unifont", size=12)
         if not os.path.exists(self._tmp_file_name):
-            pdf.multi_cell(0, 5, txt="")
+            pdf.multi_cell(0, 5, text="")
         else:
             prev_line = ""
             with open(self._tmp_file_name, "r", encoding="utf-8") as f:
