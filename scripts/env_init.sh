@@ -1,11 +1,11 @@
 #!/bin/bash
-REQUIRED_VER="3.8"
+REQUIRED_VER="3.12"
 PYTHON_VER=$(python3 --version 2>&1)
 PYTHON_VER=${PYTHON_VER#"Python "}
 if [ "$(printf '%s\n' "$REQUIRED_VER" "$PYTHON_VER" | sort -V | head -n1)" = "$REQUIRED_VER" ]; then
         echo "Python version check has passed. $PYTHON_VER >= $REQUIRED_VER."
 else
-        echo "Python version must be at least 3.8. We recommend you download Python 3.8.10"
+        echo "Python version must be at least 3.12. We recommend you download Python 3.12.8"
         exit 1
 fi
 
