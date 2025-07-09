@@ -79,7 +79,8 @@ class MACDAlert(BaseAlert):
                 self._stock_pair_name[symbol] = row["name"]
         return symbols
 
-    def _get_stock_screener_alert_results(self, stock_screener_alert_db_name: str) -> List[Tuple[TradingSymbol, TradingSymbol]]:
+    def _get_stock_screener_alert_results(self, stock_screener_alert_db_name: str) -> \
+            List[Tuple[TradingSymbol, TradingSymbol]]:
         """
         Get stock screener alert results
         :param stock_screener_alert_db_name: stock screener alert db name
@@ -243,7 +244,8 @@ class MACDAlert(BaseAlert):
 
     @staticmethod
     def _enrich_close_prices_with_previous_day_price_and_second_ticker(
-            close_prices: List[Tuple[str, float]], second_close_prices: List[Tuple[str, float]]) -> List[Tuple[str, float]]:
+            close_prices: List[Tuple[str, float]], 
+            second_close_prices: List[Tuple[str, float]]) -> List[Tuple[str, float]]:
         """
         Enrich the close prices with the previous day price
 

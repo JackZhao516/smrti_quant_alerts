@@ -138,7 +138,8 @@ class StockPriceTopPerformerAlert(BaseAlert, StockApi):
                        stock_stats[stock][FinancialMetricType.GROWTH_SCORE],
                        self._daily_volume.get(stock, 0), market_caps[stock],
                        stock_sma_data[stock].get("4hour", "SMA Data Unavailable"),
-                       stock_sma_data[stock].get("1day", "SMA Data Unavailable")] for i, stock in enumerate(stocks) if stock in stock_stats]
+                       stock_sma_data[stock].get("1day", "SMA Data Unavailable")] 
+                      for i, stock in enumerate(stocks) if stock in stock_stats]
 
         self._tg_bot.send_data_as_csv_file(csv_file_name, headers=header, data=stock_info)
 
@@ -181,7 +182,7 @@ class StockPriceTopPerformerAlert(BaseAlert, StockApi):
 
     # ----------------- generate ai analysis -----------------
     def _get_stock_increase_reason(self, stock: StockSymbol, timeframes: List[str],
-                                  stock_stats: Dict[StockSymbol, Dict[str, FinancialMetricsData]]) -> None:
+                                   stock_stats: Dict[StockSymbol, Dict[str, FinancialMetricsData]]) -> None:
         """
         Get stock increase reason
 
@@ -222,8 +223,9 @@ class StockPriceTopPerformerAlert(BaseAlert, StockApi):
         self._pdf_api.save_pdf()
         return self._pdf_api.file_name
 
-    def get_stocks_ai_analysis_for_timeframe_sma(self, stock_timeframe_dict: Dict[StockSymbol, List[str]],
-                                                 stock_stats: Dict[StockSymbol, Dict[str, FinancialMetricsData]]) -> str:
+    def get_stocks_ai_analysis_for_timeframe_sma(
+            self, stock_timeframe_dict: Dict[StockSymbol, List[str]],
+            stock_stats: Dict[StockSymbol, Dict[str, FinancialMetricsData]]) -> str:
         """
         Send stock ai analysis
 
