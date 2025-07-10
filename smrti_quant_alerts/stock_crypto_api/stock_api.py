@@ -160,7 +160,11 @@ class StockApi:
 
         res = defaultdict(dict)
 
-        today_price_dict, _ = self.get_all_stock_price_volume_by_day_delta(1)
+        today_day_delta = 1
+        today_price_dict = {}
+        while not today_price_dict or all(value == Decimal("0.0") for value in today_price_dict.values()):
+            today_price_dict, _ = self.get_all_stock_price_volume_by_day_delta(1)
+            today_day_delta += 1
         history_price_dicts = {}
 
         for i, timeframe_delta in enumerate(timeframe_deltas):
