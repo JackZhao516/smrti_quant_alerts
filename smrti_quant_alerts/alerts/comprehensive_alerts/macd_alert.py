@@ -434,7 +434,7 @@ if __name__ == "__main__":
     # macd_symbols_file = "macd_symbols_example.csv"
     macd_symbols_file = "macd_symbols.csv"
     alert = MACDAlert("macd_alert_daily", ["1D", "2D", "3D"],
-                      "", [],
+                      "", ["1W", "1M"],
                       email=True, xlsx=False, tg_type="TEST",
                       stock_screener_alert_db_name="stock_screener")
     alert.run()
