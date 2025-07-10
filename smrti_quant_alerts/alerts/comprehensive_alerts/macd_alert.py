@@ -149,6 +149,7 @@ class MACDAlert(BaseAlert):
         :return: list of MACD values
         """
         if not right_close_prices:
+            left_close_prices = [x for i, x in enumerate(left_close_prices) if i % int(timeframe[:-1]) == 0]
             macds = calculate_macd([close_price for _, close_price in left_close_prices[::-1]])[:num_of_macd]
             return [(date, macd) for date, macd in zip([date for date, _ in left_close_prices], macds)]
 
@@ -433,7 +434,7 @@ if __name__ == "__main__":
     # macd_symbols_file = "macd_symbols_example.csv"
     macd_symbols_file = "macd_symbols.csv"
     alert = MACDAlert("macd_alert_daily", ["1D", "2D", "3D"],
-                      "", ["1W", "2W", "1M"],
+                      "", [],
                       email=True, xlsx=False, tg_type="TEST",
                       stock_screener_alert_db_name="stock_screener")
     alert.run()
