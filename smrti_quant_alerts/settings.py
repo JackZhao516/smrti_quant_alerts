@@ -18,6 +18,7 @@ class Config:
         "EODHD_API_URL": "https://eodhd.com/api",
         "PERPLEXITY_API_URL": "https://api.perplexity.ai",
         "XAI_API_URL": "https://api.x.ai/v1",
+        "OPENAI_API_URL": "https://api.openai.com/v1",
     }
     IS_SETUP = False
 
@@ -64,7 +65,7 @@ class Config:
             logging.warning('token.json does not contain FMP_API_KEY/EODHD_API_KEY '
                             'cannot run "stock related alerts"')
 
-        if "PERPLEXITY_API_KEY" not in self.TOKENS:
+        if "PERPLEXITY_API_KEY" not in self.TOKENS or "OPENAI_API_KEY" not in self.TOKENS:
             logging.warning('token.json does not contain PERPLEXITY_API_KEY '
                             'cannot run "ai_analysis" for stock_alert')
 
