@@ -1,5 +1,6 @@
 from typing import List, Union
 from time import time, sleep
+from datetime import datetime
 
 import openai
 
@@ -75,15 +76,17 @@ class LLMAPI:
             self._current_count = 0
         self._current_count += 1
         timeframe = [timeframe] if isinstance(timeframe, str) else timeframe
+        date_str = datetime.now().strftime("%Y-%m-%d")
 
         message = self.build_chat_message(
             "You are an artificial intelligence trading market analyst. "
             "With the latest market data, news, and company information, "
             f"please do analysis on the companies with stock code {company_stock_code}."
+            f"The date of the stock price increase is {date_str}."
             "Then answer the following questions: ",
             f"what is the company with stock code {company_stock_code}? "
             f"Why did {company_stock_code} stock appreciate so much since "
-            f"{self._get_max_timeframe(timeframe)} timeframe ago?"
+            f"{self._get_max_timeframe(timeframe)} timeframe ago since {date_str}?"
         )
         response = self._llm_client.chat.completions.create(
             model=self._model,
