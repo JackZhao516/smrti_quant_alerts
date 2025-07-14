@@ -146,10 +146,10 @@ class LLMAPI:
         With the latest market data, news, and company information, 
         please do analysis on the companies with stock code {company_stock_code}.
         Then answer the following questions: 
-
+        IMPORTANT: The date of the stock price increase is {date_str}.
         What is the company with stock code {company_stock_code}? 
         Why did {company_stock_code} stock appreciate so much since 
-        {self._get_max_timeframe(timeframe)} timeframe ago? 
+        {self._get_max_timeframe(timeframe)} timeframe ago since {date_str}?
         
         Please provide a comprehensive analysis including (but not limited to):
         1. Company overview and business model
