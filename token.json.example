@@ -23,6 +23,7 @@
   "EODHD_API_KEY": "<API Token>",
   "PERPLEXITY_API_KEY": "<API Token>",
   "XAI_API_KEY": "<API Token>",
+  "OPENAI_API_KEY": "<API Token>",
   "GMAIL": {
     "SENDER_EMAIL": "<gmail address>",
     "PASSWORD": "<gmail password>",
