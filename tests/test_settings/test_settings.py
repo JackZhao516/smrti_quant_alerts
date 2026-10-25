@@ -80,6 +80,30 @@ class TestConfig(unittest.TestCase):
             config._validate_configs()
             self.assertEqual(cm.exception.code, 1)
 
+        # test macd_alert validation
+        config.SETTINGS = {
+            "macd_test": {
+                "alert_type": "macd_alert",
+                "alert_input_args": {
+                    "timeframe_list": ["1d"],
+                    "symbols_file": "test.csv",
+                    "tg_type": "TEST",
+                    "add_on_timeframe_list": ["1d"],
+                    "email": False,
+                    "xlsx": False
+                },
+                "alert_params": {},
+                "run_time_input_args": {
+                    "daily_times": "00:00",
+                    "excluded_week_days": [],
+                    "timezone": ""
+                },
+                "database_name": "macd_test"
+            }
+        }
+        config._validate_configs()
+        self.assertEqual(config.SETTINGS["macd_test"]["database_name"], "macd_test")
+
     def test_validate_run_time_input_args(self) -> None:
         config = Config()
         test_configs = [
