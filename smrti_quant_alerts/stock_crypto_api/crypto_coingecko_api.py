@@ -128,6 +128,7 @@ class CoingeckoApi:
 
         :return: [{"coingecko_coin": CoingeckoCoin, <market_attribute_name>: value, ...}]
         """
+        coingecko_coins = list(coingecko_coins)
         pages = math.ceil(len(coingecko_coins) / 250)
         market_info = []
         for page in range(pages):
