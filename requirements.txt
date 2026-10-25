@@ -1,4 +1,5 @@
 setuptools
+TA-Lib>=0.6.4
 binance-futures-connector>=4.0.0
 numpy==1.26.4
 pycoingecko==3.1.0

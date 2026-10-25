@@ -6,6 +6,7 @@ setup(
     packages=['smrti_quant_alerts'],
     include_package_data=True,
     install_requires=[
+        "TA-Lib>=0.6.4",
         "binance-futures-connector>=4.0.0",
         "binance-connector>=3.5.0",
         "numpy",

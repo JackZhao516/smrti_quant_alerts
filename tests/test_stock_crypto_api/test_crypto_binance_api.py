@@ -121,6 +121,46 @@ class TestCryptoBinanceApi(unittest.TestCase):
             self.assertEqual(self.binance_api.get_exchange_current_price(BinanceExchange("BTC", "USDT")),
                              Decimal("100"))
 
+    def test_get_exchange_close_prices_by_timeframe_num_of_ticks(self) -> None:
+        self.assertEqual(self.binance_api.get_exchange_close_prices_by_timeframe_num_of_ticks(None, "1d"), [])
+
+        price = [[i, "0", "0", "0", str(i)] for i in range(3)]
+        dates = ["2024-05-19", "2024-05-01", "2024-05-20"]
+        with mock.patch.object(Spot, 'klines', return_value=price), \
+                mock.patch("smrti_quant_alerts.stock_crypto_api.crypto_binance_api.get_date_from_timestamp",
+                           side_effect=dates):
+            self.assertEqual(
+                self.binance_api.get_exchange_close_prices_by_timeframe_num_of_ticks(BinanceExchange("BTC", "USDT"), "1d"),
+                [("2024-05-20", 2.0), ("2024-05-01", 1.0), ("2024-05-19", 0.0)])
+
+        with mock.patch.object(Spot, 'klines', return_value=price), \
+                mock.patch("smrti_quant_alerts.stock_crypto_api.crypto_binance_api.get_date_from_timestamp",
+                           side_effect=dates):
+            self.assertEqual(
+                self.binance_api.get_exchange_close_prices_by_timeframe_num_of_ticks(BinanceExchange("BTC", "USDT"), "1w"),
+                [("2024-05-20", 2.0)])
+
+        with mock.patch.object(Spot, 'klines', return_value=price), \
+                mock.patch("smrti_quant_alerts.stock_crypto_api.crypto_binance_api.get_date_from_timestamp",
+                           side_effect=dates):
+            self.assertEqual(
+                self.binance_api.get_exchange_close_prices_by_timeframe_num_of_ticks(BinanceExchange("BTC", "USDT"), "1m"),
+                [("2024-05-01", 1.0)])
+
+        with mock.patch.object(Spot, 'klines', side_effect=Exception):
+            self.assertEqual(
+                self.binance_api.get_exchange_close_prices_by_timeframe_num_of_ticks(BinanceExchange("BTC", "USDT"), "1d"),
+                [])
+
+    def test_get_exchange_close_price_on_timestamp(self) -> None:
+        with mock.patch.object(Spot, 'klines', return_value=[["0", "0", "0", "0", "123.4"]]):
+            self.assertEqual(
+                self.binance_api.get_exchange_close_price_on_timestamp(BinanceExchange("BTC", "USDT"), 1000), 123.4)
+
+        with mock.patch.object(Spot, 'klines', side_effect=Exception):
+            self.assertEqual(
+                self.binance_api.get_exchange_close_price_on_timestamp(BinanceExchange("BTC", "USDT"), 1000), 0)
+
     def test_get_exchange_history_hourly_close_price(self) -> None:
         self.assertEqual(self.binance_api.get_exchange_history_hourly_close_price(None), [])
 
