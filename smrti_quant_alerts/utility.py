@@ -33,7 +33,8 @@ def run_task_at_daily_time(task: Callable, daily_times: Union[Iterable[str], str
             if not excluded_week_days or datetime.datetime.now(tz).strftime('%a') not in excluded_week_days:
                 task()
             # print(f"Task finished, time used: {time() - start} seconds")
-            time.sleep(between_time - max(2 * (time.time() - start), 180))
+            sleep_time = max(between_time - max(2 * (time.time() - start), 180), 0)
+            time.sleep(sleep_time)
         time.sleep(60)
 
 
