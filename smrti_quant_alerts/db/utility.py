@@ -174,14 +174,17 @@ class SpotOverMaDBUtils:
         last_counts_list = [i.db_repr() for i in last_counts]
         with database_runtime.atomic("EXCLUSIVE"):
             cls.db_lock.acquire()
-            LastCount.update(count=LastCount.count + 1, alert_type=alert_type, date=time.time()).where(
-                LastCount.trading_symbol.in_(last_counts_list)).execute()
-            last_counts_existed = SpotOverMaDBUtils.get_last_count()
-            last_counts = [e for e in last_counts if e not in last_counts_existed]
-            last_counts = [{"trading_symbol": e.db_repr(), "symbol_type": e.type(), "alert_type": alert_type}
-                           for e in last_counts]
-            LastCount.insert_many(last_counts).execute()
-            cls.db_lock.release()
+            try:
+                LastCount.update(count=LastCount.count + 1, alert_type=alert_type, date=time.time()).where(
+                    LastCount.trading_symbol.in_(last_counts_list)).execute()
+                last_counts_existed = SpotOverMaDBUtils.get_last_count()
+                last_counts = [e for e in last_counts if e not in last_counts_existed]
+                if last_counts:
+                    last_counts_to_insert = [{"trading_symbol": e.db_repr(), "symbol_type": e.type(), "alert_type": alert_type}
+                                             for e in last_counts]
+                    LastCount.insert_many(last_counts_to_insert).execute()
+            finally:
+                cls.db_lock.release()
 
 
 class StockAlertDBUtils:
@@ -210,6 +213,9 @@ class StockAlertDBUtils:
         :param stock_symbols: list of stock symbols
         :param alert_type: alert type
         """
+        stock_symbols = list(stock_symbols)
+        if not stock_symbols:
+            return
         with database_runtime.atomic():
             StockAlertCount.insert_many([{"stock_symbol": i.ticker, "alert_type": alert_type}
                                          for i in stock_symbols]).execute()
@@ -253,7 +259,8 @@ class StockAlertDBUtils:
                         stocks_with_info.append(stock)
                     else:
                         stocks_without_info.append(stock)
-                stocks_with_info.append(stock)
+                else:
+                    stocks_with_info.append(stock)
         stocks_with_info_set = set(stocks_with_info)
         for stock in stocks:
             if stock not in stocks_with_info_set:
@@ -266,11 +273,14 @@ class StockAlertDBUtils:
         add stock info
         :param stocks: list of stock symbols
         """
+        stocks = list(stocks)
+        if not stocks:
+            return
         with database_runtime.atomic():
             StockInfo.replace_many([{"symbol": i.ticker, "security_name": i.security_name,
-                                    "gics_sector": i.gics_sector, "gics_sub_industry": i.gics_sub_industry,
+                                     "gics_sector": i.gics_sector, "gics_sub_industry": i.gics_sub_industry,
                                      "location": i.location, "cik": i.cik, "founded_time": i.founded_time}
-                                   for i in stocks]).execute()
+                                    for i in stocks]).execute()
 
 
 class MACDAlertDBUtils(StockAlertDBUtils):

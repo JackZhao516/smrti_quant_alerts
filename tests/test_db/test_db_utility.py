@@ -224,3 +224,23 @@ class TestStockAlertDBUtils(unittest.TestCase):
             StockAlertDBUtils.reset_stocks()
             stocks = StockAlertDBUtils.get_stocks()
             self.assertEqual(stocks, set())
+
+    def test_stocks_info(self) -> None:
+        with TestConfig() as _:
+            full_stock = StockSymbol("AAPL", security_name="Apple Inc.", gics_sector="Technology",
+                                     gics_sub_industry="Hardware", location="Cupertino", cik="123", founded_time="1976")
+            incomplete_stock = StockSymbol("TSLA", security_name="Tesla Inc.")
+
+            StockAlertDBUtils.add_stocks_info([full_stock, incomplete_stock])
+
+            # full=True: full_stock should be in with_info, incomplete in without_info, without duplicates
+            with_info, without_info = StockAlertDBUtils.get_stocks_info([full_stock, incomplete_stock], full=True)
+            self.assertEqual(len(with_info), 1)
+            self.assertEqual(with_info[0].ticker, "AAPL")
+            self.assertEqual(len(without_info), 1)
+            self.assertEqual(without_info[0].ticker, "TSLA")
+
+            # full=False: both should be in with_info, none in without_info
+            with_info, without_info = StockAlertDBUtils.get_stocks_info([full_stock, incomplete_stock], full=False)
+            self.assertEqual(len(with_info), 2)
+            self.assertEqual(len(without_info), 0)
