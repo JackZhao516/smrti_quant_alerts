@@ -24,7 +24,9 @@ def send_coins_info_to_telegram(coins: Union[List[TradingSymbol], Set[TradingSym
         for i, coin in enumerate(coins):
             if isinstance(coin, BinanceExchange):
                 coins[i] = CoingeckoCoin.get_symbol_object(coin.base_symbol, "binance")
-        coins = sorted(set(coins))
+        coins = sorted({coin for coin in coins if coin is not None})
+        if not coins:
+            return
         cg = CoingeckoApi()
         chain_info_dict = cg.get_coins_chain_info(coins)
         for coin in coins:
