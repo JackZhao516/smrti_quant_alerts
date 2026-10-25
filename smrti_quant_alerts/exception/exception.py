@@ -2,6 +2,7 @@ import logging
 import random
 import time
 import json
+import functools
 from json import JSONDecodeError
 from typing import Callable, Optional, Union, Any
 
@@ -24,6 +25,7 @@ def error_handling(api: str = "binance", retry: int = 5, default_val: Optional[A
     :param default_val: default value to return if all retries failed
     """
     def decorator(fun: Callable) -> Callable:
+        @functools.wraps(fun)
         def wrapper(*args: Optional[Any], **kwargs: Optional[Any]) -> Union[Response, Any]:
             error_msg = f"{api} api request error: {fun.__name__}"
             for i in range(retry):
@@ -39,7 +41,7 @@ def error_handling(api: str = "binance", retry: int = 5, default_val: Optional[A
                                 err = json.loads(response.text)
                             except JSONDecodeError:
                                 raise ClientError(
-                                    status_code, None, response.text, None, response.headers
+                                    status_code, None, response.text, response.headers, None
                                 )
 
                             # error code and message returned from server
