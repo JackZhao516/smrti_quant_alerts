@@ -94,6 +94,8 @@ class MACDAlert(BaseAlert):
             init_database_runtime(stock_screener_alert_db_name)
             stocks = list(StockAlertDBUtils.get_all_stocks())
             close_database()
+            database_name = f"{self.CONFIG.SETTINGS[self._alert_name].get('database_name', self._alert_name)}.db"
+            init_database_runtime(database_name)
             stocks = self._stock_api.get_stock_info(stocks)
             symbols = []
             for stock in stocks:
