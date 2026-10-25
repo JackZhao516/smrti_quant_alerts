@@ -162,8 +162,9 @@ class StockApi:
 
         today_day_delta = 1
         today_price_dict = {}
-        while not today_price_dict or all(value == Decimal("0.0") for value in today_price_dict.values()):
-            today_price_dict, _ = self.get_all_stock_price_volume_by_day_delta(1)
+        while (not today_price_dict or all(value == Decimal("0.0") for value in today_price_dict.values())) \
+                and today_day_delta <= 10:
+            today_price_dict, _ = self.get_all_stock_price_volume_by_day_delta(today_day_delta)
             today_day_delta += 1
         history_price_dicts = {}
 
