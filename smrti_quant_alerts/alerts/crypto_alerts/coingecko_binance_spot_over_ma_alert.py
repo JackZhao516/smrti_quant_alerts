@@ -46,6 +46,7 @@ class SpotOverMABase(ABC, CryptoComprehensiveApi):
         pool = ThreadPool(threads)
         pool.map(self._coin_spot_over_ma, self._trading_symbols)
         pool.close()
+        pool.join()
 
         logging.info(f"spot_over_ma_{self.alert_type}: {self._spot_over_ma}")
 
@@ -63,7 +64,9 @@ class SpotOverMABase(ABC, CryptoComprehensiveApi):
                          if coin not in self._spot_over_ma and coin not in self._exclude_coins]
         newly_added = []
         for coin in self._spot_over_ma:
-            if coin not in last_time_spot_over_ma and coin not in self._exclude_coins:
+            if coin in self._exclude_coins:
+                continue
+            if coin not in last_time_spot_over_ma:
                 newly_added.append(coin)
             else:
                 self._spot_over_ma[coin] = last_time_spot_over_ma[coin] + 1
