@@ -124,7 +124,7 @@ class Config:
             elif alert_type == "stock_screener":
                 self._validate_individual_configs([], ["market_cap_threshold", "email"],
                                                   alert_setting, alert_name)
-            elif alert_type == "stock_screener":
+            elif alert_type == "macd_alert":
                 self._validate_individual_configs([], ["timeframe_list", "symbols_file", "tg_type",
                                                        "add_on_timeframe_list", "email", "xlsx"],
                                                   alert_setting, alert_name)
