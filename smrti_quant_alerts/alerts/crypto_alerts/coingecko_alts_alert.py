@@ -31,9 +31,9 @@ class CGAltsAlert(BaseAlert, CoingeckoApi):
         # first filter: price change >= 50% in 24 hours and market cap >= 1M
         market_info_filtered = []
         for coin_info in market_info:
-            if (not coin_info["price_change_percentage_24h"] or
-                coin_info["price_change_percentage_24h"] >= 50) \
-                    and coin_info["market_cap"] and coin_info["market_cap"] >= 1000000:
+            price_change = coin_info.get("price_change_percentage_24h")
+            market_cap = coin_info.get("market_cap")
+            if price_change is not None and price_change >= 50 and market_cap and market_cap >= 1000000:
                 market_info_filtered.append(coin_info["coingecko_coin"])
 
         # second filter: volume change >= 50% in 24 hours, volume >= 10k in USD
