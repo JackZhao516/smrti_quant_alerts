@@ -49,6 +49,11 @@ class LLMAPI:
         return res
 
     @staticmethod
+    def _parse_timeframe_number(tf: str) -> int:
+        digits = re.findall(r'\d+', tf)
+        return int(digits[0]) if digits else 0
+
+    @staticmethod
     def _get_max_timeframe(timeframe: List[str]) -> str:
         """
         get max timeframe
@@ -58,18 +63,18 @@ class LLMAPI:
         """
         if not timeframe:
             return ""
-        years = [timeframe[i] for i in range(len(timeframe)) if "Y" in timeframe[i].upper()]
+        years = [tf for tf in timeframe if "Y" in tf.upper()]
         if years:
-            return max(years)
-        months = [timeframe[i] for i in range(len(timeframe)) if "M" in timeframe[i].upper()]
+            return max(years, key=LLMAPI._parse_timeframe_number)
+        months = [tf for tf in timeframe if "M" in tf.upper()]
         if months:
-            return max(months)
-        days = [timeframe[i] for i in range(len(timeframe)) if "D" in timeframe[i].upper()]
+            return max(months, key=LLMAPI._parse_timeframe_number)
+        days = [tf for tf in timeframe if "D" in tf.upper()]
         if days:
-            return max(days)
-        hours = [timeframe[i] for i in range(len(timeframe)) if "H" in timeframe[i].upper()]
+            return max(days, key=LLMAPI._parse_timeframe_number)
+        hours = [tf for tf in timeframe if "H" in tf.upper()]
         if hours:
-            return max(hours)
+            return max(hours, key=LLMAPI._parse_timeframe_number)
         return timeframe[0]
 
     def get_ai_response(self, prompt: str) -> Tuple[str, str]:

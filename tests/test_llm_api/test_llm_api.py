@@ -44,8 +44,11 @@ class TestLLMApi(unittest.TestCase):
     def test_get_max_timeframe(self) -> None:
         self.assertEqual(self.perplexity_api._get_max_timeframe([]), "")
         self.assertEqual(self.perplexity_api._get_max_timeframe(["1y", "5Y"]), "5Y")
+        self.assertEqual(self.perplexity_api._get_max_timeframe(["5Y", "10Y"]), "10Y")
         self.assertEqual(self.perplexity_api._get_max_timeframe(["1m", "5M"]), "5M")
+        self.assertEqual(self.perplexity_api._get_max_timeframe(["5M", "12M"]), "12M")
         self.assertEqual(self.perplexity_api._get_max_timeframe(["1d", "5D"]), "5D")
+        self.assertEqual(self.perplexity_api._get_max_timeframe(["2d", "14D"]), "14D")
         self.assertEqual(self.perplexity_api._get_max_timeframe(["1h", "5H"]), "5H")
         self.assertEqual(self.perplexity_api._get_max_timeframe(["5m", "1h"]), "5m")
         self.assertEqual(self.perplexity_api._get_max_timeframe(["1d", "5y"]), "5y")
