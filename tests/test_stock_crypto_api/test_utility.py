@@ -16,9 +16,10 @@ class TestUtility(unittest.TestCase):
 
     def test_write_exclude_coins_to_file(self) -> None:
         Config.PROJECT_DIR = os.path.dirname(__file__)
-        with mock.patch("json.dump") as mock_json_dump:
+        with mock.patch("json.dump") as mock_json_dump, mock.patch("builtins.open", mock.mock_open(read_data='["TESTTEST", "TEST1"]')) as mock_open_file:
             write_exclude_coins_to_file("BTC, ETH")
             mock_json_dump.assert_called_once_with(["TESTTEST", "BTC", "TEST1", "ETH"], mock.ANY)
+            mock_open_file.assert_any_call(os.path.join(Config.PROJECT_DIR, "exclude_coins.json"), "w")
 
     def test_read_exclude_coins_from_file(self) -> None:
         Config.PROJECT_DIR = os.path.dirname(__file__)

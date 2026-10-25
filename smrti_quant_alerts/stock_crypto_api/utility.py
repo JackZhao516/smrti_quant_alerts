@@ -23,7 +23,7 @@ def write_exclude_coins_to_file(input_exclude_coins: str) -> None:
         for coin in input_exclude_coins.split(","):
             if coin.strip().upper() not in exclude_coins_set:
                 exclude_coins.append(coin.strip().upper())
-    with open(os.path.join(Config.PROJECT_DIR, "exclude_coins.json")) as f:
+    with open(os.path.join(Config.PROJECT_DIR, "exclude_coins.json"), "w") as f:
         json.dump(exclude_coins, f)
 
 
