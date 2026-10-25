@@ -17,7 +17,7 @@ from smrti_quant_alerts.db import StockAlertDBUtils, close_database
 
 
 class StockScreenerAlert(BaseAlert, StockApi):
-    def __init__(self, alert_name: str, price_top_percent: 20, top_performer_exclude_sectors: List[str] = None,
+    def __init__(self, alert_name: str, price_top_percent: int = 20, top_performer_exclude_sectors: List[str] = None,
                  email: bool = True, market_cap_threshold: int = 10 ** 8) -> None:
         BaseAlert.__init__(self, alert_name)
         StockApi.__init__(self)
