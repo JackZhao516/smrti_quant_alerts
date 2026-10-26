@@ -1,7 +1,6 @@
 import time
 from decimal import Decimal
 from datetime import datetime
-from typing import List, Union, Set, Optional, Tuple
 
 from binance.spot import Spot
 from binance.um_futures import UMFutures
@@ -9,8 +8,7 @@ from binance.um_futures import UMFutures
 from smrti_quant_alerts.exception import error_handling
 from smrti_quant_alerts.settings import Config
 from smrti_quant_alerts.data_type import BinanceExchange, CoingeckoCoin, TradingSymbol
-from smrti_quant_alerts.stock_crypto_api.utility import read_exclude_coins_from_file, \
-    get_date_from_timestamp, get_datetime_now
+from smrti_quant_alerts.stock_crypto_api.utility import read_exclude_coins_from_file, get_date_from_timestamp
 
 
 class BinanceApi:
@@ -44,8 +42,8 @@ class BinanceApi:
         self.active_exchanges_timestamp = 0
 
     def get_exclude_coins(
-            self, input_exclude_coins: Union[List[TradingSymbol], Set[TradingSymbol], None] = None) \
-            -> Set[BinanceExchange]:
+        self, input_exclude_coins: list[TradingSymbol] | set[TradingSymbol] | None = None
+    ) -> set[BinanceExchange]:
         """
         expand exclude coins to include all quotes for each base
 
@@ -82,7 +80,7 @@ class BinanceApi:
         return exclude_coins
 
     @error_handling("binance", default_val=[])
-    def get_all_binance_exchanges(self, exchange_type: str = "SPOT") -> List[BinanceExchange]:
+    def get_all_binance_exchanges(self, exchange_type: str = "SPOT") -> list[BinanceExchange]:
         """
         Get all exchanges on binance, default is SPOT
 
@@ -94,13 +92,13 @@ class BinanceApi:
         response = client.exchange_info(**args)
 
         binance_exchanges = []
-        for exchange in response['symbols']:
-            if exchange['status'] == 'TRADING':
-                binance_exchanges.append(BinanceExchange(exchange['baseAsset'], exchange['quoteAsset']))
+        for exchange in response["symbols"]:
+            if exchange["status"] == "TRADING":
+                binance_exchanges.append(BinanceExchange(exchange["baseAsset"], exchange["quoteAsset"]))
         return binance_exchanges
 
     @error_handling("binance", default_val=Decimal(0))
-    def get_future_exchange_funding_rate(self, exchange: Optional[BinanceExchange]) -> Decimal:
+    def get_future_exchange_funding_rate(self, exchange: BinanceExchange | None) -> Decimal:
         """
         Get funding rate of a future exchange
 
@@ -116,7 +114,7 @@ class BinanceApi:
         return Decimal(0)
 
     @error_handling("binance", default_val=Decimal(0))
-    def get_exchange_current_price(self, binance_exchange: Optional[BinanceExchange]) -> Decimal:
+    def get_exchange_current_price(self, binance_exchange: BinanceExchange | None) -> Decimal:
         """
         Get exchange current close price
 
@@ -135,7 +133,8 @@ class BinanceApi:
 
     @error_handling("binance", default_val=[])
     def get_exchange_history_hourly_close_price(
-            self, exchange: Optional[BinanceExchange], days: int = 10) -> List[Decimal]:
+        self, exchange: BinanceExchange | None, days: int = 10
+    ) -> list[Decimal]:
         """
         Get exchange past close price for the history <days> days
 
@@ -147,13 +146,12 @@ class BinanceApi:
         if not exchange:
             return []
         start_time = (int(time.time()) - days * 24 * 60 * 60) * 1000
-        response = self._binance_spot_client.klines(symbol=exchange, interval="1h",
-                                                    startTime=start_time, limit=1000)
+        response = self._binance_spot_client.klines(symbol=exchange, interval="1h", startTime=start_time, limit=1000)
 
         prices = [Decimal(i[4]) for i in response][::-1]
         return prices
 
-    def get_all_spot_exchanges_in_usdt_fdusd_btc(self) -> List[BinanceExchange]:
+    def get_all_spot_exchanges_in_usdt_fdusd_btc(self) -> list[BinanceExchange]:
         """
         Get all exchanges in either USDT, FDUSD, or BTC format on binance
 
@@ -172,8 +170,9 @@ class BinanceApi:
         return list(binance_exchanges)
 
     @error_handling("binance", default_val=[])
-    def get_exchange_close_prices_by_timeframe_num_of_ticks(self, exchange: BinanceExchange, timeframe: str,
-                                                            num_of_tick: int = 10) -> List[Tuple[str, float]]:
+    def get_exchange_close_prices_by_timeframe_num_of_ticks(
+        self, exchange: BinanceExchange, timeframe: str, num_of_tick: int = 10
+    ) -> list[tuple[str, float]]:
         """
         Get exchange past close price for the history <timeframe> number of ticks
 
@@ -186,15 +185,16 @@ class BinanceApi:
         if not exchange:
             return []
         timeframe = timeframe.lower()
-        start_time = (int(time.time()) -
-                      self.timeframe_to_days[timeframe] * (num_of_tick + 1) * 24 * 60 * 60) * 1000
+        start_time = (int(time.time()) - self.timeframe_to_days[timeframe] * (num_of_tick + 1) * 24 * 60 * 60) * 1000
         binance_timeframe = "1M" if timeframe == "1m" else f"1{timeframe[1]}"
 
-        response = self._binance_spot_client.klines(symbol=exchange, interval=binance_timeframe,
-                                                    startTime=start_time, limit=1000)
+        response = self._binance_spot_client.klines(
+            symbol=exchange, interval=binance_timeframe, startTime=start_time, limit=1000
+        )
 
-        close_prices_in_days = [p for i, p in enumerate([(get_date_from_timestamp(i[0]), float(i[4]))
-                                for i in response][::-1])]
+        close_prices_in_days = [
+            p for i, p in enumerate([(get_date_from_timestamp(i[0]), float(i[4])) for i in response][::-1])
+        ]
 
         if timeframe[-1] == "w":
             return [x for x in close_prices_in_days if datetime.strptime(x[0], "%Y-%m-%d").date().weekday() == 0]
@@ -214,6 +214,7 @@ class BinanceApi:
         :return: close price
         """
         end_time = timestamp + 60000
-        response = self._binance_spot_client.klines(symbol=exchange, interval="1m",
-                                                    startTime=timestamp-1, endTime=end_time)
+        response = self._binance_spot_client.klines(
+            symbol=exchange, interval="1m", startTime=timestamp - 1, endTime=end_time
+        )
         return float(response[0][4])

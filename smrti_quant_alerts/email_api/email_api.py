@@ -3,7 +3,7 @@ import ssl
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from email.mime.application import MIMEApplication
-from typing import Iterable, List
+from collections.abc import Iterable
 
 from smrti_quant_alerts.settings import Config
 from smrti_quant_alerts.exception import error_handling
@@ -15,13 +15,19 @@ class EmailApi:
     def __init__(self, sender_email: str = None, receiver_email: str = None, password: str = None) -> None:
         self.port = 465  # For SSL
         self.smtp_server = "smtp.gmail.com"
-        self.sender_email = self.email_tokens["SENDER_EMAIL"] if not sender_email else sender_email
-        self.receiver_emails = self.email_tokens["RECEIVER_EMAIL"] if not receiver_email else receiver_email
-        self.password = self.email_tokens["PASSWORD"] if not password else password
+        self.sender_email = sender_email if sender_email else self.email_tokens["SENDER_EMAIL"]
+        self.receiver_emails = receiver_email if receiver_email else self.email_tokens["RECEIVER_EMAIL"]
+        self.password = password if password else self.email_tokens["PASSWORD"]
 
     @error_handling("email", default_val=None)
-    def send_email(self, subject: str, body: str, csv_file_names: List[str] = None,
-                   pdf_or_xlsx_file_names: Iterable[str] = None, user_html: bool = False) -> None:
+    def send_email(
+        self,
+        subject: str,
+        body: str,
+        csv_file_names: list[str] = None,
+        pdf_or_xlsx_file_names: Iterable[str] = None,
+        user_html: bool = False,
+    ) -> None:
         """
         send email with message and csv file
 
@@ -37,7 +43,7 @@ class EmailApi:
         message = MIMEMultipart("alternative")
         message["Subject"] = subject
         message["From"] = self.sender_email
-        message["To"] = ','.join(self.receiver_emails)
+        message["To"] = ",".join(self.receiver_emails)
         message.attach(MIMEText(body, "html" if user_html else "plain"))
 
         if csv_file_names:

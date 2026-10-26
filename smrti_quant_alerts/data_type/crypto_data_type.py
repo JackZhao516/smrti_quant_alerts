@@ -1,5 +1,4 @@
 from __future__ import annotations
-from typing import Optional, Union, List
 from collections import defaultdict
 
 from .base_data_type import TradingSymbol, Tick
@@ -21,8 +20,7 @@ class BinanceExchange(TradingSymbol):
     def __init__(self, base_symbol: str, quote_symbol: str) -> None:
         self.base_symbol = base_symbol.upper()
         self.quote_symbol = quote_symbol.upper()
-        self.symbol_base_quote_map[f"{self.base_symbol}{self.quote_symbol}"] = \
-            (self.base_symbol, self.quote_symbol)
+        self.symbol_base_quote_map[f"{self.base_symbol}{self.quote_symbol}"] = (self.base_symbol, self.quote_symbol)
 
         super().__init__(f"{self.base_symbol}{self.quote_symbol}")
 
@@ -31,7 +29,7 @@ class BinanceExchange(TradingSymbol):
         return self._symbol
 
     @staticmethod
-    def get_symbol_object(symbol: str) -> Optional[BinanceExchange]:
+    def get_symbol_object(symbol: str) -> BinanceExchange | None:
         if symbol.upper() in BinanceExchange.symbol_base_quote_map:
             base_symbol, quote_symbol = BinanceExchange.symbol_base_quote_map[symbol.upper()]
             return BinanceExchange(base_symbol, quote_symbol)
@@ -61,12 +59,11 @@ class CoingeckoCoin(TradingSymbol):
         return self._symbol
 
     @staticmethod
-    def get_symbol_object(symbol: str, source: str = "database") \
-            -> Union[Optional[CoingeckoCoin], List[CoingeckoCoin]]:
+    def get_symbol_object(symbol: str, source: str = "database") -> CoingeckoCoin | None | list[CoingeckoCoin]:
         if source == "database":
             # in database, symbol is stored as "<symbol>&&<coin_id>"
             pos = symbol.index("&&")
-            return CoingeckoCoin(symbol[pos + 2:], symbol[:pos])
+            return CoingeckoCoin(symbol[pos + 2 :], symbol[:pos])
         elif source == "binance":
             coin_id = BinanceExchange.get_coingecko_id_by_base(symbol)
             if coin_id:
@@ -79,7 +76,7 @@ class CoingeckoCoin(TradingSymbol):
                 return [CoingeckoCoin(coin_id, symbol) for coin_id in coin_ids]
         return None
 
-    def __eq__(self, other: Union[str, CoingeckoCoin]) -> bool:
+    def __eq__(self, other: str | CoingeckoCoin) -> bool:
         if isinstance(other, CoingeckoCoin):
             return self._symbol == other._symbol and self.coin_id == other.coin_id
         elif isinstance(other, str):

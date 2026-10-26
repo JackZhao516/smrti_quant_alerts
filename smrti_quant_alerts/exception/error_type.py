@@ -1,10 +1,15 @@
-from typing import Optional, Any
+from typing import Any
 
 
 class ClientError(Exception):
-    def __init__(self, status_code: Optional[int], error_code: Optional[int],
-                 error_message: Optional[str], header: Optional[Any],
-                 error_data: Optional[Any] = None) -> None:
+    def __init__(
+        self,
+        status_code: int | None,
+        error_code: int | None,
+        error_message: str | None,
+        header: Any | None,
+        error_data: Any | None = None,
+    ) -> None:
         # https status code
         self.status_code = status_code
         # error code returned from server
@@ -17,16 +22,17 @@ class ClientError(Exception):
         self.error_data = error_data
 
     def __str__(self) -> str:
-        return f"ClientError: status code: {self.status_code}, " \
-               f"error code: {self.error_code}, " \
-               f"server error message: {self.error_message}"
+        return (
+            f"ClientError: status code: {self.status_code}, "
+            f"error code: {self.error_code}, "
+            f"server error message: {self.error_message}"
+        )
 
 
 class ServerError(Exception):
-    def __init__(self, status_code: Optional[int], message: Optional[str]) -> None:
+    def __init__(self, status_code: int | None, message: str | None) -> None:
         self.status_code = status_code
         self.message = message
 
     def __str__(self) -> str:
-        return f"ServerError: status code: {self.status_code}, " \
-               f"server error message: {self.message}"
+        return f"ServerError: status code: {self.status_code}, server error message: {self.message}"

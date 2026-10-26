@@ -4,7 +4,6 @@ import uuid
 import csv
 import os
 from decimal import Decimal
-from typing import List, Dict, Tuple, Optional, Set
 from collections import defaultdict
 
 from smrti_quant_alerts.email_api import EmailApi
@@ -19,14 +18,18 @@ logging.basicConfig(level=logging.INFO)
 
 
 class StockPriceTopPerformerAlert(BaseAlert, StockApi):
-    def __init__(self, alert_name: str, tg_type: str = "TEST",
-                 timeframe_list: Optional[List[str]] = None,
-                 email: bool = True,
-                 time_frame_sma_filter_ai_analysis: bool = False,
-                 newly_added_stock_ai_analysis: bool = False,
-                 growth_score_filter_ai_analysis: bool = False,
-                 daily_volume_threshold: int = 0,
-                 stock_screener_alert_db_name: str = None) -> None:
+    def __init__(
+        self,
+        alert_name: str,
+        tg_type: str = "TEST",
+        timeframe_list: list[str] | None = None,
+        email: bool = True,
+        time_frame_sma_filter_ai_analysis: bool = False,
+        newly_added_stock_ai_analysis: bool = False,
+        growth_score_filter_ai_analysis: bool = False,
+        daily_volume_threshold: int = 0,
+        stock_screener_alert_db_name: str = None,
+    ) -> None:
         """
         StockPriceTopPerformerAlert class for sending
         :param alert_name: alert name
@@ -40,8 +43,11 @@ class StockPriceTopPerformerAlert(BaseAlert, StockApi):
         """
         BaseAlert.__init__(self, alert_name, tg_type=tg_type)
         StockApi.__init__(self)
-        self._timeframe_list = [timeframe.upper() for timeframe in timeframe_list] \
-            if timeframe_list else ["1D", "5D", "1M", "3M", "6M", "1Y", "3Y", "5Y"]
+        self._timeframe_list = (
+            [timeframe.upper() for timeframe in timeframe_list]
+            if timeframe_list
+            else ["1D", "5D", "1M", "3M", "6M", "1Y", "3Y", "5Y"]
+        )
         self._daily_volume_threshold = daily_volume_threshold
 
         self._send_email = email
@@ -51,15 +57,14 @@ class StockPriceTopPerformerAlert(BaseAlert, StockApi):
         self._newly_added_stock_ai_analysis = newly_added_stock_ai_analysis
         self._growth_score_filter_ai_analysis = growth_score_filter_ai_analysis
 
-        self._stock_screener_alert_stocks = \
-            self._get_stock_screener_alert_results(f"{stock_screener_alert_db_name}.db")
+        self._stock_screener_alert_stocks = self._get_stock_screener_alert_results(f"{stock_screener_alert_db_name}.db")
 
         self._ai_api = LLMAPI()
         self._pdf_api = PDFApi()
 
         self._daily_volume = {}
 
-    def _get_stock_screener_alert_results(self, stock_screener_alert_db_name: str) -> Set[StockSymbol]:
+    def _get_stock_screener_alert_results(self, stock_screener_alert_db_name: str) -> set[StockSymbol]:
         """
         Get stock screener alert results
         :param stock_screener_alert_db_name: stock screener alert db name
@@ -81,8 +86,12 @@ class StockPriceTopPerformerAlert(BaseAlert, StockApi):
             return set()
 
     # ----------------- get stock info -----------------
-    def send_stocks_info_as_csv(self, is_newly_added_dict: Dict[StockSymbol, bool],
-                                timeframe_stocks_dict: Dict[str, List[StockSymbol]], email_message: str) -> None:
+    def send_stocks_info_as_csv(
+        self,
+        is_newly_added_dict: dict[StockSymbol, bool],
+        timeframe_stocks_dict: dict[str, list[StockSymbol]],
+        email_message: str,
+    ) -> None:
         """
         Send stock info as csv file
 
@@ -92,11 +101,29 @@ class StockPriceTopPerformerAlert(BaseAlert, StockApi):
         """
         # get data to build csv file
         csv_file_name = f"stock_alert_{uuid.uuid4()}.csv"
-        header = ["Symbol", "Name", "GICS Sector", "Sub Sector", "Headquarter Location",
-                  "Founded Year/IPO Date", "Is SP500", "Is Nasdaq", "Is NYSE",
-                  "Is Newly Added", "Timeframe Alerted", "Free Cash Flow", "Net Income",
-                  "Free Cash Flow Margin", "Revenue 1Y CAGR", "Revenue 3Y CAGR",
-                  "Revenue 5Y CAGR", "One Day Volume", "Market Cap", "Close > 4H SMA200", "Close > 1D SMA200"]
+        header = [
+            "Symbol",
+            "Name",
+            "GICS Sector",
+            "Sub Sector",
+            "Headquarter Location",
+            "Founded Year/IPO Date",
+            "Is SP500",
+            "Is Nasdaq",
+            "Is NYSE",
+            "Is Newly Added",
+            "Timeframe Alerted",
+            "Free Cash Flow",
+            "Net Income",
+            "Free Cash Flow Margin",
+            "Revenue 1Y CAGR",
+            "Revenue 3Y CAGR",
+            "Revenue 5Y CAGR",
+            "One Day Volume",
+            "Market Cap",
+            "Close > 4H SMA200",
+            "Close > 1D SMA200",
+        ]
         stocks = sorted(is_newly_added_dict.keys(), key=lambda x: x.ticker)
         stock_stats_list = self.get_stocks_stats_by_num_of_timeframe(stocks, "semi", 1)
         stock_revenue_cagr = self.get_stocks_revenue_cagr(stocks)
@@ -105,10 +132,12 @@ class StockPriceTopPerformerAlert(BaseAlert, StockApi):
         for k, v in stock_stats_list.items():
             if len(v) == 0:
                 default_data = FinancialMetricsData()
-                stock_stats[k] = {FinancialMetricType.FREE_CASH_FLOW: default_data,
-                                  FinancialMetricType.NET_INCOME: default_data,
-                                  FinancialMetricType.FREE_CASH_FLOW_MARGIN: default_data,
-                                  FinancialMetricType.REVENUE: default_data}
+                stock_stats[k] = {
+                    FinancialMetricType.FREE_CASH_FLOW: default_data,
+                    FinancialMetricType.NET_INCOME: default_data,
+                    FinancialMetricType.FREE_CASH_FLOW_MARGIN: default_data,
+                    FinancialMetricType.REVENUE: default_data,
+                }
             else:
                 stock_stats[k] = v[0]
             stock_stats[k].update(stock_revenue_cagr[k])
@@ -123,37 +152,57 @@ class StockPriceTopPerformerAlert(BaseAlert, StockApi):
             for stock in timeframe_stocks:
                 stock_timeframes[stock].append(timeframe)
 
-        stock_symbol = [f"{stock.ticker} *" if stock in self._stock_screener_alert_stocks
-                        else stock.ticker for stock in stocks]
-        stock_info = [[stock_symbol[i], stock.security_name, stock.gics_sector,
-                       stock.gics_sub_industry, stock.location, stock.founded_time,
-                       stock.is_sp500, stock.is_nasdaq, stock.is_nyse,
-                       is_newly_added_dict[stock], stock_timeframes[stock],
-                       stock_stats[stock][FinancialMetricType.FREE_CASH_FLOW],
-                       stock_stats[stock][FinancialMetricType.NET_INCOME],
-                       stock_stats[stock][FinancialMetricType.FREE_CASH_FLOW_MARGIN],
-                       stock_stats[stock][FinancialMetricType.REVENUE_1Y_CAGR],
-                       stock_stats[stock][FinancialMetricType.REVENUE_3Y_CAGR],
-                       stock_stats[stock][FinancialMetricType.REVENUE_5Y_CAGR],
-                       stock_stats[stock][FinancialMetricType.GROWTH_SCORE],
-                       self._daily_volume.get(stock, 0), market_caps[stock],
-                       stock_sma_data[stock].get("4hour", "SMA Data Unavailable"),
-                       stock_sma_data[stock].get("1day", "SMA Data Unavailable")]
-                      for i, stock in enumerate(stocks) if stock in stock_stats]
+        stock_symbol = [
+            f"{stock.ticker} *" if stock in self._stock_screener_alert_stocks else stock.ticker for stock in stocks
+        ]
+        stock_info = [
+            [
+                stock_symbol[i],
+                stock.security_name,
+                stock.gics_sector,
+                stock.gics_sub_industry,
+                stock.location,
+                stock.founded_time,
+                stock.is_sp500,
+                stock.is_nasdaq,
+                stock.is_nyse,
+                is_newly_added_dict[stock],
+                stock_timeframes[stock],
+                stock_stats[stock][FinancialMetricType.FREE_CASH_FLOW],
+                stock_stats[stock][FinancialMetricType.NET_INCOME],
+                stock_stats[stock][FinancialMetricType.FREE_CASH_FLOW_MARGIN],
+                stock_stats[stock][FinancialMetricType.REVENUE_1Y_CAGR],
+                stock_stats[stock][FinancialMetricType.REVENUE_3Y_CAGR],
+                stock_stats[stock][FinancialMetricType.REVENUE_5Y_CAGR],
+                stock_stats[stock][FinancialMetricType.GROWTH_SCORE],
+                self._daily_volume.get(stock, 0),
+                market_caps[stock],
+                stock_sma_data[stock].get("4hour", "SMA Data Unavailable"),
+                stock_sma_data[stock].get("1day", "SMA Data Unavailable"),
+            ]
+            for i, stock in enumerate(stocks)
+            if stock in stock_stats
+        ]
 
         self._tg_bot.send_data_as_csv_file(csv_file_name, headers=header, data=stock_info)
 
         # send stock ai analysis
         pdf_files = []
         if self._time_frame_sma_filter_ai_analysis:
-            pdf_files.append(self.get_stocks_ai_analysis_for_timeframe_sma(
-                self.filter_stock_with_timeframe_sma(stock_timeframes, [["1Y", "6M"], ["1Y", "3M"]], stock_sma_data),
-                stock_stats))
+            pdf_files.append(
+                self.get_stocks_ai_analysis_for_timeframe_sma(
+                    self.filter_stock_with_timeframe_sma(
+                        stock_timeframes, [["1Y", "6M"], ["1Y", "3M"]], stock_sma_data
+                    ),
+                    stock_stats,
+                )
+            )
             self._tg_bot.send_file(pdf_files[-1], "Stock AI Analysis With Timeframe SMA Filter.pdf")
 
         if self._newly_added_stock_ai_analysis:
-            pdf_files.append(self.get_stocks_ai_analysis_for_newly_added(timeframe_stocks_dict, is_newly_added_dict,
-                                                                         stock_stats))
+            pdf_files.append(
+                self.get_stocks_ai_analysis_for_newly_added(timeframe_stocks_dict, is_newly_added_dict, stock_stats)
+            )
             self._tg_bot.send_file(pdf_files[-1], "Newly Added Stock AI Analysis.pdf")
 
         if self._growth_score_filter_ai_analysis:
@@ -161,8 +210,9 @@ class StockPriceTopPerformerAlert(BaseAlert, StockApi):
             self._tg_bot.send_file(pdf_files[-1], "Stock AI Analysis With Growth Score Filter.pdf")
 
         if self._stock_screener_alert_stocks:
-            pdf_files.append(self.get_stocks_ai_analysis_for_stock_screener_alert_intersection(
-                stock_timeframes, stock_stats))
+            pdf_files.append(
+                self.get_stocks_ai_analysis_for_stock_screener_alert_intersection(stock_timeframes, stock_stats)
+            )
             self._tg_bot.send_file(pdf_files[-1], "Stock AI Analysis With Stock Screener Alert Filter.pdf")
 
         # send email
@@ -171,9 +221,12 @@ class StockPriceTopPerformerAlert(BaseAlert, StockApi):
                 writer = csv.writer(csv_file)
                 writer.writerow(header)
                 writer.writerows(stock_info)
-            self._email_api.send_email("Weekly Stock Alert with Daily Volume Threshold: "
-                                       f"{self._daily_volume_threshold}",
-                                       email_message, [csv_file_name], pdf_files)
+            self._email_api.send_email(
+                f"Weekly Stock Alert with Daily Volume Threshold: {self._daily_volume_threshold}",
+                email_message,
+                [csv_file_name],
+                pdf_files,
+            )
             if os.path.exists(csv_file_name):
                 os.remove(csv_file_name)
         for pdf_file in pdf_files:
@@ -181,8 +234,9 @@ class StockPriceTopPerformerAlert(BaseAlert, StockApi):
                 os.remove(pdf_file)
 
     # ----------------- generate ai analysis -----------------
-    def _get_stock_increase_reason(self, stock: StockSymbol, timeframes: List[str],
-                                   stock_stats: Dict[StockSymbol, Dict[str, FinancialMetricsData]]) -> None:
+    def _get_stock_increase_reason(
+        self, stock: StockSymbol, timeframes: list[str], stock_stats: dict[StockSymbol, dict[str, FinancialMetricsData]]
+    ) -> None:
         """
         Get stock increase reason
 
@@ -192,16 +246,19 @@ class StockPriceTopPerformerAlert(BaseAlert, StockApi):
 
         :return: stock increase reason
         """
-        stock_increase_reason = \
-            ["Stock Stats: " + ", ".join([f"{k}: {v}" for k, v in stock_stats[stock].items()]),
-             "Timeframes: " + ", ".join(timeframes)]
-        stock_increase_reason.extend(self._ai_api.
-                                     get_stock_increase_reason(stock, timeframes).strip().split("\n"))
+        stock_increase_reason = [
+            "Stock Stats: " + ", ".join([f"{k}: {v}" for k, v in stock_stats[stock].items()]),
+            "Timeframes: " + ", ".join(timeframes),
+        ]
+        stock_increase_reason.extend(self._ai_api.get_stock_increase_reason(stock, timeframes).strip().split("\n"))
         self._pdf_api.append_stock_info(stock, stock_increase_reason)
 
-    def get_stocks_ai_analysis_for_newly_added(self, timeframe_stocks_dict: Dict[str, List[StockSymbol]],
-                                               is_newly_added_dict: Dict[StockSymbol, bool],
-                                               stock_stats: Dict[StockSymbol, Dict[str, FinancialMetricsData]]) -> str:
+    def get_stocks_ai_analysis_for_newly_added(
+        self,
+        timeframe_stocks_dict: dict[str, list[StockSymbol]],
+        is_newly_added_dict: dict[StockSymbol, bool],
+        stock_stats: dict[StockSymbol, dict[str, FinancialMetricsData]],
+    ) -> str:
         """
         Send stock ai analysis
 
@@ -215,17 +272,21 @@ class StockPriceTopPerformerAlert(BaseAlert, StockApi):
             self._pdf_api.append_text(f"Timeframe {timeframe}:")
             for stock in stocks:
                 if is_newly_added_dict[stock]:
-                    stock_increase_reason = \
-                        ["Stock Stats: " + ", ".join([f"{k}: {v}" for k, v in stock_stats[stock].items()])]
-                    stock_increase_reason.extend(self._ai_api.
-                                                 get_stock_increase_reason(stock, timeframe).strip().split("\n"))
+                    stock_increase_reason = [
+                        "Stock Stats: " + ", ".join([f"{k}: {v}" for k, v in stock_stats[stock].items()])
+                    ]
+                    stock_increase_reason.extend(
+                        self._ai_api.get_stock_increase_reason(stock, timeframe).strip().split("\n")
+                    )
                     self._pdf_api.append_stock_info(stock, stock_increase_reason)
         self._pdf_api.save_pdf()
         return self._pdf_api.file_name
 
     def get_stocks_ai_analysis_for_timeframe_sma(
-            self, stock_timeframe_dict: Dict[StockSymbol, List[str]],
-            stock_stats: Dict[StockSymbol, Dict[str, FinancialMetricsData]]) -> str:
+        self,
+        stock_timeframe_dict: dict[StockSymbol, list[str]],
+        stock_stats: dict[StockSymbol, dict[str, FinancialMetricsData]],
+    ) -> str:
         """
         Send stock ai analysis
 
@@ -239,9 +300,12 @@ class StockPriceTopPerformerAlert(BaseAlert, StockApi):
         self._pdf_api.save_pdf()
         return self._pdf_api.file_name
 
-    def get_stocks_ai_analysis_for_growth_score(self, stock_timeframe_dict: Dict[StockSymbol, List[str]],
-                                                stock_stats: Dict[StockSymbol, Dict[str, FinancialMetricsData]],
-                                                growth_score_threshold: float) -> str:
+    def get_stocks_ai_analysis_for_growth_score(
+        self,
+        stock_timeframe_dict: dict[StockSymbol, list[str]],
+        stock_stats: dict[StockSymbol, dict[str, FinancialMetricsData]],
+        growth_score_threshold: float,
+    ) -> str:
         """
         Send stock ai analysis based on growth score
 
@@ -263,8 +327,10 @@ class StockPriceTopPerformerAlert(BaseAlert, StockApi):
         return self._pdf_api.file_name
 
     def get_stocks_ai_analysis_for_stock_screener_alert_intersection(
-            self, stock_timeframe_dict: Dict[StockSymbol, List[str]],
-            stock_stats: Dict[StockSymbol, Dict[str, FinancialMetricsData]]) -> str:
+        self,
+        stock_timeframe_dict: dict[StockSymbol, list[str]],
+        stock_stats: dict[StockSymbol, dict[str, FinancialMetricsData]],
+    ) -> str:
         """
         Send stock ai analysis based on the intersection of stock screener alert results
 
@@ -281,10 +347,11 @@ class StockPriceTopPerformerAlert(BaseAlert, StockApi):
         return self._pdf_api.file_name
 
     @staticmethod
-    def filter_stock_with_timeframe_sma(stock_timeframe_dict: Dict[StockSymbol, List[str]],
-                                        timeframe_combos: List[List[str]],
-                                        sma_dict: Dict[StockSymbol, Dict[str, bool]]) \
-            -> Dict[StockSymbol, List[str]]:
+    def filter_stock_with_timeframe_sma(
+        stock_timeframe_dict: dict[StockSymbol, list[str]],
+        timeframe_combos: list[list[str]],
+        sma_dict: dict[StockSymbol, dict[str, bool]],
+    ) -> dict[StockSymbol, list[str]]:
         """
         Filter stocks with the given timeframes combos and sma data
 
@@ -305,7 +372,7 @@ class StockPriceTopPerformerAlert(BaseAlert, StockApi):
         return res
 
     # ----------------- pre-trieve stock list -----------------
-    def get_sorted_price_increased_stocks(self) -> Dict[str, List[Tuple[StockSymbol, Decimal]]]:
+    def get_sorted_price_increased_stocks(self) -> dict[str, list[tuple[StockSymbol, Decimal]]]:
         """
         Get the stocks with in the price increase percentage order for different timeframes
 
@@ -318,19 +385,20 @@ class StockPriceTopPerformerAlert(BaseAlert, StockApi):
 
             top_stocks = {}
             for timeframe in self._timeframe_list:
-                top_stocks[timeframe] = sorted(stock_price_change.items(),
-                                               key=lambda x: x[1][timeframe], reverse=True)
+                top_stocks[timeframe] = sorted(stock_price_change.items(), key=lambda x: x[1][timeframe], reverse=True)
 
-                top_stocks[timeframe] = [(stock, price_change[timeframe])
-                                         for stock, price_change in top_stocks[timeframe]]
+                top_stocks[timeframe] = [
+                    (stock, price_change[timeframe]) for stock, price_change in top_stocks[timeframe]
+                ]
                 retry = False
                 if top_stocks[timeframe][0][1] == Decimal(0):
                     retry = True
 
         return top_stocks
 
-    def get_top_n_non_etf_stocks(self, n: int, top_stocks: Dict[str, List[Tuple[StockSymbol, Decimal]]]) \
-            -> Dict[str, List[Tuple[StockSymbol, Decimal]]]:
+    def get_top_n_non_etf_stocks(
+        self, n: int, top_stocks: dict[str, list[tuple[StockSymbol, Decimal]]]
+    ) -> dict[str, list[tuple[StockSymbol, Decimal]]]:
         """
         Get top n non-ETF stocks
 
@@ -346,22 +414,28 @@ class StockPriceTopPerformerAlert(BaseAlert, StockApi):
             cur_top_stocks = []
             sp500_nasdaq_nyse_stocks = []
             for i in range(0, len(top_stocks[timeframe])):
-                if top_stocks[timeframe][i][0].is_sp500 or top_stocks[timeframe][i][0].is_nasdaq\
-                        or top_stocks[timeframe][i][0].is_nyse:
+                if (
+                    top_stocks[timeframe][i][0].is_sp500
+                    or top_stocks[timeframe][i][0].is_nasdaq
+                    or top_stocks[timeframe][i][0].is_nyse
+                ):
                     sp500_nasdaq_nyse_stocks.append(top_stocks[timeframe][i])
             for i in range(0, len(sp500_nasdaq_nyse_stocks), 40):
-                stocks_price_increase = sp500_nasdaq_nyse_stocks[i:i + 40]
-                stocks = {stock: percentage for stock, percentage in stocks_price_increase}
+                stocks_price_increase = sp500_nasdaq_nyse_stocks[i : i + 40]
+                stocks = dict(stocks_price_increase)
                 stock_info = self.get_stock_info(list(stocks.keys()))
                 for stock in stock_info:
                     if not stock.security_name:
                         logging.warning(f"Stock {stock.ticker} does not have security name")
                 cur_top_stocks.extend(
-                    [(stock, stocks[stock]) for stock in stock_info
-                     if (stock.security_name and " ETF" not in stock.security_name
-                     or not stock.security_name)
-                     and len(stock.ticker) < 5
-                     and self._daily_volume.get(stock, 0) >= self._daily_volume_threshold])
+                    [
+                        (stock, stocks[stock])
+                        for stock in stock_info
+                        if (stock.security_name and " ETF" not in stock.security_name or not stock.security_name)
+                        and len(stock.ticker) < 5
+                        and self._daily_volume.get(stock, 0) >= self._daily_volume_threshold
+                    ]
+                )
                 if len(cur_top_stocks) >= n:
                     break
             top_stocks[timeframe] = cur_top_stocks[:n]
@@ -397,10 +471,12 @@ class StockPriceTopPerformerAlert(BaseAlert, StockApi):
                     stock_str = f"{stock_str} *"
                 cur_top_stocks.append(stock_str)
                 timeframe_stocks_dict[timeframe].append(stock)
-            msg = f"Top {n} stocks from SP500 and Nasdaq with the " \
-                  f"highest price increase with timeframe {timeframe}: \n" \
-                  "Stock: Price Change Percentage\n" \
-                  f"{cur_top_stocks}"
+            msg = (
+                f"Top {n} stocks from SP500 and Nasdaq with the "
+                f"highest price increase with timeframe {timeframe}: \n"
+                "Stock: Price Change Percentage\n"
+                f"{cur_top_stocks}"
+            )
             self._tg_bot.send_message(msg)
             email_msg += msg + "\n\n"
 
@@ -414,16 +490,20 @@ class StockPriceTopPerformerAlert(BaseAlert, StockApi):
         logging.info("Stock Alert Done")
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     start = time.time()
-    stock_alert = StockPriceTopPerformerAlert("stock_alert", tg_type="TEST", email=True,
-                                              timeframe_list=["1m"],
-                                              # timeframe_list=["1m", "3m", "6m", "1y", "3y", "5y", "10y"],
-                                              # timeframe_list=["3m", "6m", "1y"],
-                                              time_frame_sma_filter_ai_analysis=False,
-                                              newly_added_stock_ai_analysis=False,
-                                              growth_score_filter_ai_analysis=False,
-                                              daily_volume_threshold=500000,
-                                              stock_screener_alert_db_name="stock_screener")
+    stock_alert = StockPriceTopPerformerAlert(
+        "stock_alert",
+        tg_type="TEST",
+        email=True,
+        timeframe_list=["1m"],
+        # timeframe_list=["1m", "3m", "6m", "1y", "3y", "5y", "10y"],
+        # timeframe_list=["3m", "6m", "1y"],
+        time_frame_sma_filter_ai_analysis=False,
+        newly_added_stock_ai_analysis=False,
+        growth_score_filter_ai_analysis=False,
+        daily_volume_threshold=500000,
+        stock_screener_alert_db_name="stock_screener",
+    )
     stock_alert.run()
     print(f"Time taken: {round(time.time() - start, 2)} seconds")

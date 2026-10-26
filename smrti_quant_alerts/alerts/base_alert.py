@@ -12,6 +12,7 @@ class BaseAlert:
 
     All alerts should implement the run method, which is the main method for running the alert.
     """
+
     CONFIG = Config(verbose=False)
     PWD = CONFIG.PROJECT_DIR
 

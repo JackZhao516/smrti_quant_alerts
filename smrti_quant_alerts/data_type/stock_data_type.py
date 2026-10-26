@@ -1,5 +1,4 @@
 from __future__ import annotations
-from typing import Tuple
 
 from .base_data_type import TradingSymbol
 
@@ -10,10 +9,19 @@ class StockSymbol(TradingSymbol):
     nyse_set = set()
     symbol_info_map = {}
 
-    def __init__(self, symbol: str, security_name: str = "", gics_sector: str = "",
-                 gics_sub_industry: str = "", location: str = "", cik: str = "",
-                 founded_time: str = "", sp500: bool = False, nasdaq: bool = False,
-                 nyse: bool = False) -> None:
+    def __init__(
+        self,
+        symbol: str,
+        security_name: str = "",
+        gics_sector: str = "",
+        gics_sub_industry: str = "",
+        location: str = "",
+        cik: str = "",
+        founded_time: str = "",
+        sp500: bool = False,
+        nasdaq: bool = False,
+        nyse: bool = False,
+    ) -> None:
         symbol, self.market = StockSymbol.parse_symbol_market(symbol)
         super().__init__(symbol.upper())
         self._security_name = security_name if security_name else ""
@@ -92,8 +100,14 @@ class StockSymbol(TradingSymbol):
     @property
     def has_stock_info(self) -> bool:
         self._refresh()
-        return self._security_name != "" and self._gics_sector != "" and self._gics_sub_industry != "" \
-            and self._location != "" and self._cik != "" and self._founded_time != ""
+        return (
+            self._security_name != ""
+            and self._gics_sector != ""
+            and self._gics_sub_industry != ""
+            and self._location != ""
+            and self._cik != ""
+            and self._founded_time != ""
+        )
 
     @staticmethod
     def get_symbol_object(symbol: str) -> StockSymbol:
@@ -102,7 +116,7 @@ class StockSymbol(TradingSymbol):
         return StockSymbol(symbol)
 
     @staticmethod
-    def parse_symbol_market(symbol: str) -> Tuple[str, str]:
+    def parse_symbol_market(symbol: str) -> tuple[str, str]:
         if "@" in symbol:
             symbol, market = symbol.split("@")
             return symbol, market

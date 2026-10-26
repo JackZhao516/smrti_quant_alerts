@@ -9,9 +9,15 @@ class TestStockSymbol(unittest.TestCase):
         self.assertEqual(symbol.ticker, "AAPL")
 
     def test_get_symbol_object(self) -> None:
-        StockSymbol("AAPL", security_name="Apple Inc.", gics_sector="Technology",
-                    gics_sub_industry="Technology Hardware, Storage & Peripherals",
-                    location="Cupertino, California", cik="0000320193", founded_time="1977")
+        StockSymbol(
+            "AAPL",
+            security_name="Apple Inc.",
+            gics_sector="Technology",
+            gics_sub_industry="Technology Hardware, Storage & Peripherals",
+            location="Cupertino, California",
+            cik="0000320193",
+            founded_time="1977",
+        )
         symbol = StockSymbol.get_symbol_object("AAPL")
         self.assertEqual(symbol, StockSymbol("AAPL"))
         self.assertEqual(StockSymbol("TSLA"), StockSymbol.get_symbol_object("TSLA"))
@@ -38,9 +44,15 @@ class TestStockSymbol(unittest.TestCase):
         StockSymbol.symbol_info_map = {}
         symbol = StockSymbol("AAPL")
         self.assertFalse(symbol.has_stock_info)
-        symbol = StockSymbol("AAPL", security_name="Apple Inc.", gics_sector="Technology",
-                             gics_sub_industry="Technology Hardware, Storage & Peripherals",
-                             location="Cupertino, California", cik="0000320193", founded_time="1977")
+        symbol = StockSymbol(
+            "AAPL",
+            security_name="Apple Inc.",
+            gics_sector="Technology",
+            gics_sub_industry="Technology Hardware, Storage & Peripherals",
+            location="Cupertino, California",
+            cik="0000320193",
+            founded_time="1977",
+        )
         self.assertTrue(symbol.has_stock_info)
 
     def test_ticker_alias(self) -> None:

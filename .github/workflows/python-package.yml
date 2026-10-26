@@ -30,13 +30,11 @@ jobs:
         pip install -r requirements.txt
         pip install binance-connector==3.5.0
         python3 setup.py develop
-        pip install flake8 coveralls PyYAML
-    - name: Lint with flake8
+        pip install ruff==0.17.2 coveralls PyYAML
+    - name: Lint with ruff
       run: |
-        # stop the build if there are Python syntax errors or undefined names
-        flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
-        # exit-zero treats all errors as warnings. The GitHub editor is 127 chars wide
-        flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
+        ruff check .
+        ruff format --check .
     - name: Test with pytest
       run: |
         pytest tests/* --cov smrti_quant_alerts --cov-config=.coveragerc --cov-report term-missing --disable-warnings --cov-fail-under=60

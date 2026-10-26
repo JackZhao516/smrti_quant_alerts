@@ -4,8 +4,6 @@ import datetime
 import pytz
 import numpy as np
 
-from typing import Set, List
-from decimal import Decimal
 from talib import MACD
 
 from smrti_quant_alerts.settings import Config
@@ -17,7 +15,7 @@ def write_exclude_coins_to_file(input_exclude_coins: str) -> None:
 
     :param input_exclude_coins: str "xxx, xxx, xxx"
     """
-    with open(os.path.join(Config.PROJECT_DIR, "exclude_coins.json"), "r") as f:
+    with open(os.path.join(Config.PROJECT_DIR, "exclude_coins.json")) as f:
         exclude_coins = json.load(f)
         exclude_coins_set = set(exclude_coins)
         for coin in input_exclude_coins.split(","):
@@ -27,7 +25,7 @@ def write_exclude_coins_to_file(input_exclude_coins: str) -> None:
         json.dump(exclude_coins, f)
 
 
-def read_exclude_coins_from_file() -> Set[str]:
+def read_exclude_coins_from_file() -> set[str]:
     """
     read exclude coins from json file
 
@@ -39,7 +37,7 @@ def read_exclude_coins_from_file() -> Set[str]:
             exclude_coins.update(json.load(f))
 
     if os.path.exists(os.path.join(Config.PROJECT_DIR, "exclude_coins.json")):
-        with open(os.path.join(Config.PROJECT_DIR, "exclude_coins.json"), "r") as f:
+        with open(os.path.join(Config.PROJECT_DIR, "exclude_coins.json")) as f:
             exclude_coins.update(json.load(f))
     return exclude_coins
 
@@ -62,8 +60,14 @@ def get_stock_market_close_timestamp_from_date(date: str) -> int:
     :return: timestamp in ms
     """
     timezone_utc = pytz.timezone("UTC")
-    return int(timezone_utc.localize(datetime.datetime.strptime(
-        date, "%Y-%m-%d")).replace(hour=23, minute=59, second=59).timestamp()) * 1000
+    return (
+        int(
+            timezone_utc.localize(datetime.datetime.strptime(date, "%Y-%m-%d"))
+            .replace(hour=23, minute=59, second=59)
+            .timestamp()
+        )
+        * 1000
+    )
 
 
 def get_date_from_timestamp(timestamp: int) -> str:
@@ -77,8 +81,9 @@ def get_date_from_timestamp(timestamp: int) -> str:
     return datetime.datetime.fromtimestamp(timestamp / 1000, timezone).strftime("%Y-%m-%d")
 
 
-def calculate_macd(close: List[float], fastperiod: int = 12,
-                   slowperiod: int = 26, signalperiod: int = 9) -> List[float]:
+def calculate_macd(
+    close: list[float], fastperiod: int = 12, slowperiod: int = 26, signalperiod: int = 9
+) -> list[float]:
     """
     calculate MACD histogram
 

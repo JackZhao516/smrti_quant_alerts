@@ -1,6 +1,5 @@
 import unittest
 import os
-from unittest.mock import patch
 
 from smrti_quant_alerts.alerts.base_alert import BaseAlert
 from smrti_quant_alerts.settings import Config

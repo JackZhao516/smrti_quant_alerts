@@ -1,13 +1,13 @@
 import uuid
-from typing import Union, List, Set, Optional
 
 from smrti_quant_alerts.data_type import TradingSymbol, BinanceExchange, CoingeckoCoin
 from smrti_quant_alerts.telegram_api import TelegramBot
 from smrti_quant_alerts.stock_crypto_api import CoingeckoApi
 
 
-def send_coins_info_to_telegram(coins: Union[List[TradingSymbol], Set[TradingSymbol]],
-                                tg_bot: TelegramBot, file_name: Optional[str] = "") -> None:
+def send_coins_info_to_telegram(
+    coins: list[TradingSymbol] | set[TradingSymbol], tg_bot: TelegramBot, file_name: str | None = ""
+) -> None:
     """
     alert coins info
 
@@ -31,6 +31,14 @@ def send_coins_info_to_telegram(coins: Union[List[TradingSymbol], Set[TradingSym
         chain_info_dict = cg.get_coins_chain_info(coins)
         for coin in coins:
             info = cg.get_coin_info(coin)
-            data.append([info["symbol"], info["name"], info["website"],
-                         info["description"], info["market_cap_rank"], chain_info_dict[coin]])
+            data.append(
+                [
+                    info["symbol"],
+                    info["name"],
+                    info["website"],
+                    info["description"],
+                    info["market_cap_rank"],
+                    chain_info_dict[coin],
+                ]
+            )
         tg_bot.send_data_as_csv_file(file_name, headers, data)

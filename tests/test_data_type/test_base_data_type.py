@@ -64,5 +64,5 @@ class TestTradingSymbol(unittest.TestCase):
             self.assertEqual(hash(symbol), hash("TEST"))
 
     def test_get_symbol_object(self) -> None:
-        with self.assertRaises(NotImplementedError) as e:
+        with self.assertRaises(NotImplementedError):
             TradingSymbol.get_symbol_object("TEST")

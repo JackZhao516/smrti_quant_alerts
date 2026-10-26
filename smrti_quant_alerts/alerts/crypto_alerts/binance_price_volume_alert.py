@@ -3,7 +3,8 @@ import math
 import json
 import logging
 import threading
-from typing import List, Any, Optional, Sequence, Iterable
+from typing import Any
+from collections.abc import Sequence, Iterable
 from collections import defaultdict
 from abc import ABC, abstractmethod
 
@@ -19,8 +20,9 @@ from smrti_quant_alerts.utility import run_task_at_daily_time
 class BinancePriceVolumeBase(ABC, BaseAlert, BinanceApi):
     _db_utils = PriceVolumeDBUtils()
 
-    def __init__(self, alert_name: str, alert_type: str = "binance_price_15m",
-                 tg_type: str = "TEST", timeframe: str = "15m") -> None:
+    def __init__(
+        self, alert_name: str, alert_type: str = "binance_price_15m", tg_type: str = "TEST", timeframe: str = "15m"
+    ) -> None:
         BaseAlert.__init__(self, alert_name, tg_type)
         BinanceApi.__init__(self)
 
@@ -40,18 +42,20 @@ class BinancePriceVolumeBase(ABC, BaseAlert, BinanceApi):
         self._exchange_bar_dict = {}
 
         # websocket client
-        self._websocket_client = SpotWebsocketStreamClient(on_message=self._handle_tick_message,
-                                                           is_combined=True, timeout=2000)
+        self._websocket_client = SpotWebsocketStreamClient(
+            on_message=self._handle_tick_message, is_combined=True, timeout=2000
+        )
 
     # ------alert helper functions-------
-    def _exchanges_to_subscription_stream_names(self, exchanges: Iterable[BinanceExchange]) -> List[str]:
+    def _exchanges_to_subscription_stream_names(self, exchanges: Iterable[BinanceExchange]) -> list[str]:
         """
         Convert exchanges to subscription stream names
         """
         return [f"{e.lower()}@kline_{self._timeframe}" for e in exchanges]
 
-    def _update_count_and_send_telegram_message(self, title: str, exchange: BinanceExchange,
-                                                num_of_bars: int, amount: float) -> None:
+    def _update_count_and_send_telegram_message(
+        self, title: str, exchange: BinanceExchange, num_of_bars: int, amount: float
+    ) -> None:
         """
         Update count and send telegram message
 
@@ -64,19 +68,21 @@ class BinancePriceVolumeBase(ABC, BaseAlert, BinanceApi):
         self._db_utils.update_count(exchange, self._alert_type, 1850, "daily")
         monthly_count = self._db_utils.update_count(exchange, self._alert_type, 1850, "monthly")
         if num_of_bars == 2:
-            bar_str = f"[{self._exchange_bar_dict[exchange][-2]} -> " \
-                        f"{self._exchange_bar_dict[exchange][-1]}]"
+            bar_str = f"[{self._exchange_bar_dict[exchange][-2]} -> {self._exchange_bar_dict[exchange][-1]}]"
         else:
-            bar_str = f"[{self._exchange_bar_dict[exchange][-3]} -> " \
-                        f"{self._exchange_bar_dict[exchange][-2]} -> " \
-                        f"{self._exchange_bar_dict[exchange][-1]}]"
+            bar_str = (
+                f"[{self._exchange_bar_dict[exchange][-3]} -> "
+                f"{self._exchange_bar_dict[exchange][-2]} -> "
+                f"{self._exchange_bar_dict[exchange][-1]}]"
+            )
         self._tg_bot.send_message(
             f"{exchange} {self._alert_type} alert {title}:\n"
             f"{bar_str}\namount: ${math.ceil(amount)}\n"
             f"ticker volume alert monthly count:"
-            f" {monthly_count}")
+            f" {monthly_count}"
+        )
 
-    def _handle_tick_message_pre_check(self, msg: str) -> Optional[ExchangeTick]:
+    def _handle_tick_message_pre_check(self, msg: str) -> ExchangeTick | None:
         """
         Pre check for tick message
 
@@ -85,13 +91,24 @@ class BinancePriceVolumeBase(ABC, BaseAlert, BinanceApi):
         :return: message dict if pass pre check, otherwise empty dict
         """
         msg = json.loads(msg)
-        if "stream" not in msg or "data" not in msg or "k" not in msg["data"] or \
-                msg["data"]["k"]["x"] is False or msg["data"]["k"]["i"] != self._timeframe or \
-                msg["data"]["k"]["s"] not in self._exchanges:
+        if (
+            "stream" not in msg
+            or "data" not in msg
+            or "k" not in msg["data"]
+            or msg["data"]["k"]["x"] is False
+            or msg["data"]["k"]["i"] != self._timeframe
+            or msg["data"]["k"]["s"] not in self._exchanges
+        ):
             return None
-        return ExchangeTick(BinanceExchange.get_symbol_object(msg["data"]["k"]["s"]),
-                            float(msg["data"]["k"]["v"]), float(msg["data"]["k"]["o"]), float(msg["data"]["k"]["c"]),
-                            float(msg["data"]["k"]["h"]), float(msg["data"]["k"]["l"]), int(msg["data"]["k"]["t"]))
+        return ExchangeTick(
+            BinanceExchange.get_symbol_object(msg["data"]["k"]["s"]),
+            float(msg["data"]["k"]["v"]),
+            float(msg["data"]["k"]["o"]),
+            float(msg["data"]["k"]["c"]),
+            float(msg["data"]["k"]["h"]),
+            float(msg["data"]["k"]["l"]),
+            int(msg["data"]["k"]["t"]),
+        )
 
     def _alert_price_change(self) -> None:
         """
@@ -117,18 +134,21 @@ class BinancePriceVolumeBase(ABC, BaseAlert, BinanceApi):
                 count = self._db_utils.update_count(price_lists[-i - 1][0], self._alert_type, 1850, "monthly")
                 self._db_utils.update_count(price_lists[-i - 1][0], self._alert_type, 1850, "daily")
                 smallest.append(
-                    f"{price_lists[-i - 1][0]}: {round(price_lists[-i - 1][1], 2)}%, monthly count: {count}")
+                    f"{price_lists[-i - 1][0]}: {round(price_lists[-i - 1][1], 2)}%, monthly count: {count}"
+                )
 
         price_type = "close/open" if self._timeframe == "15m" else "high/low"
 
         if len(largest) > 0:
             self._tg_bot.send_message(
                 f"{self._timeframe} top {len(largest)} "
-                f"positive price ({price_type}) change in % over {self._alert_threshold}%: {largest}")
+                f"positive price ({price_type}) change in % over {self._alert_threshold}%: {largest}"
+            )
         if len(smallest) > 0:
             self._tg_bot.send_message(
                 f"{self._timeframe} top {len(smallest)} "
-                f"negative price ({price_type}) change in % over {self._alert_threshold}%: {smallest}")
+                f"negative price ({price_type}) change in % over {self._alert_threshold}%: {smallest}"
+            )
 
     @abstractmethod
     def _handle_tick_message(self, _, msg: str) -> Any:
@@ -151,10 +171,7 @@ class BinancePriceVolumeBase(ABC, BaseAlert, BinanceApi):
         for exchange, count in message_list:
             message_str += f"{exchange} monthly count: {count[0]}\n"
 
-        self._tg_bot.send_message(
-            f"Daily {self._alert_type} ticker monthly count:\n"
-            f"{message_str}", blue_text=True
-        )
+        self._tg_bot.send_message(f"Daily {self._alert_type} ticker monthly count:\n{message_str}", blue_text=True)
         if time.time() - self._monthly_start_timestamp > 30 * 86400 + 180:
             self._db_utils.reset_count(self._alert_type, "monthly")
             self._monthly_start_timestamp = time.time()
@@ -165,9 +182,7 @@ class BinancePriceVolumeBase(ABC, BaseAlert, BinanceApi):
         for exchange, count in message_list:
             message_str += f"{exchange}: {count[0]}\n"
 
-        self._tg_bot.send_message(
-            f"Daily {self._alert_type} new alerts daily count:\n"
-            f"{message_str}", blue_text=True)
+        self._tg_bot.send_message(f"Daily {self._alert_type} new alerts daily count:\n{message_str}", blue_text=True)
         self._db_utils.reset_count(self._alert_type, "daily")
 
     def _auto_subscribe_new_exchanges(self):
@@ -199,8 +214,9 @@ class BinancePriceVolumeBase(ABC, BaseAlert, BinanceApi):
             if self._websocket_client.socket_manager.is_alive():
                 time.sleep(5)
             else:
-                self._websocket_client = SpotWebsocketStreamClient(on_message=self._handle_tick_message,
-                                                                   is_combined=True, timeout=2000)
+                self._websocket_client = SpotWebsocketStreamClient(
+                    on_message=self._handle_tick_message, is_combined=True, timeout=2000
+                )
                 exchange_strs = self._exchanges_to_subscription_stream_names(self._exchanges)
                 self._websocket_client.subscribe(exchange_strs)
                 logging.warning(f"Restarted websocket for {self._alert_type}")
@@ -215,13 +231,19 @@ class BinancePriceVolumeBase(ABC, BaseAlert, BinanceApi):
         self._websocket_client.subscribe(exchange_strs)
 
         services = [
-            threading.Thread(target=run_task_at_daily_time,
-                             args=(self._alert_count,
-                                   self.CONFIG.SETTINGS[self._alert_name]["run_time_input_args"]["daily_times"],
-                                   None, self.CONFIG.SETTINGS[self._alert_name]["run_time_input_args"]["timezone"])),
-            threading.Thread(target=run_task_at_daily_time,
-                             args=(self._auto_subscribe_new_exchanges,
-                                   [f"{str(h).zfill(2)}:05" for h in range(24)])),
+            threading.Thread(
+                target=run_task_at_daily_time,
+                args=(
+                    self._alert_count,
+                    self.CONFIG.SETTINGS[self._alert_name]["run_time_input_args"]["daily_times"],
+                    None,
+                    self.CONFIG.SETTINGS[self._alert_name]["run_time_input_args"]["timezone"],
+                ),
+            ),
+            threading.Thread(
+                target=run_task_at_daily_time,
+                args=(self._auto_subscribe_new_exchanges, [f"{str(h).zfill(2)}:05" for h in range(24)]),
+            ),
             threading.Thread(target=self._auto_restart_websocket),
         ]
         for service in services:
@@ -230,8 +252,9 @@ class BinancePriceVolumeBase(ABC, BaseAlert, BinanceApi):
 
 class BinancePrice15mAlert(BinancePriceVolumeBase):
     def __init__(self, alert_name: str, tg_type: str = "TEST") -> None:
-        BinancePriceVolumeBase.__init__(self, alert_name=alert_name, alert_type="binance_price_15m",
-                                        tg_type=tg_type, timeframe="15m")
+        BinancePriceVolumeBase.__init__(
+            self, alert_name=alert_name, alert_type="binance_price_15m", tg_type=tg_type, timeframe="15m"
+        )
         self._alert_threshold = self._params["15m_price_change_percentage"]
         self._exchange_bar_dict = defaultdict(dict)
 
@@ -246,8 +269,9 @@ class BinancePrice15mAlert(BinancePriceVolumeBase):
 
 class BinancePrice1hAlert(BinancePriceVolumeBase):
     def __init__(self, alert_name: str, tg_type: str = "TEST") -> None:
-        BinancePriceVolumeBase.__init__(self, alert_name=alert_name, alert_type="binance_price_1h",
-                                        tg_type=tg_type, timeframe="1h")
+        BinancePriceVolumeBase.__init__(
+            self, alert_name=alert_name, alert_type="binance_price_1h", tg_type=tg_type, timeframe="1h"
+        )
         self._alert_threshold = self._params["1h_price_change_percentage"]
         self._exchange_bar_dict = defaultdict(dict)
 
@@ -262,8 +286,9 @@ class BinancePrice1hAlert(BinancePriceVolumeBase):
 
 class BinanceVolume15mAlert(BinancePriceVolumeBase):
     def __init__(self, alert_name: str, tg_type: str = "TEST") -> None:
-        BinancePriceVolumeBase.__init__(self, alert_name=alert_name, alert_type="binance_volume_15m",
-                                        tg_type=tg_type, timeframe="15m")
+        BinancePriceVolumeBase.__init__(
+            self, alert_name=alert_name, alert_type="binance_volume_15m", tg_type=tg_type, timeframe="15m"
+        )
         self._alert_threshold = self._params["15m_volume_usd"]
         self._exchange_bar_dict = defaultdict(list)
 
@@ -284,14 +309,18 @@ class BinanceVolume15mAlert(BinancePriceVolumeBase):
                 self._update_count_and_send_telegram_message("2nd bar 50X", tick.exchange, 2, tick.amount)
 
             # third bar is 50 times larger than first bar, amount is larger than threshold
-            if len(self._exchange_bar_dict[tick.exchange]) == 3 and \
-                    tick.volume >= 50 * self._exchange_bar_dict[tick.exchange][-3]:
+            if (
+                len(self._exchange_bar_dict[tick.exchange]) == 3
+                and tick.volume >= 50 * self._exchange_bar_dict[tick.exchange][-3]
+            ):
                 self._update_count_and_send_telegram_message("3rd bar 50X", tick.exchange, 3, tick.amount)
 
             # second and third bar are 10 times larger than first bar, amount is larger than threshold
-            if len(self._exchange_bar_dict[tick.exchange]) == 3 and \
-                    tick.volume >= 10 * self._exchange_bar_dict[tick.exchange][-3] and \
-                    self._exchange_bar_dict[tick.exchange][-2] >= 10 * self._exchange_bar_dict[tick.exchange][-3]:
+            if (
+                len(self._exchange_bar_dict[tick.exchange]) == 3
+                and tick.volume >= 10 * self._exchange_bar_dict[tick.exchange][-3]
+                and self._exchange_bar_dict[tick.exchange][-2] >= 10 * self._exchange_bar_dict[tick.exchange][-3]
+            ):
                 self._update_count_and_send_telegram_message("2nd, 3rd bar 10X", tick.exchange, 3, tick.amount)
 
         if len(self._exchange_bar_dict[tick.exchange]) == 3:
@@ -300,8 +329,9 @@ class BinanceVolume15mAlert(BinancePriceVolumeBase):
 
 class BinanceVolume1hAlert(BinancePriceVolumeBase):
     def __init__(self, alert_name: str, tg_type: str = "TEST") -> None:
-        BinancePriceVolumeBase.__init__(self, alert_name=alert_name, alert_type="binance_volume_1h",
-                                        tg_type=tg_type, timeframe="1h")
+        BinancePriceVolumeBase.__init__(
+            self, alert_name=alert_name, alert_type="binance_volume_1h", tg_type=tg_type, timeframe="1h"
+        )
         self._alert_threshold = self._params["1h_volume_usd"]
         self._exchange_bar_dict = defaultdict(list)
 
@@ -317,17 +347,24 @@ class BinanceVolume1hAlert(BinancePriceVolumeBase):
 
         self._exchange_bar_dict[tick.exchange].append(tick.volume)
         # second bar is 10 times larger than first bar, amount is larger than threshold
-        if tick.amount >= self._alert_threshold and \
-                tick.volume >= 10 * self._exchange_bar_dict[tick.exchange][0]:
+        if tick.amount >= self._alert_threshold and tick.volume >= 10 * self._exchange_bar_dict[tick.exchange][0]:
             self._update_count_and_send_telegram_message("2nd bar 10X", tick.exchange, 2, tick.amount)
 
         self._exchange_bar_dict[tick.exchange].pop(0)
 
 
 class BinancePriceVolumeAlert(BaseAlert):
-    def __init__(self, alert_name: str, alert_types: Sequence[str] = ("binance_price_15m", "binance_price_1h",
-                                                                      "binance_volume_15m", "binance_volume_1h"),
-                 tg_types: Sequence[str] = ("TEST", "TEST", "TEST", "TEST")) -> None:
+    def __init__(
+        self,
+        alert_name: str,
+        alert_types: Sequence[str] = (
+            "binance_price_15m",
+            "binance_price_1h",
+            "binance_volume_15m",
+            "binance_volume_1h",
+        ),
+        tg_types: Sequence[str] = ("TEST", "TEST", "TEST", "TEST"),
+    ) -> None:
         BaseAlert.__init__(self, alert_name, tg_types[0])
         self._alert_types = alert_types
         self._tg_types = tg_types
@@ -340,7 +377,7 @@ class BinancePriceVolumeAlert(BaseAlert):
             "binance_volume_1h": BinanceVolume1hAlert,
         }
 
-        for alert_type, tg_type in zip(self._alert_types, self._tg_types):
+        for alert_type, tg_type in zip(self._alert_types, self._tg_types, strict=False):
             alert = alert_type_to_class[alert_type](alert_name=self._alert_name, tg_type=tg_type)
             threading.Thread(target=alert.run).start()
 

@@ -1,7 +1,7 @@
 import time
 import math
 from decimal import Decimal
-from typing import List, Dict, Set, Any, Union, Optional
+from typing import Any
 
 from pycoingecko import CoinGeckoAPI
 
@@ -19,8 +19,8 @@ class CoingeckoApi:
         self._cg = CoinGeckoAPI(api_key=self.COINGECKO_API_KEY)
 
     def get_exclude_coins(
-            self, input_exclude_coins: Union[List[TradingSymbol], Set[TradingSymbol], None] = None) \
-            -> Set[CoingeckoCoin]:
+        self, input_exclude_coins: list[TradingSymbol] | set[TradingSymbol] | None = None
+    ) -> set[CoingeckoCoin]:
         """
         expand exclude coins to include all quotes for each base
 
@@ -52,14 +52,13 @@ class CoingeckoApi:
             else:
                 binance_exchange = BinanceExchange.get_symbol_object(coin)
                 if binance_exchange:
-                    coingecok_coin = \
-                        CoingeckoCoin.get_symbol_object(binance_exchange.base_symbol, "binance")
+                    coingecok_coin = CoingeckoCoin.get_symbol_object(binance_exchange.base_symbol, "binance")
                     if coingecok_coin:
                         exclude_coins.add(coingecok_coin)
         return exclude_coins
 
     @error_handling("coingecko", default_val=[])
-    def get_all_coingecko_coins(self) -> List[CoingeckoCoin]:
+    def get_all_coingecko_coins(self) -> list[CoingeckoCoin]:
         """
         Get all coins on coingecko
 
@@ -69,7 +68,7 @@ class CoingeckoApi:
         return [CoingeckoCoin(coin["id"], coin["symbol"]) for coin in coingecko_coins]
 
     @error_handling("coingecko", default_val=[])
-    def get_top_n_market_cap_coins(self, n: int = 100) -> List[CoingeckoCoin]:
+    def get_top_n_market_cap_coins(self, n: int = 100) -> list[CoingeckoCoin]:
         """
         get the top n market cap coins on coingecko
 
@@ -83,23 +82,24 @@ class CoingeckoApi:
         market_list = []
         for page in range(1, pages + 1):
             market_list += self._cg.get_coins_markets(
-                vs_currency='usd', order='market_cap_desc', per_page=250,
-                page=page, sparkline=False)
+                vs_currency="usd", order="market_cap_desc", per_page=250, page=page, sparkline=False
+            )
             time.sleep(0.2)
         market_list = market_list
 
         seen = set()
         coingecko_coins = []
         for market in market_list:
-            if market['id'] not in seen:
-                coingecko_coins.append(CoingeckoCoin(market['id'], market['symbol']))
-                seen.add(market['id'])
+            if market["id"] not in seen:
+                coingecko_coins.append(CoingeckoCoin(market["id"], market["symbol"]))
+                seen.add(market["id"])
 
         return coingecko_coins[:n]
 
     @error_handling("coingecko", default_val={})
-    def get_coins_chain_info(self, coingecko_coins: Union[List[CoingeckoCoin], Set[CoingeckoCoin]]) \
-            -> Dict[CoingeckoCoin, str]:
+    def get_coins_chain_info(
+        self, coingecko_coins: list[CoingeckoCoin] | set[CoingeckoCoin]
+    ) -> dict[CoingeckoCoin, str]:
         """
         get coin chain name information
         :param coingecko_coins: [CoingeckoCoin, ...]
@@ -116,9 +116,12 @@ class CoingeckoApi:
         return res
 
     @error_handling("coingecko", default_val=[])
-    def get_coins_market_info(self, coingecko_coins: Union[List[CoingeckoCoin], Set[CoingeckoCoin]],
-                              market_attribute_name_list: List[str],
-                              price_change_percentage: str = "24h") -> List[Dict[str, Any]]:
+    def get_coins_market_info(
+        self,
+        coingecko_coins: list[CoingeckoCoin] | set[CoingeckoCoin],
+        market_attribute_name_list: list[str],
+        price_change_percentage: str = "24h",
+    ) -> list[dict[str, Any]]:
         """
         get coin market info from coingecko
 
@@ -133,12 +136,17 @@ class CoingeckoApi:
         market_info = []
         for page in range(pages):
             cur_full_info = self._cg.get_coins_markets(
-                vs_currency='usd', ids=[coin.coin_id for coin in coingecko_coins[page * 250:(page + 1) * 250]],
-                per_page=250, page=1, sparkline=False,
-                price_change_percentage=price_change_percentage, locale='en')
+                vs_currency="usd",
+                ids=[coin.coin_id for coin in coingecko_coins[page * 250 : (page + 1) * 250]],
+                per_page=250,
+                page=1,
+                sparkline=False,
+                price_change_percentage=price_change_percentage,
+                locale="en",
+            )
 
             for info in cur_full_info:
-                cur_info = {"coingecko_coin": CoingeckoCoin(info['id'], info['symbol'])}
+                cur_info = {"coingecko_coin": CoingeckoCoin(info["id"], info["symbol"])}
                 for market_attribute_name in market_attribute_name_list:
                     cur_info[market_attribute_name] = info.get(market_attribute_name, None)
 
@@ -146,10 +154,18 @@ class CoingeckoApi:
 
         return market_info
 
-    @error_handling("coingecko",
-                    default_val={"symbol": "", "name": "", "description": "",
-                                 "website": "", "genesis_date": "", "market_cap_rank": ""})
-    def get_coin_info(self, coingecko_coin: Optional[CoingeckoCoin] = None) -> Dict[str, Any]:
+    @error_handling(
+        "coingecko",
+        default_val={
+            "symbol": "",
+            "name": "",
+            "description": "",
+            "website": "",
+            "genesis_date": "",
+            "market_cap_rank": "",
+        },
+    )
+    def get_coin_info(self, coingecko_coin: CoingeckoCoin | None = None) -> dict[str, Any]:
         """
         get coin info from coingecko
 
@@ -159,25 +175,44 @@ class CoingeckoApi:
                   "genesis_date": .., "market_cap_rank": ..}
         """
         if not coingecko_coin:
-            return {"symbol": "", "name": "", "description": "", "website": "",
-                    "genesis_date": "", "market_cap_rank": ""}
-        coin_info = self._cg.get_coin_by_id(id=coingecko_coin.coin_id, localization='false',
-                                            tickers='false', market_data='false',
-                                            community_data='false', developer_data='false',
-                                            sparkline='false')
+            return {
+                "symbol": "",
+                "name": "",
+                "description": "",
+                "website": "",
+                "genesis_date": "",
+                "market_cap_rank": "",
+            }
+        coin_info = self._cg.get_coin_by_id(
+            id=coingecko_coin.coin_id,
+            localization="false",
+            tickers="false",
+            market_data="false",
+            community_data="false",
+            developer_data="false",
+            sparkline="false",
+        )
 
         links = coin_info.get("links", {}).get("homepage", [])
         links = [link for link in links if link.startswith("http")]
         links = "; ".join(links) if links else ""
-        return {"symbol": coingecko_coin.coin_symbol, "name": coin_info.get("name", ""),
-                "description": coin_info.get("description", "").get("en", ""),
-                "website": links, "genesis_date": coin_info.get("genesis_date", ""),
-                "market_cap_rank": coin_info.get("market_cap_rank", "")}
+        return {
+            "symbol": coingecko_coin.coin_symbol,
+            "name": coin_info.get("name", ""),
+            "description": coin_info.get("description", "").get("en", ""),
+            "website": links,
+            "genesis_date": coin_info.get("genesis_date", ""),
+            "market_cap_rank": coin_info.get("market_cap_rank", ""),
+        }
 
     @error_handling("coingecko", default_val={})
-    def get_coin_market_info(self, coingecko_coin: Optional[CoingeckoCoin] = None,
-                             market_attribute_name_list: Optional[List[str]] = None,
-                             days: int = 1, interval: str = "daily") -> Dict[str, Any]:
+    def get_coin_market_info(
+        self,
+        coingecko_coin: CoingeckoCoin | None = None,
+        market_attribute_name_list: list[str] | None = None,
+        days: int = 1,
+        interval: str = "daily",
+    ) -> dict[str, Any]:
         """
         get coin market info from coingecko
 
@@ -191,14 +226,18 @@ class CoingeckoApi:
         if not coingecko_coin:
             return {}
         coin_info = self._cg.get_coin_market_chart_by_id(
-            id=coingecko_coin.coin_id, vs_currency='usd', days=days, interval=interval)
+            id=coingecko_coin.coin_id, vs_currency="usd", days=days, interval=interval
+        )
 
-        return {market_attribute_name: coin_info[market_attribute_name]
-                for market_attribute_name in market_attribute_name_list}
+        return {
+            market_attribute_name: coin_info[market_attribute_name]
+            for market_attribute_name in market_attribute_name_list
+        }
 
     @error_handling("coingecko", default_val=[])
-    def get_coin_history_hourly_close_price(self, coingecko_coin: Optional[CoingeckoCoin] = None, days: int = 10) \
-            -> List[Decimal]:
+    def get_coin_history_hourly_close_price(
+        self, coingecko_coin: CoingeckoCoin | None = None, days: int = 10
+    ) -> list[Decimal]:
         """
         Get coin past close price for the history <days> days
 
@@ -209,16 +248,16 @@ class CoingeckoApi:
         """
         if not coingecko_coin:
             return []
-        respond = self._cg.get_coin_market_chart_by_id(id=coingecko_coin.coin_id,
-                                                       vs_currency='usd', days=days,
-                                                       precision="full")
+        respond = self._cg.get_coin_market_chart_by_id(
+            id=coingecko_coin.coin_id, vs_currency="usd", days=days, precision="full"
+        )
         prices = respond.get("prices", [])
         prices = [Decimal(i[1]) for i in prices][::-1]
 
         return prices
 
     @error_handling("coingecko", default_val=Decimal(0))
-    def get_coin_current_price(self, coingecko_coin: Optional[CoingeckoCoin] = None) -> Decimal:
+    def get_coin_current_price(self, coingecko_coin: CoingeckoCoin | None = None) -> Decimal:
         """
         Get coin current close price
 
@@ -228,6 +267,6 @@ class CoingeckoApi:
         """
         if not coingecko_coin:
             return Decimal(0)
-        respond = self._cg.get_price(ids=coingecko_coin.coin_id, vs_currencies='usd', precision='full')
-        price = respond.get(coingecko_coin.coin_id, {}).get('usd', 0)
+        respond = self._cg.get_price(ids=coingecko_coin.coin_id, vs_currencies="usd", precision="full")
+        price = respond.get(coingecko_coin.coin_id, {}).get("usd", 0)
         return Decimal(price)

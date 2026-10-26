@@ -4,7 +4,8 @@ import time
 import json
 import functools
 from json import JSONDecodeError
-from typing import Callable, Optional, Union, Any
+from typing import Any
+from collections.abc import Callable
 
 from requests.exceptions import RequestException
 from requests.models import Response
@@ -12,7 +13,7 @@ from requests.models import Response
 from .error_type import ClientError, ServerError
 
 
-def error_handling(api: str = "binance", retry: int = 5, default_val: Optional[Any] = None) -> Callable:
+def error_handling(api: str = "binance", retry: int = 5, default_val: Any | None = None) -> Callable:
     """
     decorator for handling api request exceptions
     if a library function has direct api request, use this decorator
@@ -24,9 +25,10 @@ def error_handling(api: str = "binance", retry: int = 5, default_val: Optional[A
     :param retry: retry times
     :param default_val: default value to return if all retries failed
     """
+
     def decorator(fun: Callable) -> Callable:
         @functools.wraps(fun)
-        def wrapper(*args: Optional[Any], **kwargs: Optional[Any]) -> Union[Response, Any]:
+        def wrapper(*args: Any | None, **kwargs: Any | None) -> Response | Any:
             error_msg = f"{api} api request error: {fun.__name__}"
             for i in range(retry):
                 try:
@@ -40,26 +42,22 @@ def error_handling(api: str = "binance", retry: int = 5, default_val: Optional[A
                             try:
                                 err = json.loads(response.text)
                             except JSONDecodeError:
-                                raise ClientError(
-                                    status_code, None, response.text, response.headers, None
-                                )
+                                raise ClientError(status_code, None, response.text, response.headers, None) from None
 
                             # error code and message returned from server
                             # binance error json
-                            data = err["data"] if "data" in err else None
-                            code = err["code"] if "code" in err else None
-                            msg = err["msg"] if "msg" in err else None
+                            data = err.get("data", None)
+                            code = err.get("code", None)
+                            msg = err.get("msg", None)
 
                             # telegram error json
-                            code = err["error_code"] if "error_code" in err else code
-                            msg = err["description"] if "description" in err else msg
+                            code = err.get("error_code", code)
+                            msg = err.get("description", msg)
 
                             # coingecko error json
-                            msg = err["error"] if "error" in err else msg
+                            msg = err.get("error", msg)
 
-                            raise ClientError(
-                                status_code, code, msg, response.headers, data
-                            )
+                            raise ClientError(status_code, code, msg, response.headers, data)
                         raise ServerError(status_code, response.text)
                     else:
                         return response
@@ -70,5 +68,7 @@ def error_handling(api: str = "binance", retry: int = 5, default_val: Optional[A
                     logging.error(f"{error_msg}: {e}, retrying {i + 1} times")
                 time.sleep(random.random() * 2)
             return default_val
+
         return wrapper
+
     return decorator

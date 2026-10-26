@@ -22,12 +22,12 @@ class TestPDFApi(unittest.TestCase):
 
     def test_append_text(self) -> None:
         self.pdf_api.append_text("test")
-        with open(self.pdf_api._tmp_file_name, "r", encoding="utf-8") as f:
+        with open(self.pdf_api._tmp_file_name, encoding="utf-8") as f:
             self.assertEqual(f.read(), "\n\n\n\ntest\n\n\n\n\n\n")
 
     def test_append_stock_info(self) -> None:
         self.pdf_api.append_stock_info(StockSymbol("TEST", "Test"), ["test1", "test2"])
-        with open(self.pdf_api._tmp_file_name, "r", encoding="utf-8") as f:
+        with open(self.pdf_api._tmp_file_name, encoding="utf-8") as f:
             self.assertEqual(f.read(), "TEST  Test\ntest1\ntest2\n\n\n\n\n")
 
     def test_save_pdf(self) -> None:

@@ -4,8 +4,14 @@ import datetime
 from unittest import mock
 
 from smrti_quant_alerts.settings import Config
-from smrti_quant_alerts.stock_crypto_api.utility import get_datetime_now, write_exclude_coins_to_file, \
-    read_exclude_coins_from_file, get_stock_market_close_timestamp_from_date, get_date_from_timestamp, calculate_macd
+from smrti_quant_alerts.stock_crypto_api.utility import (
+    get_datetime_now,
+    write_exclude_coins_to_file,
+    read_exclude_coins_from_file,
+    get_stock_market_close_timestamp_from_date,
+    get_date_from_timestamp,
+    calculate_macd,
+)
 
 
 class TestUtility(unittest.TestCase):
@@ -16,7 +22,10 @@ class TestUtility(unittest.TestCase):
 
     def test_write_exclude_coins_to_file(self) -> None:
         Config.PROJECT_DIR = os.path.dirname(__file__)
-        with mock.patch("json.dump") as mock_json_dump, mock.patch("builtins.open", mock.mock_open(read_data='["TESTTEST", "BTC", "TEST1"]')) as mock_open_file:
+        with (
+            mock.patch("json.dump") as mock_json_dump,
+            mock.patch("builtins.open", mock.mock_open(read_data='["TESTTEST", "BTC", "TEST1"]')) as mock_open_file,
+        ):
             write_exclude_coins_to_file("BTC, ETH")
             mock_json_dump.assert_called_once_with(["TESTTEST", "BTC", "TEST1", "ETH"], mock.ANY)
             mock_open_file.assert_any_call(os.path.join(Config.PROJECT_DIR, "exclude_coins.json"), "w")

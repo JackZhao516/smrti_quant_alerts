@@ -21,8 +21,12 @@ class FutureFundingRate(BaseAlert, BinanceApi):
         Check whether the exchange funding rate pass threshold
         """
         funding_rate = self.get_future_exchange_funding_rate(exchange)
-        if funding_rate and (funding_rate > 0 and funding_rate > self._rate_threshold or
-                             funding_rate < 0 and funding_rate < -self._rate_threshold):
+        if funding_rate and (
+            funding_rate > 0
+            and funding_rate > self._rate_threshold
+            or funding_rate < 0
+            and funding_rate < -self._rate_threshold
+        ):
             funding_rate = f"{round(funding_rate * 100, 3)}%"
             self._pass_threshold_exchanges.append([exchange, funding_rate])
         sleep(0.5)
@@ -39,10 +43,9 @@ class FutureFundingRate(BaseAlert, BinanceApi):
         pool.close()
 
         if self._pass_threshold_exchanges:
-            self._tg_bot.send_message(f"Bi-hourly Funding Rate Alert: \n"
-                                      f"{self._pass_threshold_exchanges}")
+            self._tg_bot.send_message(f"Bi-hourly Funding Rate Alert: \n{self._pass_threshold_exchanges}")
             self._pass_threshold_exchanges = []
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     FutureFundingRate(alert_name="funding_rate").run()

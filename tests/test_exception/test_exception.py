@@ -5,12 +5,11 @@ from smrti_quant_alerts.exception import error_handling
 
 
 class TestException(unittest.TestCase):
-
     @error_handling("Test", 1, [])
     def mock_response(self, status_code: int, text: str) -> Response:
         res = Response()
         res.status_code = status_code
-        bytes_string = text.encode('utf-8')
+        bytes_string = text.encode("utf-8")
         res._content = bytes_string
         return res
 

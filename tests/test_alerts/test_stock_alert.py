@@ -1,8 +1,6 @@
 import unittest
-from unittest.mock import patch, ANY
 
 from smrti_quant_alerts.alerts import StockPriceTopPerformerAlert
-from smrti_quant_alerts.data_type import StockSymbol
 
 
 class TestStockAlert(unittest.TestCase):
@@ -11,6 +9,7 @@ class TestStockAlert(unittest.TestCase):
 
     def test_placeholder(self) -> None:
         pass
+
     # def test_get_sorted_price_increased_stocks(self) -> None:
     #     stock1, stock2, stock3 = StockSymbol("TEST1", "test1"), \
     #         StockSymbol("TEST2", "test2"), StockSymbol("TEST3", "testETF")

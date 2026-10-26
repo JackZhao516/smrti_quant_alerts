@@ -2,14 +2,17 @@ import pytz
 import logging
 import datetime
 import time
-from typing import Callable, Union, Iterable, Optional, List
+from collections.abc import Callable, Iterable
 
 from smrti_quant_alerts.settings import Config
 
 
-def run_task_at_daily_time(task: Callable, daily_times: Union[Iterable[str], str],
-                           excluded_week_days: Optional[List[str]] = None,
-                           timezone: Optional[str] = None) -> None:
+def run_task_at_daily_time(
+    task: Callable,
+    daily_times: Iterable[str] | str,
+    excluded_week_days: list[str] | None = None,
+    timezone: str | None = None,
+) -> None:
     """
     :param task: function to run
     :param daily_times: time to run the task, format: "HH:MM"
@@ -22,15 +25,16 @@ def run_task_at_daily_time(task: Callable, daily_times: Union[Iterable[str], str
     if len(daily_times) == 1:
         between_time = 60 * 60 * 24
     else:
-        between_time = (datetime.datetime.strptime(daily_times[1], '%H:%M') -
-                        datetime.datetime.strptime(daily_times[0], '%H:%M')).seconds
+        between_time = (
+            datetime.datetime.strptime(daily_times[1], "%H:%M") - datetime.datetime.strptime(daily_times[0], "%H:%M")
+        ).seconds
 
-    tz = pytz.timezone('Asia/Shanghai') if not timezone else pytz.timezone(timezone)
+    tz = pytz.timezone("Asia/Shanghai") if not timezone else pytz.timezone(timezone)
 
     while True:
-        if datetime.datetime.now(tz).strftime('%H:%M') in daily_times:
+        if datetime.datetime.now(tz).strftime("%H:%M") in daily_times:
             start = time.time()
-            if not excluded_week_days or datetime.datetime.now(tz).strftime('%a') not in excluded_week_days:
+            if not excluded_week_days or datetime.datetime.now(tz).strftime("%a") not in excluded_week_days:
                 task()
             # print(f"Task finished, time used: {time() - start} seconds")
             sleep_time = max(between_time - max(2 * (time.time() - start), 180), 0)

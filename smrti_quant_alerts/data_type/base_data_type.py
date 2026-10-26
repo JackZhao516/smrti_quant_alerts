@@ -1,5 +1,4 @@
 from __future__ import annotations
-from typing import Union, Optional, List
 from dataclasses import dataclass
 
 
@@ -9,9 +8,9 @@ class Tick:
     volume: float = 0.0
     open: float = 0.0
     close: float = 0.0
-    high: Optional[float] = None
-    low: Optional[float] = None
-    timestamp: Optional[int] = None
+    high: float | None = None
+    low: float | None = None
+    timestamp: int | None = None
 
     @property
     def amount(self) -> float:
@@ -28,35 +27,35 @@ class TradingSymbol:
     def __str__(self) -> str:
         return self._symbol
 
-    def __eq__(self, other: Union[str, TradingSymbol]) -> bool:
+    def __eq__(self, other: str | TradingSymbol) -> bool:
         if isinstance(other, self.__class__):
             return self._symbol == other._symbol
         elif isinstance(other, str):
             return self._symbol == other.upper()
         return False
 
-    def __lt__(self, other: Union[str, TradingSymbol]) -> bool:
+    def __lt__(self, other: str | TradingSymbol) -> bool:
         if isinstance(other, self.__class__):
             return self._symbol < other._symbol
         elif isinstance(other, str):
             return self._symbol < other.upper()
         return False
 
-    def __gt__(self, other: Union[str, TradingSymbol]) -> bool:
+    def __gt__(self, other: str | TradingSymbol) -> bool:
         if isinstance(other, self.__class__):
             return self._symbol > other._symbol
         elif isinstance(other, str):
             return self._symbol > other.upper()
         return False
 
-    def __le__(self, other: Union[str, TradingSymbol]) -> bool:
+    def __le__(self, other: str | TradingSymbol) -> bool:
         if isinstance(other, self.__class__):
             return self._symbol <= other._symbol
         elif isinstance(other, str):
             return self._symbol <= other.upper()
         return False
 
-    def __ge__(self, other: Union[str, TradingSymbol]) -> bool:
+    def __ge__(self, other: str | TradingSymbol) -> bool:
         if isinstance(other, self.__class__):
             return self._symbol >= other._symbol
         elif isinstance(other, str):
@@ -79,7 +78,7 @@ class TradingSymbol:
         return self._symbol
 
     @staticmethod
-    def get_symbol_object(symbol: str) -> Union[Optional[TradingSymbol], List[TradingSymbol]]:
+    def get_symbol_object(symbol: str) -> TradingSymbol | None | list[TradingSymbol]:
         raise NotImplementedError
 
     @classmethod

@@ -1,12 +1,12 @@
 import json
 import os
 import logging
-from typing import Dict, Any, List
+from typing import Any
 
 import pytz
 import datetime
 
-logging.basicConfig(level=logging.WARN, format='%(asctime)s - %(levelname)s - %(message)s')
+logging.basicConfig(level=logging.WARN, format="%(asctime)s - %(levelname)s - %(message)s")
 
 
 class Config:
@@ -56,33 +56,31 @@ class Config:
             if key not in self.TOKENS:
                 logging.error(f'token.json does not contain "{key}"')
                 exit(1)
-        if "TOKEN" not in self.TOKENS["TELEGRAMBOT"] or \
-                "TELEGRAM_IDS" not in self.TOKENS["TELEGRAMBOT"]:
-            logging.error("token.json does not contain "
-                          "TELEGRAMBOT.TOKEN or TELEGRAMBOT.TELEGRAM_IDS")
+        if "TOKEN" not in self.TOKENS["TELEGRAMBOT"] or "TELEGRAM_IDS" not in self.TOKENS["TELEGRAMBOT"]:
+            logging.error("token.json does not contain TELEGRAMBOT.TOKEN or TELEGRAMBOT.TELEGRAM_IDS")
             exit(1)
         if "FMP_API_KEY" not in self.TOKENS or "EODHD_API_KEY" not in self.TOKENS:
-            logging.warning('token.json does not contain FMP_API_KEY/EODHD_API_KEY '
-                            'cannot run "stock related alerts"')
+            logging.warning('token.json does not contain FMP_API_KEY/EODHD_API_KEY cannot run "stock related alerts"')
 
         if "PERPLEXITY_API_KEY" not in self.TOKENS or "OPENAI_API_KEY" not in self.TOKENS:
-            logging.warning('token.json does not contain PERPLEXITY_API_KEY '
-                            'cannot run "ai_analysis" for stock_alert')
+            logging.warning('token.json does not contain PERPLEXITY_API_KEY cannot run "ai_analysis" for stock_alert')
 
         if "GMAIL" not in self.TOKENS:
-            logging.warning('token.json does not contain GMAIL cannot send email')
+            logging.warning("token.json does not contain GMAIL cannot send email")
 
         if verbose:
-            logging.warning('"TELEGRAM_IDS" in token.json:\n'
-                            '"CG_SUM": alert_100, alert_300, alert_500, sequential\n'
-                            '"VOLUME_15M", "VOLUME_1H", "PRICE_15M", "PRICE_1H": price_volume\n'
-                            '"CG_MAR_CAP": market_cap\n'
-                            '"ALTS": alts\n'
-                            '"FUNDING_RATE": funding_rate\n'
-                            '"MEME": meme_alert\n'
-                            '"STOCK": stock_alert\n'
-                            '"CG_PRICE_INCREASE": price_increase\n'
-                            'Remember to fill in the Telegram channel/group ID for each alert type')
+            logging.warning(
+                '"TELEGRAM_IDS" in token.json:\n'
+                '"CG_SUM": alert_100, alert_300, alert_500, sequential\n'
+                '"VOLUME_15M", "VOLUME_1H", "PRICE_15M", "PRICE_1H": price_volume\n'
+                '"CG_MAR_CAP": market_cap\n'
+                '"ALTS": alts\n'
+                '"FUNDING_RATE": funding_rate\n'
+                '"MEME": meme_alert\n'
+                '"STOCK": stock_alert\n'
+                '"CG_PRICE_INCREASE": price_increase\n'
+                "Remember to fill in the Telegram channel/group ID for each alert type"
+            )
         logging.info("token.json validated")
 
     def _validate_configs(self) -> None:
@@ -90,11 +88,10 @@ class Config:
         validate configs.json
         """
         # every alert setting should contain these keys
-        alert_setting_keys = ["alert_input_args", "alert_params",
-                              "run_time_input_args", "database_name", "alert_type"]
+        alert_setting_keys = ["alert_input_args", "alert_params", "run_time_input_args", "database_name", "alert_type"]
         for alert_name, alert_setting in self.SETTINGS.items():
             for key in alert_setting_keys:
-                if key not in alert_setting.keys():
+                if key not in alert_setting:
                     logging.error(f'configs.json does not contain "{key}" for {alert_name}')
                     exit(1)
             alert_type = alert_setting["alert_type"]
@@ -102,43 +99,54 @@ class Config:
             if not alert_setting["database_name"]:
                 self.SETTINGS[alert_name]["database_name"] = alert_name
             if alert_type == "price_volume":
-                self._validate_individual_configs(["15m_volume_usd", "1h_volume_usd",
-                                                   "15m_price_change_percentage", "1h_price_change_percentage"],
-                                                  ["tg_types", "alert_types"],
-                                                  alert_setting, alert_name)
+                self._validate_individual_configs(
+                    ["15m_volume_usd", "1h_volume_usd", "15m_price_change_percentage", "1h_price_change_percentage"],
+                    ["tg_types", "alert_types"],
+                    alert_setting,
+                    alert_name,
+                )
             elif alert_type == "price_increase_alert":
-                self._validate_individual_configs([], ["top_range", "top_n", "timeframe", "tg_type"],
-                                                  alert_setting, alert_name)
+                self._validate_individual_configs(
+                    [], ["top_range", "top_n", "timeframe", "tg_type"], alert_setting, alert_name
+                )
             elif alert_type == "stock_price_outperformer":
-                self._validate_individual_configs([], ["tg_type", "timeframe_list", "email",
-                                                       "time_frame_sma_filter_ai_analysis",
-                                                       "newly_added_stock_ai_analysis",
-                                                       "growth_score_filter_ai_analysis"],
-                                                  alert_setting, alert_name)
+                self._validate_individual_configs(
+                    [],
+                    [
+                        "tg_type",
+                        "timeframe_list",
+                        "email",
+                        "time_frame_sma_filter_ai_analysis",
+                        "newly_added_stock_ai_analysis",
+                        "growth_score_filter_ai_analysis",
+                    ],
+                    alert_setting,
+                    alert_name,
+                )
             elif alert_type == "alts_alert":
-                self._validate_individual_configs([], ["tg_type"],
-                                                  alert_setting, alert_name)
+                self._validate_individual_configs([], ["tg_type"], alert_setting, alert_name)
             elif alert_type == "floating_shares":
-                self._validate_individual_configs([], ["tg_type", "symbols_file"],
-                                                  alert_setting, alert_name)
+                self._validate_individual_configs([], ["tg_type", "symbols_file"], alert_setting, alert_name)
             elif alert_type == "stock_screener":
-                self._validate_individual_configs([], ["market_cap_threshold", "email"],
-                                                  alert_setting, alert_name)
+                self._validate_individual_configs([], ["market_cap_threshold", "email"], alert_setting, alert_name)
             elif alert_type == "macd_alert":
-                self._validate_individual_configs([], ["timeframe_list", "symbols_file", "tg_type",
-                                                       "add_on_timeframe_list", "email", "xlsx"],
-                                                  alert_setting, alert_name)
+                self._validate_individual_configs(
+                    [],
+                    ["timeframe_list", "symbols_file", "tg_type", "add_on_timeframe_list", "email", "xlsx"],
+                    alert_setting,
+                    alert_name,
+                )
             elif alert_type in ["sequential", "alert_100", "alert_300", "alert_500", "meme_alert"]:
-                self._validate_individual_configs([], ["tg_type", "timeframe", "window", "alert_type",
-                                                       "alert_coins_info"],
-                                                  alert_setting, alert_name)
+                self._validate_individual_configs(
+                    [], ["tg_type", "timeframe", "window", "alert_type", "alert_coins_info"], alert_setting, alert_name
+                )
             elif alert_type == "market_cap":
                 self._validate_individual_configs([], ["top_n", "tg_type"], alert_setting, alert_name)
             elif alert_type == "funding_rate":
                 self._validate_individual_configs([], ["tg_type", "rate_threshold"], alert_setting, alert_name)
 
     @staticmethod
-    def _validate_run_time_input_args(run_time_input_args: Dict[str, Any], alert_name: str) -> None:
+    def _validate_run_time_input_args(run_time_input_args: dict[str, Any], alert_name: str) -> None:
         """
         validate the configs inside run_time_input_args
 
@@ -156,37 +164,46 @@ class Config:
                 exit(1)
             if key == "daily_times":
                 if not isinstance(value, list) and not isinstance(value, str):
-                    logging.error(f'configs.json contains "daily_times" not a list or str for {alert_name}'
-                                  f', in the format of ["00:00", "12:00"] or "00:00"')
+                    logging.error(
+                        f'configs.json contains "daily_times" not a list or str for {alert_name}'
+                        f', in the format of ["00:00", "12:00"] or "00:00"'
+                    )
                     exit(1)
                 try:
                     if isinstance(value, list):
                         for time in value:
-                            datetime.datetime.strptime(time, '%H:%M')
+                            datetime.datetime.strptime(time, "%H:%M")
                     else:
-                        datetime.datetime.strptime(value, '%H:%M')
+                        datetime.datetime.strptime(value, "%H:%M")
                 except ValueError:
-                    logging.error(f'configs.json contains "daily_times" not in the format of "HH:MM" for {alert_name}'
-                                  f', in the format of ["00:00", "12:00"] or "00:00"')
+                    logging.error(
+                        f'configs.json contains "daily_times" not in the format of "HH:MM" for {alert_name}'
+                        f', in the format of ["00:00", "12:00"] or "00:00"'
+                    )
                     exit(1)
 
             if key == "excluded_week_days":
                 if not isinstance(value, list):
-                    logging.error(f'"excluded_week_days" should be a list for {alert_name}, '
-                                  f'in the format of ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]')
+                    logging.error(
+                        f'"excluded_week_days" should be a list for {alert_name}, '
+                        f'in the format of ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]'
+                    )
                     exit(1)
                 for day in value:
                     if day not in ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]:
-                        logging.error(f'configs.json contains unknown week day "{day}" for {alert_name}, '
-                                      f'in the format of ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]')
+                        logging.error(
+                            f'configs.json contains unknown week day "{day}" for {alert_name}, '
+                            f'in the format of ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]'
+                        )
                         exit(1)
             if key == "timezone" and value and value not in pytz.all_timezones:
                 logging.error(f'configs.json contains unknown timezone "{value}" for {alert_name}')
                 exit(1)
 
     @staticmethod
-    def _validate_individual_configs(param_keys: List[str], input_args_keys: List[str],
-                                     alert_settings: Dict[str, Any], alert_name: str) -> None:
+    def _validate_individual_configs(
+        param_keys: list[str], input_args_keys: list[str], alert_settings: dict[str, Any], alert_name: str
+    ) -> None:
         """
         validate price_volume alert configs
 
@@ -198,13 +215,15 @@ class Config:
         alert_params = alert_settings["alert_params"]
         for param in param_keys:
             if param not in alert_params:
-                logging.error(f'configs.json does not contain "{param}" under "alert_params", '
-                              f'cannot run "{alert_name}" alerts')
+                logging.error(
+                    f'configs.json does not contain "{param}" under "alert_params", cannot run "{alert_name}" alerts'
+                )
                 exit(1)
         for key in input_args_keys:
             if key not in alert_settings["alert_input_args"]:
-                logging.error(f'configs.json does not contain "{key}" under "alert_input_args", '
-                              f'cannot run "{alert_name}" alerts')
+                logging.error(
+                    f'configs.json does not contain "{key}" under "alert_input_args", cannot run "{alert_name}" alerts'
+                )
                 exit(1)
 
     def reload_settings(self) -> None:

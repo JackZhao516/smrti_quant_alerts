@@ -7,7 +7,6 @@ from datetime import datetime, timedelta
 
 import pandas as pd
 import numpy as np
-from typing import List, Dict, Tuple
 from collections import defaultdict
 
 from smrti_quant_alerts.email_api import EmailApi
@@ -23,10 +22,17 @@ logging.basicConfig(level=logging.INFO)
 class MACDAlert(BaseAlert):
     TIMEFRAME_DAYS = {"1D": 1, "2D": 2, "3D": 3, "1W": 5, "2W": 10, "3W": 15, "1M": 20}
 
-    def __init__(self, alert_name: str, timeframe_list: List[str], symbols_file: str,
-                 add_on_timeframe_list: List[str] = None, email: bool = False,
-                 stock_screener_alert_db_name: str = None,
-                 xlsx: bool = False, tg_type: str = "TEST") -> None:
+    def __init__(
+        self,
+        alert_name: str,
+        timeframe_list: list[str],
+        symbols_file: str,
+        add_on_timeframe_list: list[str] = None,
+        email: bool = False,
+        stock_screener_alert_db_name: str = None,
+        xlsx: bool = False,
+        tg_type: str = "TEST",
+    ) -> None:
         """
         either get the list of symbols from the file or from the stock screener alert db
         :param alert_name: alert name
@@ -53,7 +59,7 @@ class MACDAlert(BaseAlert):
 
         self._excel_file_paths = []
 
-    def _parse_symbols_file(self, file_name: str) -> List[Tuple[TradingSymbol, TradingSymbol]]:
+    def _parse_symbols_file(self, file_name: str) -> list[tuple[TradingSymbol, TradingSymbol]]:
         """
         parse the symbols file
 
@@ -61,15 +67,16 @@ class MACDAlert(BaseAlert):
         :return: list of symbol pairs
         """
         symbols = []
-        with open(file_name, "r") as f:
+        with open(file_name) as f:
             reader = csv.DictReader(f)
             for row in reader:
                 if not row["sub_sector"]:
                     row["sub_sector"] = None
                 # stock does not care about the quote currency
                 left_symbol = get_class(row["type_left"])(row["symbol_left"], "USDT")
-                right_symbol = get_class(row["type_right"])(row["symbol_right"], "USDT") \
-                    if row["symbol_right"] else None
+                right_symbol = (
+                    get_class(row["type_right"])(row["symbol_right"], "USDT") if row["symbol_right"] else None
+                )
                 symbol = (left_symbol, right_symbol)
                 symbols.append(symbol)
                 if self._sectors[row["sector"]].get(row["sub_sector"]):
@@ -79,8 +86,9 @@ class MACDAlert(BaseAlert):
                 self._stock_pair_name[symbol] = row["name"]
         return symbols
 
-    def _get_stock_screener_alert_results(self, stock_screener_alert_db_name: str) -> \
-            List[Tuple[TradingSymbol, TradingSymbol]]:
+    def _get_stock_screener_alert_results(
+        self, stock_screener_alert_db_name: str
+    ) -> list[tuple[TradingSymbol, TradingSymbol]]:
         """
         Get stock screener alert results
         :param stock_screener_alert_db_name: stock screener alert db name
@@ -111,15 +119,15 @@ class MACDAlert(BaseAlert):
             return []
 
     @staticmethod
-    def _encode_symbol_pair(symbol_pair: Tuple[TradingSymbol, TradingSymbol]) -> str:
+    def _encode_symbol_pair(symbol_pair: tuple[TradingSymbol, TradingSymbol]) -> str:
         """
         Encode the symbol pair
         """
         return f"{symbol_pair[0]}/{symbol_pair[1]}" if symbol_pair[1] else str(symbol_pair[0])
 
-    def _get_past_number_of_macd(self, symbol_pairs: List[Tuple[TradingSymbol, TradingSymbol]],
-                                 timeframe_list: List[str], num_of_macd: int = 14) \
-            -> Dict[str, Dict[str, List[Tuple[str, float]]]]:
+    def _get_past_number_of_macd(
+        self, symbol_pairs: list[tuple[TradingSymbol, TradingSymbol]], timeframe_list: list[str], num_of_macd: int = 14
+    ) -> dict[str, dict[str, list[tuple[str, float]]]]:
         """
         Get the past number of MACD values
 
@@ -129,17 +137,19 @@ class MACDAlert(BaseAlert):
         for symbol_pair in symbol_pairs:
             for timeframe in timeframe_list:
                 left_close_prices, right_close_prices = self._get_left_right_close_prices(symbol_pair, timeframe)
-                res = self._get_macd_for_stocks_or_cryptos(left_close_prices, right_close_prices,
-                                                           timeframe, num_of_macd)
+                res = self._get_macd_for_stocks_or_cryptos(
+                    left_close_prices, right_close_prices, timeframe, num_of_macd
+                )
                 macd_dict[self._encode_symbol_pair(symbol_pair)][timeframe] = res
         return macd_dict
 
     @staticmethod
-    def _get_macd_for_stocks_or_cryptos(left_close_prices: List[Tuple[str, float]],
-                                        right_close_prices: List[Tuple[str, float]],
-                                        timeframe: str = "1D",
-                                        num_of_macd: int = 14) \
-            -> List[Tuple[str, float]]:
+    def _get_macd_for_stocks_or_cryptos(
+        left_close_prices: list[tuple[str, float]],
+        right_close_prices: list[tuple[str, float]],
+        timeframe: str = "1D",
+        num_of_macd: int = 14,
+    ) -> list[tuple[str, float]]:
         """
         Get the MACD values for the stocks
 
@@ -153,22 +163,23 @@ class MACDAlert(BaseAlert):
         if not right_close_prices:
             left_close_prices = [x for i, x in enumerate(left_close_prices) if i % int(timeframe[:-1]) == 0]
             macds = calculate_macd([close_price for _, close_price in left_close_prices[::-1]])[:num_of_macd]
-            return [(date, macd) for date, macd in zip([date for date, _ in left_close_prices], macds)]
+            return [(date, macd) for date, macd in zip([date for date, _ in left_close_prices], macds, strict=False)]
 
         left_close_prices = [x for i, x in enumerate(left_close_prices) if i % int(timeframe[:-1]) == 0]
         right_close_prices = [x for i, x in enumerate(right_close_prices) if i % int(timeframe[:-1]) == 0]
 
         close_prices = []
         dates = []
-        for left_price, right_price in zip(left_close_prices, right_close_prices):
+        for left_price, right_price in zip(left_close_prices, right_close_prices, strict=False):
             if right_price[1] != 0:
                 close_prices.append(left_price[1] / right_price[1])
                 dates.append(left_price[0])
         macds = calculate_macd(close_prices[::-1])[:num_of_macd]
-        return [(date, macd) for date, macd in zip(dates, macds)]
+        return [(date, macd) for date, macd in zip(dates, macds, strict=False)]
 
-    def _get_left_right_close_prices(self, symbol_pair: Tuple[TradingSymbol, TradingSymbol], timeframe: str) \
-            -> Tuple[List[Tuple[str, float]], List[Tuple[str, float]]]:
+    def _get_left_right_close_prices(
+        self, symbol_pair: tuple[TradingSymbol, TradingSymbol], timeframe: str
+    ) -> tuple[list[tuple[str, float]], list[tuple[str, float]]]:
         """
         Get the close prices for the left and right symbols
         """
@@ -178,50 +189,66 @@ class MACDAlert(BaseAlert):
 
         if isinstance(symbol_pair[0], StockSymbol):
             left_close_prices = self._stock_api.get_stock_close_prices_by_timeframe_num_of_ticks(
-                symbol_pair[0], timeframe, num_of_sticks)
+                symbol_pair[0], timeframe, num_of_sticks
+            )
             if timeframe[-1] == "D":
                 left_close_prices = self._enrich_close_prices_with_previous_day_price(left_close_prices)
             if isinstance(symbol_pair[1], StockSymbol):
                 right_close_prices = self._stock_api.get_stock_close_prices_by_timeframe_num_of_ticks(
-                    symbol_pair[1], timeframe, num_of_sticks)
+                    symbol_pair[1], timeframe, num_of_sticks
+                )
                 if timeframe[-1] == "D":
                     right_close_prices = self._enrich_close_prices_with_previous_day_price(right_close_prices)
             elif isinstance(symbol_pair[1], BinanceExchange):
                 right_close_prices = []
                 for date, _ in left_close_prices:
                     time.sleep(0.2)
-                    right_close_prices.append((date, self._binance_api.get_exchange_close_price_on_timestamp(
-                        symbol_pair[1], get_stock_market_close_timestamp_from_date(date) - 60000)))
+                    right_close_prices.append(
+                        (
+                            date,
+                            self._binance_api.get_exchange_close_price_on_timestamp(
+                                symbol_pair[1], get_stock_market_close_timestamp_from_date(date) - 60000
+                            ),
+                        )
+                    )
                     if right_close_prices[-1][1] == 0:
                         right_close_prices.pop()
                         break
         else:
             if isinstance(symbol_pair[1], StockSymbol):
                 right_close_prices = self._stock_api.get_stock_close_prices_by_timeframe_num_of_ticks(
-                    symbol_pair[1], timeframe, num_of_sticks)
+                    symbol_pair[1], timeframe, num_of_sticks
+                )
                 if timeframe[-1] == "D":
                     right_close_prices = self._enrich_close_prices_with_previous_day_price(right_close_prices)
 
                 for date, _ in right_close_prices:
                     time.sleep(0.2)
-                    left_close_prices.append((date, self._binance_api.get_exchange_close_price_on_timestamp(
-                        symbol_pair[0], get_stock_market_close_timestamp_from_date(date) - 60000)))
+                    left_close_prices.append(
+                        (
+                            date,
+                            self._binance_api.get_exchange_close_price_on_timestamp(
+                                symbol_pair[0], get_stock_market_close_timestamp_from_date(date) - 60000
+                            ),
+                        )
+                    )
                     if left_close_prices[-1][1] == 0:
                         left_close_prices.pop()
                         break
             else:
                 left_close_prices = self._binance_api.get_exchange_close_prices_by_timeframe_num_of_ticks(
-                    symbol_pair[0], timeframe, num_of_sticks)
+                    symbol_pair[0], timeframe, num_of_sticks
+                )
                 time.sleep(0.2)
 
                 right_close_prices = self._binance_api.get_exchange_close_prices_by_timeframe_num_of_ticks(
-                    symbol_pair[1], timeframe, num_of_sticks)
+                    symbol_pair[1], timeframe, num_of_sticks
+                )
 
         return left_close_prices, right_close_prices
 
     @staticmethod
-    def _enrich_close_prices_with_previous_day_price(
-            close_prices: List[Tuple[str, float]]) -> List[Tuple[str, float]]:
+    def _enrich_close_prices_with_previous_day_price(close_prices: list[tuple[str, float]]) -> list[tuple[str, float]]:
         """
         Enrich the close prices with the previous day price
 
@@ -247,8 +274,8 @@ class MACDAlert(BaseAlert):
 
     @staticmethod
     def _enrich_close_prices_with_previous_day_price_and_second_ticker(
-            close_prices: List[Tuple[str, float]],
-            second_close_prices: List[Tuple[str, float]]) -> List[Tuple[str, float]]:
+        close_prices: list[tuple[str, float]], second_close_prices: list[tuple[str, float]]
+    ) -> list[tuple[str, float]]:
         """
         Enrich the close prices with the previous day price
 
@@ -278,7 +305,7 @@ class MACDAlert(BaseAlert):
         return res
 
     @staticmethod
-    def _generate_xlsx(symbol_pair_encoded: str, macd_dict: Dict[str, List[Tuple[str, float]]]) -> str:
+    def _generate_xlsx(symbol_pair_encoded: str, macd_dict: dict[str, list[tuple[str, float]]]) -> str:
         """
         Generate the csv file for the MACD values
 
@@ -296,9 +323,13 @@ class MACDAlert(BaseAlert):
                 df.to_excel(writer, sheet_name=timeframe, index=False)
         return filename
 
-    def _process_timeframe_for_changed_macd(self, symbol_pair: Tuple[TradingSymbol, TradingSymbol],
-                                            changed_timeframes: List[str], positive_timeframes: List[str],
-                                            negative_timeframes: List[str]) -> str:
+    def _process_timeframe_for_changed_macd(
+        self,
+        symbol_pair: tuple[TradingSymbol, TradingSymbol],
+        changed_timeframes: list[str],
+        positive_timeframes: list[str],
+        negative_timeframes: list[str],
+    ) -> str:
         """
         Process the timeframe for changed MACD
 
@@ -310,8 +341,9 @@ class MACDAlert(BaseAlert):
         :return: processed timeframe string
         """
         if self._add_on_timeframe_list:
-            add_on_timeframe_macd = self._get_past_number_of_macd(
-                [symbol_pair], self._add_on_timeframe_list)[self._encode_symbol_pair(symbol_pair)]
+            add_on_timeframe_macd = self._get_past_number_of_macd([symbol_pair], self._add_on_timeframe_list)[
+                self._encode_symbol_pair(symbol_pair)
+            ]
             for timeframe, values in add_on_timeframe_macd.items():
                 if not values or np.isnan(values[0][1]):
                     continue
@@ -329,9 +361,13 @@ class MACDAlert(BaseAlert):
 
         return f"{pos_str} {neg_str}"
 
-    def _generate_individual_symbol_xlsx_content(self, symbol_pair: Tuple[TradingSymbol, TradingSymbol],
-                                                 rising_to_falling: List[str], falling_to_rising: List[str],
-                                                 macd_dict: Dict[str, Dict[str, List[Tuple[str, float]]]]) -> List[str]:
+    def _generate_individual_symbol_xlsx_content(
+        self,
+        symbol_pair: tuple[TradingSymbol, TradingSymbol],
+        rising_to_falling: list[str],
+        falling_to_rising: list[str],
+        macd_dict: dict[str, dict[str, list[tuple[str, float]]]],
+    ) -> list[str]:
         """
         Generate the individual symbol content
 
@@ -365,20 +401,22 @@ class MACDAlert(BaseAlert):
                 if previous_macd > 0:
                     r_to_f.append(timeframe)
             if current_macd * previous_macd < 0:
-                res[0] += f" *"
+                res[0] += " *"
         if r_to_f:
             rising_to_falling.append(
                 f"{space}·{symbol_pair_encoded}{space}{r_to_f}<br>"
                 f"{space * 2}-{space}{self._process_timeframe_for_changed_macd(symbol_pair, r_to_f, pos, neg)}<br>"
-                f"{space * 2}{space}{self._stock_pair_name[symbol_pair]}<br>")
+                f"{space * 2}{space}{self._stock_pair_name[symbol_pair]}<br>"
+            )
         if f_to_r:
             falling_to_rising.append(
                 f"{space}·{symbol_pair_encoded}{space}{f_to_r}<br>"
                 f"{space * 2}-{space}{self._process_timeframe_for_changed_macd(symbol_pair, f_to_r, pos, neg)}<br>"
-                f"{space * 2}{space}{self._stock_pair_name[symbol_pair]}<br>")
+                f"{space * 2}{space}{self._stock_pair_name[symbol_pair]}<br>"
+            )
         return res
 
-    def _generate_email_content(self, macd_dict: Dict[str, Dict[str, List[Tuple[str, float]]]]) -> Tuple[str, str]:
+    def _generate_email_content(self, macd_dict: dict[str, dict[str, list[tuple[str, float]]]]) -> tuple[str, str]:
         """
         Generate the email content
 
@@ -395,15 +433,17 @@ class MACDAlert(BaseAlert):
                     res = [["", *self._timeframe_list, "name"]]
                     for symbol_pair in symbol_pairs:
                         row = self._generate_individual_symbol_xlsx_content(
-                            symbol_pair, rising_to_falling, falling_to_rising, macd_dict)
+                            symbol_pair, rising_to_falling, falling_to_rising, macd_dict
+                        )
                         res.append([*row, self._stock_pair_name[symbol_pair]])
                     df = pd.DataFrame(res, dtype=str)
                     if sub_sector is None or sub_sector == "":
                         sub_sector = "others"
                     df.to_excel(writer, sheet_name=sub_sector, header=False, index=False)
 
-        return "<b>Summary</b><br><br>" + "<br>".join(rising_to_falling) + "<br><br>" + \
-               "<br>".join(falling_to_rising), file_name
+        return "<b>Summary</b><br><br>" + "<br>".join(rising_to_falling) + "<br><br>" + "<br>".join(
+            falling_to_rising
+        ), file_name
 
     def run(self) -> None:
         """
@@ -422,8 +462,9 @@ class MACDAlert(BaseAlert):
         # send email
         if self._email:
             name_prefix = "Pair " if not self._use_stock_screener_symbols else ""
-            self._email_api.send_email(name_prefix + self._alert_name, email_content, [], self._excel_file_paths,
-                                       user_html=True)
+            self._email_api.send_email(
+                name_prefix + self._alert_name, email_content, [], self._excel_file_paths, user_html=True
+            )
 
         # send telegram message
         self._tg_bot.send_message(email_content)
@@ -435,8 +476,14 @@ class MACDAlert(BaseAlert):
 if __name__ == "__main__":
     # macd_symbols_file = "macd_symbols_example.csv"
     macd_symbols_file = "macd_symbols.csv"
-    alert = MACDAlert("macd_alert_daily", ["1D", "2D", "3D"],
-                      "", ["1W", "1M"],
-                      email=True, xlsx=False, tg_type="TEST",
-                      stock_screener_alert_db_name="stock_screener")
+    alert = MACDAlert(
+        "macd_alert_daily",
+        ["1D", "2D", "3D"],
+        "",
+        ["1W", "1M"],
+        email=True,
+        xlsx=False,
+        tg_type="TEST",
+        stock_screener_alert_db_name="stock_screener",
+    )
     alert.run()

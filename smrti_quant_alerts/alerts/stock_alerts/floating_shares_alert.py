@@ -3,7 +3,6 @@ import uuid
 import os
 import time
 import threading
-from typing import List, Tuple, Dict, Union
 from collections import defaultdict
 
 import pandas as pd
@@ -42,7 +41,7 @@ class FloatingSharesAlert(BaseAlert, StockApi):
         """
         if not symbols_file:
             return
-        with open(symbols_file, "r") as f:
+        with open(symbols_file) as f:
             self._symbols = [line.strip() for line in f.readlines()]
 
     def _load_stocks_info(self) -> None:
@@ -52,8 +51,9 @@ class FloatingSharesAlert(BaseAlert, StockApi):
         stocks = self.get_nasdaq_list() + self.get_nyse_list()
         self.get_stock_info(stocks)
 
-    def _generate_floating_shares(self, symbols: List[StockSymbol]) \
-            -> Tuple[str, Dict[StockSymbol, Dict[str, FinancialMetricsData]]]:
+    def _generate_floating_shares(
+        self, symbols: list[StockSymbol]
+    ) -> tuple[str, dict[StockSymbol, dict[str, FinancialMetricsData]]]:
         """
         Generate outstanding shares for the list of symbols
 
@@ -86,7 +86,8 @@ class FloatingSharesAlert(BaseAlert, StockApi):
         df.to_csv(self._file_8k_summary_filename, index=False)
 
     def _generate_floating_shares_summary_xlsx(
-            self, floating_shares: Dict[StockSymbol, Dict[str, FinancialMetricsData]]) -> None:
+        self, floating_shares: dict[StockSymbol, dict[str, FinancialMetricsData]]
+    ) -> None:
         """
         Generate the floating shares summary xlsx
         """
@@ -111,14 +112,16 @@ class FloatingSharesAlert(BaseAlert, StockApi):
         self._generate_file_8k_summary_csv()
         # email content
         content = f"Filter by symbols: {self._symbols}" if self._symbols else ""
-        content_str, floating_shares = \
-            self._generate_floating_shares([StockSymbol(symbol=s) for s in sorted(self._symbols)])
+        content_str, floating_shares = self._generate_floating_shares(
+            [StockSymbol(symbol=s) for s in sorted(self._symbols)]
+        )
         content += f"\n\n{content_str}"
         self._generate_floating_shares_summary_xlsx(floating_shares)
 
         # send email
-        self._email_api.send_email(self._alert_name, content,
-                                   [self._file_8k_summary_filename], [self._floating_shares_summary_filename])
+        self._email_api.send_email(
+            self._alert_name, content, [self._file_8k_summary_filename], [self._floating_shares_summary_filename]
+        )
 
         # send telegram message
         self._tg_bot.send_message(f"{self._alert_name}\n{content}")
