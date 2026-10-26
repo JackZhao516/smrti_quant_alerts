@@ -10,12 +10,9 @@ from smrti_quant_alerts.settings import Config
 
 
 class TelegramBot:
-    tokens = Config().TOKENS["TELEGRAMBOT"]
-    TOKEN = tokens["TOKEN"]
-    TELEGRAM_IDS = tokens["TELEGRAM_IDS"]
     PWD = os.path.join(Config.PROJECT_DIR, "runtime_data")
 
-    def __init__(self, tg_type: str = "CG_ALERT", daemon: bool = True) -> None:
+    def __init__(self, tg_type: str = "CG_ALERT", daemon: bool = True, tokens: dict[str, Any] | None = None) -> None:
         """
         TelegramBot class for sending message to telegram group via bot
 
@@ -26,8 +23,12 @@ class TelegramBot:
         ::param alert_type: "CG_ALERT", "CG_SUM", "TEST", "VOLUME", "PRICE", etc.
         ::param daemon: True if letting the TelegramBot handle the 20 msg/min limit,
                         False if you want to handle the limit yourself
+        ::param tokens: telegram token config; defaults to Config().TOKENS["TELEGRAMBOT"]
 
         """
+        tokens = tokens if tokens is not None else Config().TOKENS["TELEGRAMBOT"]
+        self.TOKEN = tokens["TOKEN"]
+        self.TELEGRAM_IDS = tokens["TELEGRAM_IDS"]
         self.telegram_chat_id = self.TELEGRAM_IDS[tg_type]
 
         # message queue

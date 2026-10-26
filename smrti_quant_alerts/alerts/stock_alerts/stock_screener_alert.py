@@ -23,6 +23,7 @@ class StockScreenerAlert(BaseAlert, StockApi):
         top_performer_exclude_sectors: list[str] = None,
         email: bool = True,
         market_cap_threshold: int = 10**8,
+        start_threads: bool = True,
     ) -> None:
         BaseAlert.__init__(self, alert_name)
         StockApi.__init__(self)
@@ -39,13 +40,14 @@ class StockScreenerAlert(BaseAlert, StockApi):
         self._stock_price_top_performer_by_gics_sector_timeframe = {}
         self._newly_added_stocks = set()
 
-        self._get_stock_info_thread = threading.Thread(target=self._get_all_stock_info)
-        self._get_stock_info_thread.start()
+        if start_threads:
+            self._get_stock_info_thread = threading.Thread(target=self._get_all_stock_info)
+            self._get_stock_info_thread.start()
 
-        self._get_price_top_performer_thread = threading.Thread(
-            target=self.get_top_percent_stock_price_top_performer_by_gics_sector_timeframe
-        )
-        self._get_price_top_performer_thread.start()
+            self._get_price_top_performer_thread = threading.Thread(
+                target=self.get_top_percent_stock_price_top_performer_by_gics_sector_timeframe
+            )
+            self._get_price_top_performer_thread.start()
 
     def _get_stocks(self) -> list[StockSymbol]:
         """

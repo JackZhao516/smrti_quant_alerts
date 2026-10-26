@@ -14,6 +14,23 @@ class TestCryptoCoingeckoApi(unittest.TestCase):
     def setUp(self) -> None:
         self.coingecko_api = CoingeckoApi()
 
+    def test_injected_client(self) -> None:
+        client = mock.Mock()
+
+        coingecko_api = CoingeckoApi(api_key="test-key", client=client)
+
+        self.assertIs(coingecko_api._cg, client)
+        self.assertEqual(coingecko_api.COINGECKO_API_KEY, "test-key")
+
+    def test_injected_client_does_not_require_config(self) -> None:
+        client = mock.Mock()
+
+        with mock.patch.object(Config, "__init__", side_effect=AssertionError("Config should not be loaded")):
+            coingecko_api = CoingeckoApi(client=client)
+
+        self.assertIs(coingecko_api._cg, client)
+        self.assertIsNone(coingecko_api.COINGECKO_API_KEY)
+
     def test_get_exclude_coins(self) -> None:
         Config.PROJECT_DIR = os.path.dirname(os.path.abspath(__file__))
         CoingeckoCoin.symbol_id_map = defaultdict(set)

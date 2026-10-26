@@ -16,11 +16,14 @@ logging.basicConfig(level=logging.INFO)
 
 
 class FloatingSharesAlert(BaseAlert, StockApi):
-    def __init__(self, alert_name: str, symbols_file: str = None, tg_type: str = "TEST") -> None:
+    def __init__(
+        self, alert_name: str, symbols_file: str = None, tg_type: str = "TEST", start_threads: bool = True
+    ) -> None:
         """
         :param alert_name: alert name
         :param symbols_file: stock symbols file
         :param tg_type: telegram type
+        :param start_threads: start background loading threads; disable in tests
         """
         BaseAlert.__init__(self, alert_name, tg_type)
         StockApi.__init__(self)
@@ -30,8 +33,9 @@ class FloatingSharesAlert(BaseAlert, StockApi):
         self._file_8k_summary_filename = f"file_8k_summary_{uuid.uuid4()}.csv"
         self._floating_shares_summary_filename = f"floating_shares_{uuid.uuid4()}.xlsx"
         self._load_symbols(symbols_file)
-        self._load_stocks_info_thread = threading.Thread(target=self._load_stocks_info)
-        self._load_stocks_info_thread.start()
+        if start_threads:
+            self._load_stocks_info_thread = threading.Thread(target=self._load_stocks_info)
+            self._load_stocks_info_thread.start()
 
     def _load_symbols(self, symbols_file: str) -> None:
         """

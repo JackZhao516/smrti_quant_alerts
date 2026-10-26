@@ -2,7 +2,7 @@ import unittest
 import os
 from unittest.mock import patch
 
-from smrti_quant_alerts.db import init_database_runtime
+from smrti_quant_alerts.db import close_database, init_database_runtime, is_database_runtime_initialized
 from smrti_quant_alerts.settings import Config
 import contextlib
 
@@ -24,3 +24,11 @@ class TestDatabase(unittest.TestCase):
 
         self.delete_dir()
         Config.PROJECT_DIR = tmp
+
+
+def test_close_database_resets_proxy(runtime_database) -> None:
+    assert is_database_runtime_initialized()
+
+    close_database()
+
+    assert not is_database_runtime_initialized()

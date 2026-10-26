@@ -20,8 +20,6 @@ warnings.filterwarnings("ignore", category=RuntimeWarning)
 
 
 class StockApi:
-    FMP_API_KEY = Config.TOKENS["FMP_API_KEY"]
-    EODHD_API_KEY = Config.TOKENS["EODHD_API_KEY"]
     FMP_API_URL = Config.API_ENDPOINTS["FMP_API_URL"]
     EODHD_API_URL = Config.API_ENDPOINTS["EODHD_API_URL"]
 
@@ -43,7 +41,13 @@ class StockApi:
     }
     timeframe_dict_reverse = {v: k for k, v in timeframe_dict.items()}
 
-    def __init__(self) -> None:
+    def __init__(self, config: Config | None = None) -> None:
+        config = config if config is not None else Config()
+        self.FMP_API_KEY = config.TOKENS["FMP_API_KEY"]
+        self.EODHD_API_KEY = config.TOKENS["EODHD_API_KEY"]
+        self.FMP_API_URL = config.API_ENDPOINTS["FMP_API_URL"]
+        self.EODHD_API_URL = config.API_ENDPOINTS["EODHD_API_URL"]
+        self.PWD = config.PROJECT_DIR
         if not is_database_runtime_initialized():
             init_database_runtime("test.db")
 
