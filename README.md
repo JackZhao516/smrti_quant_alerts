@@ -39,6 +39,12 @@ Alerts are sent to [Telegram](https://telegram.org/) groups/channels.
 ## Test
     ./scripts/testit.sh
 
+## Lint
+    ruff check .
+    ruff format --check .
+
+Install the git hooks with `pre-commit install` to run Ruff before each commit.
+
 ## Clean Up
     ./scripts/env_clean.sh
 
