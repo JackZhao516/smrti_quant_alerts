@@ -1,9 +1,9 @@
 from setuptools import setup
 
 setup(
-    name='smrti_quant_alerts',
-    version='0.9.0',
-    packages=['smrti_quant_alerts'],
+    name="smrti_quant_alerts",
+    version="0.9.0",
+    packages=["smrti_quant_alerts"],
     include_package_data=True,
     install_requires=[
         "TA-Lib>=0.6.4",
@@ -21,6 +21,6 @@ setup(
         "fpdf2==2.7.9",
         "pycodestyle",
         "pytest",
-        "pytest-cov"
+        "pytest-cov",
     ],
 )

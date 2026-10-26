@@ -2,6 +2,7 @@
 This script is used to send a weekly report of newly deleted and newly added
 top n market cap coins
 """
+
 import time
 import logging
 from collections import defaultdict
@@ -41,14 +42,16 @@ class CoingeckoMarketCapAlert(BaseAlert, CoingeckoApi):
                     if coin not in cur_set:
                         added_list.append(coin)
                 self._top_n_list[n] = new_list
-            self._tg_bot.send_message(f"Top {n} Market Cap Report: \n"
-                                      f"Deleted: {deleted_list}\n"
-                                      f"Added: {added_list}\n"
-                                      f"(Added in market cap desc order)")
+            self._tg_bot.send_message(
+                f"Top {n} Market Cap Report: \n"
+                f"Deleted: {deleted_list}\n"
+                f"Added: {added_list}\n"
+                f"(Added in market cap desc order)"
+            )
             time.sleep(5)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     nums = [100, 200, 300, 400, 500]
     cmc_alert = CoingeckoMarketCapAlert(alert_name="market_cap", top_n=nums, tg_type="TEST")
     cmc_alert.run()

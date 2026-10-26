@@ -60,8 +60,14 @@ def get_stock_market_close_timestamp_from_date(date: str) -> int:
     :return: timestamp in ms
     """
     timezone_utc = pytz.timezone("UTC")
-    return int(timezone_utc.localize(datetime.datetime.strptime(
-        date, "%Y-%m-%d")).replace(hour=23, minute=59, second=59).timestamp()) * 1000
+    return (
+        int(
+            timezone_utc.localize(datetime.datetime.strptime(date, "%Y-%m-%d"))
+            .replace(hour=23, minute=59, second=59)
+            .timestamp()
+        )
+        * 1000
+    )
 
 
 def get_date_from_timestamp(timestamp: int) -> str:
@@ -75,8 +81,9 @@ def get_date_from_timestamp(timestamp: int) -> str:
     return datetime.datetime.fromtimestamp(timestamp / 1000, timezone).strftime("%Y-%m-%d")
 
 
-def calculate_macd(close: list[float], fastperiod: int = 12,
-                   slowperiod: int = 26, signalperiod: int = 9) -> list[float]:
+def calculate_macd(
+    close: list[float], fastperiod: int = 12, slowperiod: int = 26, signalperiod: int = 9
+) -> list[float]:
     """
     calculate MACD histogram
 

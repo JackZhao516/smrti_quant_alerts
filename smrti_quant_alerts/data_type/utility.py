@@ -9,8 +9,13 @@ def get_class(symbol_type: str) -> type[TradingSymbol] | None:
     """
     Get the class object for the given symbol type.
     """
-    name_class_object_map = defaultdict(None, {"BinanceExchange": BinanceExchange,
-                                               "CoingeckoCoin": CoingeckoCoin,
-                                               "StockSymbol": StockSymbol,
-                                               "TradingSymbol": TradingSymbol})
+    name_class_object_map = defaultdict(
+        None,
+        {
+            "BinanceExchange": BinanceExchange,
+            "CoingeckoCoin": CoingeckoCoin,
+            "StockSymbol": StockSymbol,
+            "TradingSymbol": TradingSymbol,
+        },
+    )
     return name_class_object_map[symbol_type]

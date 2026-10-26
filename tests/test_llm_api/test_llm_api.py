@@ -36,9 +36,10 @@ class TestLLMApi(unittest.TestCase):
     def test_build_chat_message(self) -> None:
         system_message = "test_system_message"
         user_message = "test_user_message"
-        self.assertEqual(self.perplexity_api.build_chat_message(system_message, user_message),
-                         [{"role": "system", "content": "test_system_message"},
-                         {"role": "user", "content": "test_user_message"}])
+        self.assertEqual(
+            self.perplexity_api.build_chat_message(system_message, user_message),
+            [{"role": "system", "content": "test_system_message"}, {"role": "user", "content": "test_user_message"}],
+        )
 
     def test_get_max_timeframe(self) -> None:
         self.assertEqual(self.perplexity_api._get_max_timeframe([]), "")

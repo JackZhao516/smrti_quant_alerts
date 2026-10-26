@@ -20,8 +20,14 @@ class EmailApi:
         self.password = password if password else self.email_tokens["PASSWORD"]
 
     @error_handling("email", default_val=None)
-    def send_email(self, subject: str, body: str, csv_file_names: list[str] = None,
-                   pdf_or_xlsx_file_names: Iterable[str] = None, user_html: bool = False) -> None:
+    def send_email(
+        self,
+        subject: str,
+        body: str,
+        csv_file_names: list[str] = None,
+        pdf_or_xlsx_file_names: Iterable[str] = None,
+        user_html: bool = False,
+    ) -> None:
         """
         send email with message and csv file
 
@@ -37,7 +43,7 @@ class EmailApi:
         message = MIMEMultipart("alternative")
         message["Subject"] = subject
         message["From"] = self.sender_email
-        message["To"] = ','.join(self.receiver_emails)
+        message["To"] = ",".join(self.receiver_emails)
         message.attach(MIMEText(body, "html" if user_html else "plain"))
 
         if csv_file_names:

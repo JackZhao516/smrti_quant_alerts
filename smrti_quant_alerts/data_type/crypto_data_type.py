@@ -20,8 +20,7 @@ class BinanceExchange(TradingSymbol):
     def __init__(self, base_symbol: str, quote_symbol: str) -> None:
         self.base_symbol = base_symbol.upper()
         self.quote_symbol = quote_symbol.upper()
-        self.symbol_base_quote_map[f"{self.base_symbol}{self.quote_symbol}"] = \
-            (self.base_symbol, self.quote_symbol)
+        self.symbol_base_quote_map[f"{self.base_symbol}{self.quote_symbol}"] = (self.base_symbol, self.quote_symbol)
 
         super().__init__(f"{self.base_symbol}{self.quote_symbol}")
 
@@ -60,12 +59,11 @@ class CoingeckoCoin(TradingSymbol):
         return self._symbol
 
     @staticmethod
-    def get_symbol_object(symbol: str, source: str = "database") \
-            -> CoingeckoCoin | None | list[CoingeckoCoin]:
+    def get_symbol_object(symbol: str, source: str = "database") -> CoingeckoCoin | None | list[CoingeckoCoin]:
         if source == "database":
             # in database, symbol is stored as "<symbol>&&<coin_id>"
             pos = symbol.index("&&")
-            return CoingeckoCoin(symbol[pos + 2:], symbol[:pos])
+            return CoingeckoCoin(symbol[pos + 2 :], symbol[:pos])
         elif source == "binance":
             coin_id = BinanceExchange.get_coingecko_id_by_base(symbol)
             if coin_id:

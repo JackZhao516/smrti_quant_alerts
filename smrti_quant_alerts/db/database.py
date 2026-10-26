@@ -13,9 +13,15 @@ def init_database(db_name: str) -> SqliteDatabase:
         os.mkdir(database_dir)
     db_name = os.path.join(database_dir, db_name)
     # in support of multi threading
-    return playhouse.pool.PooledSqliteDatabase(db_name, stale_timeout=500, max_connections=20, pragmas={
-            'journal_mode': 'wal',
-            'cache_size': -1 * 64000,  # 64MB
-            'foreign_keys': 1,
-            'ignore_check_constraints': 0,
-            'synchronous': 2})
+    return playhouse.pool.PooledSqliteDatabase(
+        db_name,
+        stale_timeout=500,
+        max_connections=20,
+        pragmas={
+            "journal_mode": "wal",
+            "cache_size": -1 * 64000,  # 64MB
+            "foreign_keys": 1,
+            "ignore_check_constraints": 0,
+            "synchronous": 2,
+        },
+    )

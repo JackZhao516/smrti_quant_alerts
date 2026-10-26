@@ -9,6 +9,7 @@ class TestStockAlert(unittest.TestCase):
 
     def test_placeholder(self) -> None:
         pass
+
     # def test_get_sorted_price_increased_stocks(self) -> None:
     #     stock1, stock2, stock3 = StockSymbol("TEST1", "test1"), \
     #         StockSymbol("TEST2", "test2"), StockSymbol("TEST3", "testETF")

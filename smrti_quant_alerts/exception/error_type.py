@@ -2,9 +2,14 @@ from typing import Any
 
 
 class ClientError(Exception):
-    def __init__(self, status_code: int | None, error_code: int | None,
-                 error_message: str | None, header: Any | None,
-                 error_data: Any | None = None) -> None:
+    def __init__(
+        self,
+        status_code: int | None,
+        error_code: int | None,
+        error_message: str | None,
+        header: Any | None,
+        error_data: Any | None = None,
+    ) -> None:
         # https status code
         self.status_code = status_code
         # error code returned from server
@@ -17,9 +22,11 @@ class ClientError(Exception):
         self.error_data = error_data
 
     def __str__(self) -> str:
-        return f"ClientError: status code: {self.status_code}, " \
-               f"error code: {self.error_code}, " \
-               f"server error message: {self.error_message}"
+        return (
+            f"ClientError: status code: {self.status_code}, "
+            f"error code: {self.error_code}, "
+            f"server error message: {self.error_message}"
+        )
 
 
 class ServerError(Exception):
@@ -28,5 +35,4 @@ class ServerError(Exception):
         self.message = message
 
     def __str__(self) -> str:
-        return f"ServerError: status code: {self.status_code}, " \
-               f"server error message: {self.message}"
+        return f"ServerError: status code: {self.status_code}, server error message: {self.message}"

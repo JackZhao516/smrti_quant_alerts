@@ -17,8 +17,8 @@ class CryptoComprehensiveApi(BinanceApi, CoingeckoApi):
         self._match_binance_exchange_to_coingecko_coins()
 
     def get_exclude_coins(
-            self, input_exclude_coins: list[TradingSymbol] | set[TradingSymbol] | None = None) \
-            -> set[TradingSymbol]:
+        self, input_exclude_coins: list[TradingSymbol] | set[TradingSymbol] | None = None
+    ) -> set[TradingSymbol]:
         """
         expand exclude coins to include all quotes for each base
 
@@ -39,8 +39,8 @@ class CryptoComprehensiveApi(BinanceApi, CoingeckoApi):
         page = 0
         while True:
             exchanges = self._cg.get_exchanges_tickers_by_id(
-                id="binance", coin_ids="bitcoin,first-digital-usd,tether,usd-coin,ethereum",
-                page=page).get("tickers", [])
+                id="binance", coin_ids="bitcoin,first-digital-usd,tether,usd-coin,ethereum", page=page
+            ).get("tickers", [])
             if not exchanges:
                 return
 
@@ -50,7 +50,8 @@ class CryptoComprehensiveApi(BinanceApi, CoingeckoApi):
 
     @error_handling("coingecko", default_val=([], []))
     def get_coins_with_daily_volume_threshold_later_than_2023(
-            self, threshold: int = 3000000) -> tuple[list[BinanceExchange], list[CoingeckoCoin]]:
+        self, threshold: int = 3000000
+    ) -> tuple[list[BinanceExchange], list[CoingeckoCoin]]:
         """
         Get all coins with 24h volume larger than threshold (in USD)
         coin/usdt coin/eth coin/fdusd coin/btc exchanges on binance:
@@ -69,26 +70,28 @@ class CryptoComprehensiveApi(BinanceApi, CoingeckoApi):
         coingecko_coins = []
         binance_exchanges = []
 
-        quotes = ['USDT', 'FDUSD', 'BTC', 'ETH']
+        quotes = ["USDT", "FDUSD", "BTC", "ETH"]
 
         for page in range(pages):
             cur_coins_info = self._cg.get_coins_markets(
-                vs_currency='usd', ids=[coin.coin_id for coin in coins[page * 250:(page + 1) * 250]],
-                per_page=250, page=1)
+                vs_currency="usd",
+                ids=[coin.coin_id for coin in coins[page * 250 : (page + 1) * 250]],
+                per_page=250,
+                page=1,
+            )
 
             for info in cur_coins_info:
-                symbol = info['symbol']
-                coin = CoingeckoCoin(info['id'], info['symbol'])
-                if 'atl_date' not in info or not info['atl_date'] \
-                        or 'ath_date' not in info or not info['ath_date']:
+                symbol = info["symbol"]
+                coin = CoingeckoCoin(info["id"], info["symbol"])
+                if "atl_date" not in info or not info["atl_date"] or "ath_date" not in info or not info["ath_date"]:
                     continue
-                atl_year = int(info['atl_date'][:4])
-                ath_year = int(info['ath_date'][:4])
+                atl_year = int(info["atl_date"][:4])
+                ath_year = int(info["ath_date"][:4])
                 if atl_year < 2023 or ath_year < 2023:
                     continue
 
-                if info['total_volume'] and int(info['total_volume']) > threshold:
-                    genesis_date = self.get_coin_info(coin)['genesis_date']
+                if info["total_volume"] and int(info["total_volume"]) > threshold:
+                    genesis_date = self.get_coin_info(coin)["genesis_date"]
                     if not genesis_date or genesis_date and int(genesis_date[:4]) >= 2023:
                         binance_coin = False
                         for quote in quotes:
@@ -103,9 +106,8 @@ class CryptoComprehensiveApi(BinanceApi, CoingeckoApi):
 
     @error_handling("coingecko", default_val=([], []))
     def get_top_market_cap_coins_with_volume_threshold(
-            self, num: int = 300, daily_volume_threshold: int | None = None,
-            weekly_volume_threshold: int | None = None) \
-            -> tuple[list[BinanceExchange], list[CoingeckoCoin]]:
+        self, num: int = 300, daily_volume_threshold: int | None = None, weekly_volume_threshold: int | None = None
+    ) -> tuple[list[BinanceExchange], list[CoingeckoCoin]]:
         """
         get the top <num> market cap
         coin/usdt coin/eth coin/fdusd coin/btc exchanges on binance:
@@ -132,18 +134,24 @@ class CryptoComprehensiveApi(BinanceApi, CoingeckoApi):
             time.sleep(0.5)
             if weekly_volume_threshold or daily_volume_threshold:
                 # get weekly volume
-                data = self.get_coin_market_info(coin, ["total_volumes"], days=7, interval='daily')
-                weekly_volume = np.sum(np.array(data.get('total_volumes', [0, 0])))
-                daily_volume = data.get('total_volumes', [[0, 0]])[-1][1]
-                if weekly_volume_threshold and weekly_volume < weekly_volume_threshold or \
-                        daily_volume_threshold and daily_volume < daily_volume_threshold:
+                data = self.get_coin_market_info(coin, ["total_volumes"], days=7, interval="daily")
+                weekly_volume = np.sum(np.array(data.get("total_volumes", [0, 0])))
+                daily_volume = data.get("total_volumes", [[0, 0]])[-1][1]
+                if (
+                    weekly_volume_threshold
+                    and weekly_volume < weekly_volume_threshold
+                    or daily_volume_threshold
+                    and daily_volume < daily_volume_threshold
+                ):
                     return
 
             symbol = coin.coin_symbol
-            if f"{symbol}USDT" not in self.active_binance_spot_exchanges_set and \
-                    f"{symbol}BTC" not in self.active_binance_spot_exchanges_set and \
-                    f"{symbol}ETH" not in self.active_binance_spot_exchanges_set and \
-                    f"{symbol}FDUSD" not in self.active_binance_spot_exchanges_set:
+            if (
+                f"{symbol}USDT" not in self.active_binance_spot_exchanges_set
+                and f"{symbol}BTC" not in self.active_binance_spot_exchanges_set
+                and f"{symbol}ETH" not in self.active_binance_spot_exchanges_set
+                and f"{symbol}FDUSD" not in self.active_binance_spot_exchanges_set
+            ):
                 coingeco_coins.append(CoingeckoCoin(coin.coin_id, symbol))
             else:
                 if f"{symbol}USDT" in self.active_binance_spot_exchanges_set:
@@ -163,8 +171,8 @@ class CryptoComprehensiveApi(BinanceApi, CoingeckoApi):
 
     @error_handling("coingecko", default_val=([], []))
     def get_coins_with_weekly_volume_increase(
-            self, volume_threshold: float = 1.3,
-            num: int = 500) -> tuple[list[BinanceExchange], list[CoingeckoCoin]]:
+        self, volume_threshold: float = 1.3, num: int = 500
+    ) -> tuple[list[BinanceExchange], list[CoingeckoCoin]]:
         """
         Get top <num> market cap coins with weekly volume increase larger than volume_threshold
         for alt/btc, alt/eth, ignore the volume increase threshold
@@ -193,9 +201,9 @@ class CryptoComprehensiveApi(BinanceApi, CoingeckoApi):
                     binance_exchanges.append(BinanceExchange(symbol, quote))
 
             # get volume increase ratio
-            data = self.get_coin_market_info(coin, ["total_volumes"], days=13, interval='daily')
+            data = self.get_coin_market_info(coin, ["total_volumes"], days=13, interval="daily")
 
-            data = np.array(data['total_volumes'])
+            data = np.array(data["total_volumes"])
             volume_increase = 100 if np.sum(data[:7, 1]) == 0 else np.sum(data[7:, 1]) / np.sum(data[:7, 1])
 
             if volume_increase >= volume_threshold:

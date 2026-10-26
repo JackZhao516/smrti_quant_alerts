@@ -58,7 +58,7 @@ class PDFApi:
         """
         pdf = FPDF(format="letter")
         pdf.add_page()
-        pdf.add_font(fname=os.path.join(self.PWD, 'DejaVuSansCondensed.ttf'))
+        pdf.add_font(fname=os.path.join(self.PWD, "DejaVuSansCondensed.ttf"))
         pdf.set_font("DejaVuSansCondensed", size=12)
         # pdf.add_font(fname='unifont.ttf')
         # pdf.set_font("unifont", size=12)

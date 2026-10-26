@@ -45,10 +45,9 @@ class TelegramBot:
             message = message.replace("[", "(")
             message = message.replace("]", ")")
             message = f"[{message}](https://api.telegram.org/bot{self.TOKEN}/getMe)"
-        api_url = f'https://api.telegram.org/bot{self.TOKEN}/' \
-                  f'sendMessage?chat_id={self.telegram_chat_id}&text={message}'
+        api_url = f"https://api.telegram.org/bot{self.TOKEN}/sendMessage?chat_id={self.telegram_chat_id}&text={message}"
         if blue_text:
-            api_url += '&parse_mode=Markdown'
+            api_url += "&parse_mode=Markdown"
         requests.get(api_url, timeout=80)
 
     def _release_msg_from_queue(self) -> None:
@@ -76,7 +75,7 @@ class TelegramBot:
 
         """
         # split message if it's too long, 4000 is the limit
-        messages = [[message[i:i + 4000], blue_text] for i in range(0, len(message), 4000)]
+        messages = [[message[i : i + 4000], blue_text] for i in range(0, len(message), 4000)]
 
         if not self.daemon:
             for message in messages:
@@ -102,10 +101,9 @@ class TelegramBot:
         :param file_path: path of the file to send
         :param output_file_name: output name of the sent file
         """
-        api_url = f'https://api.telegram.org/bot{self.TOKEN}/' \
-                  f'sendDocument?'
-        files = {'document': open(file_path, 'rb')}
-        data = {'chat_id': self.telegram_chat_id, 'caption': output_file_name, 'parse_mode': 'HTML'}
+        api_url = f"https://api.telegram.org/bot{self.TOKEN}/sendDocument?"
+        files = {"document": open(file_path, "rb")}
+        data = {"chat_id": self.telegram_chat_id, "caption": output_file_name, "parse_mode": "HTML"}
         return requests.post(api_url, data=data, files=files, stream=True, timeout=1000)
 
     @error_handling("telegram", default_val=None)

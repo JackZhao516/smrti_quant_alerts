@@ -7,8 +7,12 @@ from smrti_quant_alerts.data_type import CoingeckoCoin
 
 class TestMarketCapAlert(unittest.TestCase):
     def test_run(self) -> None:
-        coin1, coin2, coin3, coin4 = CoingeckoCoin("test1", "TEST1"), CoingeckoCoin("test2", "TEST2"), \
-            CoingeckoCoin("test3", "TEST3"), CoingeckoCoin("test4", "TEST4")
+        coin1, coin2, coin3, coin4 = (
+            CoingeckoCoin("test1", "TEST1"),
+            CoingeckoCoin("test2", "TEST2"),
+            CoingeckoCoin("test3", "TEST3"),
+            CoingeckoCoin("test4", "TEST4"),
+        )
 
         with patch.object(CoingeckoMarketCapAlert, "get_top_n_market_cap_coins") as mock_get_coins:
             top_coins = [coin1, coin2, coin4]
@@ -20,10 +24,9 @@ class TestMarketCapAlert(unittest.TestCase):
                 mock_get_coins.return_value = [coin1, coin3, coin4]
                 alert.run()
                 mock_send_message.assert_called()
-                mock_send_message.assert_called_once_with(f"Top 3 Market Cap Report: \n"
-                                                          f"Deleted: {[coin2]}\n"
-                                                          f"Added: {[coin3]}\n"
-                                                          f"(Added in market cap desc order)")
+                mock_send_message.assert_called_once_with(
+                    f"Top 3 Market Cap Report: \nDeleted: {[coin2]}\nAdded: {[coin3]}\n(Added in market cap desc order)"
+                )
                 mock_send_message.reset_mock()
                 mock_get_coins.return_value = []
                 alert.run()

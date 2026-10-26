@@ -23,7 +23,7 @@ class LLMAPI:
             self._api_key = config.TOKENS[f"{self._default_source}_API_KEY"]
         else:
             # Fallback to environment variable
-            self._api_key = os.getenv('OPENAI_API_KEY')
+            self._api_key = os.getenv("OPENAI_API_KEY")
 
         if not self._api_key:
             logging.warning("No OpenAI API key found in tokens.json or environment variables")
@@ -49,7 +49,7 @@ class LLMAPI:
 
     @staticmethod
     def _parse_timeframe_number(tf: str) -> int:
-        digits = re.findall(r'\d+', tf)
+        digits = re.findall(r"\d+", tf)
         return int(digits[0]) if digits else 0
 
     @staticmethod
@@ -97,16 +97,16 @@ class LLMAPI:
                         For each fact or piece of information you provide:
                         1. Include the specific URL where you found it
                         2. Format citations as markdown links: [domain.com](full_url)
-                        3. Use multiple sources when possible for comprehensive information"""
+                        3. Use multiple sources when possible for comprehensive information""",
                     },
                     {
                         "role": "user",
                         "content": f"""Please search the web to answer this question accurately. Include URLs for your sources:
-                        {prompt}"""
-                    }
+                        {prompt}""",
+                    },
                 ],
                 temperature=0.7,
-                max_tokens=2000
+                max_tokens=2000,
             )
 
             # Extract main response and citations
@@ -114,7 +114,7 @@ class LLMAPI:
             citations = []
 
             # Extract citations from the response using markdown link format
-            urls = re.findall(r'\[([^\]]+)\]\(([^)]+)\)', response_content)
+            urls = re.findall(r"\[([^\]]+)\]\(([^)]+)\)", response_content)
             if urls:
                 for domain, url in urls:
                     citations.append(f"- [{domain}]({url})")

@@ -25,6 +25,7 @@ def error_handling(api: str = "binance", retry: int = 5, default_val: Any | None
     :param retry: retry times
     :param default_val: default value to return if all retries failed
     """
+
     def decorator(fun: Callable) -> Callable:
         @functools.wraps(fun)
         def wrapper(*args: Any | None, **kwargs: Any | None) -> Response | Any:
@@ -41,9 +42,7 @@ def error_handling(api: str = "binance", retry: int = 5, default_val: Any | None
                             try:
                                 err = json.loads(response.text)
                             except JSONDecodeError:
-                                raise ClientError(
-                                    status_code, None, response.text, response.headers, None
-                                ) from None
+                                raise ClientError(status_code, None, response.text, response.headers, None) from None
 
                             # error code and message returned from server
                             # binance error json
@@ -58,9 +57,7 @@ def error_handling(api: str = "binance", retry: int = 5, default_val: Any | None
                             # coingecko error json
                             msg = err.get("error", msg)
 
-                            raise ClientError(
-                                status_code, code, msg, response.headers, data
-                            )
+                            raise ClientError(status_code, code, msg, response.headers, data)
                         raise ServerError(status_code, response.text)
                     else:
                         return response
@@ -71,5 +68,7 @@ def error_handling(api: str = "binance", retry: int = 5, default_val: Any | None
                     logging.error(f"{error_msg}: {e}, retrying {i + 1} times")
                 time.sleep(random.random() * 2)
             return default_val
+
         return wrapper
+
     return decorator

@@ -29,21 +29,31 @@ class TestConfig(unittest.TestCase):
     def test_read_configs_tokens(self) -> None:
         config = Config()
 
-        with patch('builtins.open',
-                   side_effect=lambda file, mode='r': mock_open(read_data=dummy_token_str).return_value
-                   if file == os.path.join(config.PROJECT_DIR, "token.json")
-                   else mock_open(read_data=dummy_config_str).return_value):
+        with patch(
+            "builtins.open",
+            side_effect=lambda file, mode="r": (
+                mock_open(read_data=dummy_token_str).return_value
+                if file == os.path.join(config.PROJECT_DIR, "token.json")
+                else mock_open(read_data=dummy_config_str).return_value
+            ),
+        ):
             config._read_configs_tokens()
             self.assertEqual(config.SETTINGS, dummy_config_json)
             self.assertEqual(config.TOKENS, dummy_token_json)
 
-        with patch('builtins.open',
-                   side_effect=lambda file, mode='r': mock_open(read_data=dummy_token_str).return_value
-                   if file == os.path.join(config.PROJECT_DIR, "token.json")
-                   else mock_open(read_data="test").return_value):
-            with self.assertRaises(SystemExit) as cm:
-                config._read_configs_tokens()
-                self.assertEqual(cm.exception.code, 1)
+        with (
+            patch(
+                "builtins.open",
+                side_effect=lambda file, mode="r": (
+                    mock_open(read_data=dummy_token_str).return_value
+                    if file == os.path.join(config.PROJECT_DIR, "token.json")
+                    else mock_open(read_data="test").return_value
+                ),
+            ),
+            self.assertRaises(SystemExit) as cm,
+        ):
+            config._read_configs_tokens()
+            self.assertEqual(cm.exception.code, 1)
 
         tmp, Config.PROJECT_DIR = Config.PROJECT_DIR, "test"
         with self.assertRaises(SystemExit) as cm:
@@ -55,17 +65,13 @@ class TestConfig(unittest.TestCase):
         config = Config(verbose=True)
         config.TOKENS = dummy_token_json
 
-        test_tokens = [
-            {"TELEGRAMBOT": {}},
-            {"TELEGRAMBOT": {"TOKEN": {}}, "COINGECKO_API_KEY": "test"}
-        ]
+        test_tokens = [{"TELEGRAMBOT": {}}, {"TELEGRAMBOT": {"TOKEN": {}}, "COINGECKO_API_KEY": "test"}]
         for test_token in test_tokens:
             config.TOKENS = test_token
             with self.assertRaises(SystemExit) as cm:
                 config._validate_tokens(verbose=True)
                 self.assertEqual(cm.exception.code, 1)
-        config.TOKENS = {"TELEGRAMBOT": {"TOKEN": "test", "TELEGRAM_IDS": ["test"]},
-                         "COINGECKO_API_KEY": "test"}
+        config.TOKENS = {"TELEGRAMBOT": {"TOKEN": "test", "TELEGRAM_IDS": ["test"]}, "COINGECKO_API_KEY": "test"}
 
         with patch("logging.warning") as mock_warning:
             config._validate_tokens(verbose=False)
@@ -90,15 +96,11 @@ class TestConfig(unittest.TestCase):
                     "tg_type": "TEST",
                     "add_on_timeframe_list": ["1d"],
                     "email": False,
-                    "xlsx": False
+                    "xlsx": False,
                 },
                 "alert_params": {},
-                "run_time_input_args": {
-                    "daily_times": "00:00",
-                    "excluded_week_days": [],
-                    "timezone": ""
-                },
-                "database_name": "macd_test"
+                "run_time_input_args": {"daily_times": "00:00", "excluded_week_days": [], "timezone": ""},
+                "database_name": "macd_test",
             }
         }
         config._validate_configs()
@@ -108,18 +110,27 @@ class TestConfig(unittest.TestCase):
         config = Config()
         test_configs = [
             {"run_time_input_args": {"test"}, "alert_name": "test"},
-            {"run_time_input_args": {"test": "00:00"},
-             "alert_name": "test"},
-            {"run_time_input_args": {"daily_times": "00:00", "excluded_week_days": "", "timezone": ""},
-             "alert_name": "test"},
-            {"run_time_input_args": {"daily_times": ["00:00"], "excluded_week_days": ["test"], "timezone": ""},
-             "alert_name": "test"},
-            {"run_time_input_args": {"daily_times": ["test"], "excluded_week_days": [], "timezone": ""},
-             "alert_name": "test"},
-            {"run_time_input_args": {"daily_times": ["00:00"], "excluded_week_days": [], "timezone": "test"},
-             "alert_name": "test"},
-            {"run_time_input_args": {"daily_times": 1, "excluded_week_days": [], "timezone": "test"},
-             "alert_name": "test"}
+            {"run_time_input_args": {"test": "00:00"}, "alert_name": "test"},
+            {
+                "run_time_input_args": {"daily_times": "00:00", "excluded_week_days": "", "timezone": ""},
+                "alert_name": "test",
+            },
+            {
+                "run_time_input_args": {"daily_times": ["00:00"], "excluded_week_days": ["test"], "timezone": ""},
+                "alert_name": "test",
+            },
+            {
+                "run_time_input_args": {"daily_times": ["test"], "excluded_week_days": [], "timezone": ""},
+                "alert_name": "test",
+            },
+            {
+                "run_time_input_args": {"daily_times": ["00:00"], "excluded_week_days": [], "timezone": "test"},
+                "alert_name": "test",
+            },
+            {
+                "run_time_input_args": {"daily_times": 1, "excluded_week_days": [], "timezone": "test"},
+                "alert_name": "test",
+            },
         ]
         for test_config in test_configs:
             with self.assertRaises(SystemExit) as cm:
@@ -130,10 +141,18 @@ class TestConfig(unittest.TestCase):
         config = Config()
         config.SETTINGS = dummy_config_json
         test_configs = [
-            {"param_keys": ["test"], "input_args_keys": ["test"],
-             "alert_settings": {"alert_params": {"test": 1}, "alert_input_args": {1: 1}}, "alert_name": "test"},
-            {"param_keys": ["test"], "input_args_keys": ["test"],
-             "alert_settings": {"alert_params": {1: 1}, "alert_input_args": {"test": 1}}, "alert_name": "test"}
+            {
+                "param_keys": ["test"],
+                "input_args_keys": ["test"],
+                "alert_settings": {"alert_params": {"test": 1}, "alert_input_args": {1: 1}},
+                "alert_name": "test",
+            },
+            {
+                "param_keys": ["test"],
+                "input_args_keys": ["test"],
+                "alert_settings": {"alert_params": {1: 1}, "alert_input_args": {"test": 1}},
+                "alert_name": "test",
+            },
         ]
         for test_config in test_configs:
             with self.assertRaises(SystemExit) as cm:

@@ -39,9 +39,12 @@ class FinancialDataType(Enum):
 
 
 class FinancialMetricsData:
-    def __init__(self, data: float | str | FinancialMetricsData = 0,
-                 data_type: FinancialDataType = FinancialDataType.FLOAT,
-                 has_percentage: bool = False) -> None:
+    def __init__(
+        self,
+        data: float | str | FinancialMetricsData = 0,
+        data_type: FinancialDataType = FinancialDataType.FLOAT,
+        has_percentage: bool = False,
+    ) -> None:
         if isinstance(data, FinancialMetricsData):
             data = data.float_data
         if isinstance(data, (int, float, np.integer, np.floating)) and (np.isnan(data) or np.isinf(data)):
@@ -120,8 +123,9 @@ class FinancialMetricsData:
 
     def __add__(self, other: FinancialMetricsData | float) -> FinancialMetricsData:
         if isinstance(other, FinancialMetricsData):
-            return FinancialMetricsData(self.float_data + other.float_data,
-                                        FinancialDataType.FLOAT, self._has_percentage)
+            return FinancialMetricsData(
+                self.float_data + other.float_data, FinancialDataType.FLOAT, self._has_percentage
+            )
         return FinancialMetricsData(self.float_data + other, FinancialDataType.FLOAT, self._has_percentage)
 
     def __radd__(self, other: FinancialMetricsData | float) -> FinancialMetricsData:
@@ -129,22 +133,25 @@ class FinancialMetricsData:
 
     def __sub__(self, other: FinancialMetricsData | float) -> FinancialMetricsData:
         if isinstance(other, FinancialMetricsData):
-            return FinancialMetricsData(self.float_data - other.float_data,
-                                        FinancialDataType.FLOAT, self._has_percentage)
+            return FinancialMetricsData(
+                self.float_data - other.float_data, FinancialDataType.FLOAT, self._has_percentage
+            )
         return FinancialMetricsData(self.float_data - other, FinancialDataType.FLOAT, self._has_percentage)
 
     def __mul__(self, other: FinancialMetricsData | float) -> FinancialMetricsData:
         if isinstance(other, FinancialMetricsData):
-            return FinancialMetricsData(self.float_data * other.float_data,
-                                        FinancialDataType.FLOAT, self._has_percentage)
+            return FinancialMetricsData(
+                self.float_data * other.float_data, FinancialDataType.FLOAT, self._has_percentage
+            )
         return FinancialMetricsData(self.float_data * other, FinancialDataType.FLOAT, self._has_percentage)
 
     def __truediv__(self, other: FinancialMetricsData | float) -> FinancialMetricsData:
         if isinstance(other, FinancialMetricsData):
             if other.float_data == 0:
                 return FinancialMetricsData(0, FinancialDataType.FLOAT, self._has_percentage)
-            return FinancialMetricsData(self.float_data / other.float_data,
-                                        FinancialDataType.FLOAT, self._has_percentage)
+            return FinancialMetricsData(
+                self.float_data / other.float_data, FinancialDataType.FLOAT, self._has_percentage
+            )
         if other == 0:
             return FinancialMetricsData(0, FinancialDataType.FLOAT, self._has_percentage)
         return FinancialMetricsData(self.float_data / other, FinancialDataType.FLOAT, self._has_percentage)

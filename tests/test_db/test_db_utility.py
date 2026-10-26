@@ -4,8 +4,13 @@ import threading
 import time
 from unittest.mock import patch
 
-from smrti_quant_alerts.db import init_database_runtime, PriceVolumeDBUtils, \
-    SpotOverMaDBUtils, StockAlertDBUtils, close_database
+from smrti_quant_alerts.db import (
+    init_database_runtime,
+    PriceVolumeDBUtils,
+    SpotOverMaDBUtils,
+    StockAlertDBUtils,
+    close_database,
+)
 from smrti_quant_alerts.data_type import BinanceExchange, CoingeckoCoin, TradingSymbol, StockSymbol
 from smrti_quant_alerts.settings import Config
 
@@ -26,6 +31,7 @@ class TestConfig:
     """
     Test config for database; context manager
     """
+
     def __enter__(self):
         remove_database()
         init_database_runtime("test.db")
@@ -42,7 +48,7 @@ class TestConfig:
 
 class TestDBUtility(unittest.TestCase):
     def test_init_database_runtime(self) -> None:
-        with patch('playhouse.pool.PooledSqliteDatabase', side_effect=lambda x, **kwargs: exit(1)):
+        with patch("playhouse.pool.PooledSqliteDatabase", side_effect=lambda x, **kwargs: exit(1)):
             with self.assertRaises(SystemExit) as cm:
                 init_database_runtime("test.db")
                 self.assertEqual(cm.exception.code, 1)
@@ -51,8 +57,9 @@ class TestDBUtility(unittest.TestCase):
 
 class TestPriceVolumeDBUtils(unittest.TestCase):
     @staticmethod
-    def convert_timestamp_to_zero(count_dict: dict[BinanceExchange, tuple[int, float]]) \
-            -> dict[BinanceExchange, tuple[int, float]]:
+    def convert_timestamp_to_zero(
+        count_dict: dict[BinanceExchange, tuple[int, float]],
+    ) -> dict[BinanceExchange, tuple[int, float]]:
         """
         convert timestamp to 0
         """
@@ -100,8 +107,10 @@ class TestPriceVolumeDBUtils(unittest.TestCase):
             count = PriceVolumeDBUtils.get_count("test_alert", None, "daily")
             self.assertEqual(self.convert_timestamp_to_zero(count), {})
             count = PriceVolumeDBUtils.get_count("test_alert", None, "monthly")
-            self.assertEqual(self.convert_timestamp_to_zero(count), {BinanceExchange("test", "test"): (1, 0),
-                                                                     BinanceExchange("test3", "test"): (1, 0)})
+            self.assertEqual(
+                self.convert_timestamp_to_zero(count),
+                {BinanceExchange("test", "test"): (1, 0), BinanceExchange("test3", "test"): (1, 0)},
+            )
             try:
                 PriceVolumeDBUtils.reset_count("test_alert", "daily")
             except Exception:
@@ -113,6 +122,7 @@ class TestPriceVolumeDBUtils(unittest.TestCase):
 
     def test_multithreading_access(self) -> None:
         with TestConfig() as _:
+
             def update_count() -> None:
                 for _ in range(100):
                     PriceVolumeDBUtils.update_count(BinanceExchange("test", "test1"), "test_alert", 0, "daily")
@@ -131,29 +141,51 @@ class TestPriceVolumeDBUtils(unittest.TestCase):
             count = PriceVolumeDBUtils.get_count("test_alert", None, "daily")
             self.assertEqual(self.convert_timestamp_to_zero(count), {BinanceExchange("test", "test1"): (1000, 0)})
             count = PriceVolumeDBUtils.get_count("test_alert", None, "monthly")
-            self.assertEqual(self.convert_timestamp_to_zero(count), {BinanceExchange("test2", "test3"): (1001, 0),
-                                                                     BinanceExchange("test4", "test5"): (1, 0)})
+            self.assertEqual(
+                self.convert_timestamp_to_zero(count),
+                {BinanceExchange("test2", "test3"): (1001, 0), BinanceExchange("test4", "test5"): (1, 0)},
+            )
 
 
 class TestSpotOverMaDBUtils(unittest.TestCase):
     def test_get_last_count(self) -> None:
         with TestConfig() as _:
-            SpotOverMaDBUtils.update_last_count([BinanceExchange("test", "test"),
-                                                 BinanceExchange("test1", "test")], "test")
+            SpotOverMaDBUtils.update_last_count(
+                [BinanceExchange("test", "test"), BinanceExchange("test1", "test")], "test"
+            )
             SpotOverMaDBUtils.update_last_count([BinanceExchange("test", "test1")], "test1")
             SpotOverMaDBUtils.update_last_count([CoingeckoCoin("test", "test")], "test")
 
             count = SpotOverMaDBUtils.get_last_count(BinanceExchange)
-            self.assertEqual(count, {BinanceExchange("test", "test"): 1, BinanceExchange("test1", "test"): 1,
-                                     BinanceExchange("test", "test1"): 1})
+            self.assertEqual(
+                count,
+                {
+                    BinanceExchange("test", "test"): 1,
+                    BinanceExchange("test1", "test"): 1,
+                    BinanceExchange("test", "test1"): 1,
+                },
+            )
 
             count = SpotOverMaDBUtils.get_last_count()
-            self.assertEqual(count, {BinanceExchange("test", "test"): 1, BinanceExchange("test1", "test"): 1,
-                                     BinanceExchange("test", "test1"): 1, CoingeckoCoin("test", "test"): 1})
+            self.assertEqual(
+                count,
+                {
+                    BinanceExchange("test", "test"): 1,
+                    BinanceExchange("test1", "test"): 1,
+                    BinanceExchange("test", "test1"): 1,
+                    CoingeckoCoin("test", "test"): 1,
+                },
+            )
 
             count = SpotOverMaDBUtils.get_last_count(alert_type="test")
-            self.assertEqual(count, {BinanceExchange("test", "test"): 1, BinanceExchange("test1", "test"): 1,
-                                     CoingeckoCoin("test", "test"): 1})
+            self.assertEqual(
+                count,
+                {
+                    BinanceExchange("test", "test"): 1,
+                    BinanceExchange("test1", "test"): 1,
+                    CoingeckoCoin("test", "test"): 1,
+                },
+            )
 
             count = SpotOverMaDBUtils.get_last_count(BinanceExchange, "test1")
             self.assertEqual(count, {BinanceExchange("test", "test1"): 1})
@@ -226,8 +258,15 @@ class TestStockAlertDBUtils(unittest.TestCase):
 
     def test_stocks_info(self) -> None:
         with TestConfig() as _:
-            full_stock = StockSymbol("AAPL", security_name="Apple Inc.", gics_sector="Technology",
-                                     gics_sub_industry="Hardware", location="Cupertino", cik="123", founded_time="1976")
+            full_stock = StockSymbol(
+                "AAPL",
+                security_name="Apple Inc.",
+                gics_sector="Technology",
+                gics_sub_industry="Hardware",
+                location="Cupertino",
+                cik="123",
+                founded_time="1976",
+            )
             incomplete_stock = StockSymbol("TSLA", security_name="Tesla Inc.")
 
             StockAlertDBUtils.add_stocks_info([full_stock, incomplete_stock])

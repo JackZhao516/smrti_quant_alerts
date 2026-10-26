@@ -17,7 +17,7 @@ class TestCryptoBinanceApi(unittest.TestCase):
 
     def test_update_active_binance_spot_exchanges(self) -> None:
         self.binance_api._reset_timestamp()
-        with mock.patch.object(BinanceApi, 'get_all_binance_exchanges', return_value=["test", "test1"]):
+        with mock.patch.object(BinanceApi, "get_all_binance_exchanges", return_value=["test", "test1"]):
             self.binance_api._update_active_binance_spot_exchanges()
             self.assertEqual(self.binance_api.active_binance_spot_exchanges, ["test", "test1"])
             self.assertEqual(self.binance_api.active_binance_spot_exchanges_set, {"test", "test1"})
@@ -25,141 +25,185 @@ class TestCryptoBinanceApi(unittest.TestCase):
     def test_get_exclude_coins(self) -> None:
         Config.PROJECT_DIR = os.path.dirname(os.path.abspath(__file__))
         BinanceExchange.symbol_base_quote_map = {}
-        with mock.patch.object(BinanceApi, 'get_all_binance_exchanges',
-                               return_value=[BinanceExchange("BTC", "ETH"), BinanceExchange("BTC", "USDT"),
-                                             BinanceExchange("TEST", "TEST"), CoingeckoCoin("tether", "USDT"),
-                                             BinanceExchange("USDT", "BTC"), BinanceExchange("ALT", "USDT")]):
+        with mock.patch.object(
+            BinanceApi,
+            "get_all_binance_exchanges",
+            return_value=[
+                BinanceExchange("BTC", "ETH"),
+                BinanceExchange("BTC", "USDT"),
+                BinanceExchange("TEST", "TEST"),
+                CoingeckoCoin("tether", "USDT"),
+                BinanceExchange("USDT", "BTC"),
+                BinanceExchange("ALT", "USDT"),
+            ],
+        ):
             exclude_coins = self.binance_api.get_exclude_coins([])
-            self.assertEqual(exclude_coins, {BinanceExchange("BTC", "ETH"), BinanceExchange("BTC", "USDT"),
-                                             BinanceExchange("USDT", "BTC"), BinanceExchange("TEST", "TEST")})
+            self.assertEqual(
+                exclude_coins,
+                {
+                    BinanceExchange("BTC", "ETH"),
+                    BinanceExchange("BTC", "USDT"),
+                    BinanceExchange("USDT", "BTC"),
+                    BinanceExchange("TEST", "TEST"),
+                },
+            )
 
             exclude_coins = self.binance_api.get_exclude_coins([BinanceExchange("ALT", "USDT")])
-            self.assertEqual(exclude_coins, {BinanceExchange("BTC", "ETH"), BinanceExchange("BTC", "USDT"),
-                                             BinanceExchange("USDT", "BTC"), BinanceExchange("TEST", "TEST"),
-                                             BinanceExchange("ALT", "USDT")})
+            self.assertEqual(
+                exclude_coins,
+                {
+                    BinanceExchange("BTC", "ETH"),
+                    BinanceExchange("BTC", "USDT"),
+                    BinanceExchange("USDT", "BTC"),
+                    BinanceExchange("TEST", "TEST"),
+                    BinanceExchange("ALT", "USDT"),
+                },
+            )
 
             exclude_coins = self.binance_api.get_exclude_coins([CoingeckoCoin("alt", "ALT")])
-            self.assertEqual(exclude_coins, {BinanceExchange("BTC", "ETH"), BinanceExchange("BTC", "USDT"),
-                                             BinanceExchange("USDT", "BTC"), BinanceExchange("TEST", "TEST"),
-                                             BinanceExchange("ALT", "USDT")})
+            self.assertEqual(
+                exclude_coins,
+                {
+                    BinanceExchange("BTC", "ETH"),
+                    BinanceExchange("BTC", "USDT"),
+                    BinanceExchange("USDT", "BTC"),
+                    BinanceExchange("TEST", "TEST"),
+                    BinanceExchange("ALT", "USDT"),
+                },
+            )
 
     def test_get_all_binance_exchanges(self) -> None:
         return_value = {
-            "symbols": [{
-                "status": "TRADING",
-                "baseAsset": "BTC",
-                "quoteAsset": "USDT"
-            }, {
-                "status": "TRADING",
-                "baseAsset": "ETH",
-                "quoteAsset": "USDT"
-            }, {
-                "status": "NOT TRADING",
-                "baseAsset": "TEST",
-                "quoteAsset": "TEST"
-            }]
+            "symbols": [
+                {"status": "TRADING", "baseAsset": "BTC", "quoteAsset": "USDT"},
+                {"status": "TRADING", "baseAsset": "ETH", "quoteAsset": "USDT"},
+                {"status": "NOT TRADING", "baseAsset": "TEST", "quoteAsset": "TEST"},
+            ]
         }
-        with mock.patch.object(Spot, 'exchange_info', return_value=return_value):
-            self.assertEqual(set(self.binance_api.get_all_binance_exchanges()),
-                             {BinanceExchange("BTC", "USDT"), BinanceExchange("ETH", "USDT")})
+        with mock.patch.object(Spot, "exchange_info", return_value=return_value):
+            self.assertEqual(
+                set(self.binance_api.get_all_binance_exchanges()),
+                {BinanceExchange("BTC", "USDT"), BinanceExchange("ETH", "USDT")},
+            )
 
-        with mock.patch.object(Spot, 'exchange_info', side_effect=Exception):
+        with mock.patch.object(Spot, "exchange_info", side_effect=Exception):
             self.assertEqual(self.binance_api.get_all_binance_exchanges(), [])
 
     def test_get_all_spot_exchanges_in_usdt_fdusd_btc(self) -> None:
         return_value = {
-            "symbols": [{
-                "status": "TRADING",
-                "baseAsset": "BTC",
-                "quoteAsset": "USDT"
-            }, {
-                "status": "TRADING",
-                "baseAsset": "ETH",
-                "quoteAsset": "FDUSD"
-            }, {
-                "status": "TRADING",
-                "baseAsset": "TEST",
-                "quoteAsset": "TEST"
-            }]
+            "symbols": [
+                {"status": "TRADING", "baseAsset": "BTC", "quoteAsset": "USDT"},
+                {"status": "TRADING", "baseAsset": "ETH", "quoteAsset": "FDUSD"},
+                {"status": "TRADING", "baseAsset": "TEST", "quoteAsset": "TEST"},
+            ]
         }
-        with mock.patch.object(Spot, 'exchange_info', return_value=return_value):
-            self.assertEqual(set(self.binance_api.get_all_spot_exchanges_in_usdt_fdusd_btc()),
-                             {BinanceExchange("BTC", "USDT"), BinanceExchange("ETH", "FDUSD")})
+        with mock.patch.object(Spot, "exchange_info", return_value=return_value):
+            self.assertEqual(
+                set(self.binance_api.get_all_spot_exchanges_in_usdt_fdusd_btc()),
+                {BinanceExchange("BTC", "USDT"), BinanceExchange("ETH", "FDUSD")},
+            )
 
         self.binance_api._reset_timestamp()
 
-        with mock.patch.object(Spot, 'exchange_info', side_effect=Exception):
+        with mock.patch.object(Spot, "exchange_info", side_effect=Exception):
             self.assertEqual(self.binance_api.get_all_spot_exchanges_in_usdt_fdusd_btc(), [])
 
     def test_get_future_exchange_funding_rate(self) -> None:
         self.assertEqual(self.binance_api.get_future_exchange_funding_rate(None), Decimal(0))
 
-        with mock.patch.object(UMFutures, 'mark_price', return_value={"lastFundingRate": "-0.002"}):
-            self.assertEqual(self.binance_api.get_future_exchange_funding_rate(BinanceExchange("BTC", "USDT")),
-                             Decimal("-0.002"))
+        with mock.patch.object(UMFutures, "mark_price", return_value={"lastFundingRate": "-0.002"}):
+            self.assertEqual(
+                self.binance_api.get_future_exchange_funding_rate(BinanceExchange("BTC", "USDT")), Decimal("-0.002")
+            )
 
-        with mock.patch.object(UMFutures, 'mark_price', side_effect=Exception):
-            self.assertEqual(self.binance_api.get_future_exchange_funding_rate(BinanceExchange("BTC", "USDT")),
-                             Decimal(0))
+        with mock.patch.object(UMFutures, "mark_price", side_effect=Exception):
+            self.assertEqual(
+                self.binance_api.get_future_exchange_funding_rate(BinanceExchange("BTC", "USDT")), Decimal(0)
+            )
 
-        with mock.patch.object(UMFutures, 'mark_price', return_value={"lastFundingRate": None}):
-            self.assertEqual(self.binance_api.get_future_exchange_funding_rate(BinanceExchange("BTC", "USDT")),
-                             Decimal(0))
+        with mock.patch.object(UMFutures, "mark_price", return_value={"lastFundingRate": None}):
+            self.assertEqual(
+                self.binance_api.get_future_exchange_funding_rate(BinanceExchange("BTC", "USDT")), Decimal(0)
+            )
 
     def test_get_exchange_current_price(self) -> None:
         self.assertEqual(self.binance_api.get_exchange_current_price(None), Decimal(0))
 
-        with mock.patch.object(Spot, 'ticker_price', return_value={"price": "100"}):
-            self.assertEqual(self.binance_api.get_exchange_current_price(BinanceExchange("BTC", "USDT")),
-                             Decimal("100"))
+        with mock.patch.object(Spot, "ticker_price", return_value={"price": "100"}):
+            self.assertEqual(
+                self.binance_api.get_exchange_current_price(BinanceExchange("BTC", "USDT")), Decimal("100")
+            )
 
-        with mock.patch.object(Spot, 'ticker_price', side_effect=Exception):
-            self.assertEqual(self.binance_api.get_exchange_current_price(BinanceExchange("BTC", "USDT")),
-                             Decimal(0))
+        with mock.patch.object(Spot, "ticker_price", side_effect=Exception):
+            self.assertEqual(self.binance_api.get_exchange_current_price(BinanceExchange("BTC", "USDT")), Decimal(0))
 
-        with mock.patch.object(Spot, 'ticker_price', return_value=[{"price": "100"}]):
-            self.assertEqual(self.binance_api.get_exchange_current_price(BinanceExchange("BTC", "USDT")),
-                             Decimal("100"))
+        with mock.patch.object(Spot, "ticker_price", return_value=[{"price": "100"}]):
+            self.assertEqual(
+                self.binance_api.get_exchange_current_price(BinanceExchange("BTC", "USDT")), Decimal("100")
+            )
 
     def test_get_exchange_close_prices_by_timeframe_num_of_ticks(self) -> None:
         self.assertEqual(self.binance_api.get_exchange_close_prices_by_timeframe_num_of_ticks(None, "1d"), [])
 
         price = [[i, "0", "0", "0", str(i)] for i in range(3)]
         dates = ["2024-05-19", "2024-05-01", "2024-05-20"]
-        with mock.patch.object(Spot, 'klines', return_value=price), \
-                mock.patch("smrti_quant_alerts.stock_crypto_api.crypto_binance_api.get_date_from_timestamp",
-                           side_effect=dates):
+        with (
+            mock.patch.object(Spot, "klines", return_value=price),
+            mock.patch(
+                "smrti_quant_alerts.stock_crypto_api.crypto_binance_api.get_date_from_timestamp", side_effect=dates
+            ),
+        ):
             self.assertEqual(
-                self.binance_api.get_exchange_close_prices_by_timeframe_num_of_ticks(BinanceExchange("BTC", "USDT"), "1d"),
-                [("2024-05-20", 2.0), ("2024-05-01", 1.0), ("2024-05-19", 0.0)])
+                self.binance_api.get_exchange_close_prices_by_timeframe_num_of_ticks(
+                    BinanceExchange("BTC", "USDT"), "1d"
+                ),
+                [("2024-05-20", 2.0), ("2024-05-01", 1.0), ("2024-05-19", 0.0)],
+            )
 
-        with mock.patch.object(Spot, 'klines', return_value=price), \
-                mock.patch("smrti_quant_alerts.stock_crypto_api.crypto_binance_api.get_date_from_timestamp",
-                           side_effect=dates):
+        with (
+            mock.patch.object(Spot, "klines", return_value=price),
+            mock.patch(
+                "smrti_quant_alerts.stock_crypto_api.crypto_binance_api.get_date_from_timestamp", side_effect=dates
+            ),
+        ):
             self.assertEqual(
-                self.binance_api.get_exchange_close_prices_by_timeframe_num_of_ticks(BinanceExchange("BTC", "USDT"), "1w"),
-                [("2024-05-20", 2.0)])
+                self.binance_api.get_exchange_close_prices_by_timeframe_num_of_ticks(
+                    BinanceExchange("BTC", "USDT"), "1w"
+                ),
+                [("2024-05-20", 2.0)],
+            )
 
-        with mock.patch.object(Spot, 'klines', return_value=price), \
-                mock.patch("smrti_quant_alerts.stock_crypto_api.crypto_binance_api.get_date_from_timestamp",
-                           side_effect=dates):
+        with (
+            mock.patch.object(Spot, "klines", return_value=price),
+            mock.patch(
+                "smrti_quant_alerts.stock_crypto_api.crypto_binance_api.get_date_from_timestamp", side_effect=dates
+            ),
+        ):
             self.assertEqual(
-                self.binance_api.get_exchange_close_prices_by_timeframe_num_of_ticks(BinanceExchange("BTC", "USDT"), "1m"),
-                [("2024-05-01", 1.0)])
+                self.binance_api.get_exchange_close_prices_by_timeframe_num_of_ticks(
+                    BinanceExchange("BTC", "USDT"), "1m"
+                ),
+                [("2024-05-01", 1.0)],
+            )
 
-        with mock.patch.object(Spot, 'klines', side_effect=Exception):
+        with mock.patch.object(Spot, "klines", side_effect=Exception):
             self.assertEqual(
-                self.binance_api.get_exchange_close_prices_by_timeframe_num_of_ticks(BinanceExchange("BTC", "USDT"), "1d"),
-                [])
+                self.binance_api.get_exchange_close_prices_by_timeframe_num_of_ticks(
+                    BinanceExchange("BTC", "USDT"), "1d"
+                ),
+                [],
+            )
 
     def test_get_exchange_close_price_on_timestamp(self) -> None:
-        with mock.patch.object(Spot, 'klines', return_value=[["0", "0", "0", "0", "123.4"]]):
+        with mock.patch.object(Spot, "klines", return_value=[["0", "0", "0", "0", "123.4"]]):
             self.assertEqual(
-                self.binance_api.get_exchange_close_price_on_timestamp(BinanceExchange("BTC", "USDT"), 1000), 123.4)
+                self.binance_api.get_exchange_close_price_on_timestamp(BinanceExchange("BTC", "USDT"), 1000), 123.4
+            )
 
-        with mock.patch.object(Spot, 'klines', side_effect=Exception):
+        with mock.patch.object(Spot, "klines", side_effect=Exception):
             self.assertEqual(
-                self.binance_api.get_exchange_close_price_on_timestamp(BinanceExchange("BTC", "USDT"), 1000), 0)
+                self.binance_api.get_exchange_close_price_on_timestamp(BinanceExchange("BTC", "USDT"), 1000), 0
+            )
 
     def test_get_exchange_history_hourly_close_price(self) -> None:
         self.assertEqual(self.binance_api.get_exchange_history_hourly_close_price(None), [])
@@ -167,10 +211,10 @@ class TestCryptoBinanceApi(unittest.TestCase):
         price = [[i] * 5 for i in range(24)]
         return_value = [Decimal(i) for i in range(23, -1, -1)]
 
-        with mock.patch.object(Spot, 'klines', return_value=price):
-            self.assertEqual(self.binance_api.get_exchange_history_hourly_close_price(BinanceExchange("T", "T"), 1),
-                             return_value)
+        with mock.patch.object(Spot, "klines", return_value=price):
+            self.assertEqual(
+                self.binance_api.get_exchange_history_hourly_close_price(BinanceExchange("T", "T"), 1), return_value
+            )
 
-        with mock.patch.object(Spot, 'klines', side_effect=Exception):
-            self.assertEqual(self.binance_api.get_exchange_history_hourly_close_price(BinanceExchange("T", "T")),
-                             [])
+        with mock.patch.object(Spot, "klines", side_effect=Exception):
+            self.assertEqual(self.binance_api.get_exchange_history_hourly_close_price(BinanceExchange("T", "T")), [])
