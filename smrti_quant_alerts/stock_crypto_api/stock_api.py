@@ -2,7 +2,7 @@ import datetime
 import warnings
 from functools import reduce
 from multiprocessing.pool import ThreadPool
-from typing import List, Dict, Union, Optional, Iterable, Tuple
+from collections.abc import Iterable
 from decimal import Decimal
 from collections import defaultdict
 
@@ -42,7 +42,7 @@ class StockApi:
         return f"{symbol.ticker}.{symbol.market}"
 
     @error_handling("sp500", default_val=[])
-    def get_sp_500_list(self) -> List[StockSymbol]:
+    def get_sp_500_list(self) -> list[StockSymbol]:
         """
         Get all stocks in SP 500
 
@@ -60,7 +60,7 @@ class StockApi:
         return sorted(stock_list, key=lambda x: x.ticker)
 
     @error_handling("financialmodelingprep", default_val=[])
-    def get_nasdaq_list(self) -> List[StockSymbol]:
+    def get_nasdaq_list(self) -> list[StockSymbol]:
         """
         Get all stocks in NASDAQ 100
 
@@ -77,7 +77,7 @@ class StockApi:
         return sorted(stock_list, key=lambda x: x.ticker)
 
     @error_handling("financialmodelingprep", default_val=[])
-    def get_nyse_list(self) -> List[StockSymbol]:
+    def get_nyse_list(self) -> list[StockSymbol]:
         """
         Get all stocks in NASDAQ 100
 
@@ -93,7 +93,7 @@ class StockApi:
         StockAlertDBUtils.add_stocks_info(stock_list)
         return sorted(stock_list, key=lambda x: x.ticker)
 
-    def get_all_non_etf_stocks_by_gics_sector(self) -> Dict[str, List[StockSymbol]]:
+    def get_all_non_etf_stocks_by_gics_sector(self) -> dict[str, list[StockSymbol]]:
         """
         Get all stocks in a specific GICS sector
 
@@ -110,7 +110,7 @@ class StockApi:
 
     @error_handling("eodhd", default_val=({}, {}))
     def get_all_stock_price_volume_by_day_delta(self, day_delta: int = 0) \
-            -> Tuple[Dict[StockSymbol, Decimal], Dict[StockSymbol, Decimal]]:
+            -> tuple[dict[StockSymbol, Decimal], dict[StockSymbol, Decimal]]:
         """
         Get all stock prices for the <day_delta> day from today
 
@@ -142,8 +142,8 @@ class StockApi:
         return prices, volumes
 
     def get_all_stock_price_change_percentage(
-            self, timeframe_list: Optional[List[str]] = None) \
-            -> Dict[StockSymbol, Dict[str, Decimal]]:
+            self, timeframe_list: list[str] | None = None) \
+            -> dict[StockSymbol, dict[str, Decimal]]:
         """
         Get adjusted stock price change percentage, 1D, 5D, 1M, 3M, 6M, 1Y, 3Y, 5Y
 
@@ -185,7 +185,7 @@ class StockApi:
         return res
 
     def get_all_non_etf_stocks_price_change_percentage_by_gics_sector_timeframes(
-            self, timeframes: List[str]) -> Dict[str, Dict[str, List[Tuple[StockSymbol, Decimal]]]]:
+            self, timeframes: list[str]) -> dict[str, dict[str, list[tuple[StockSymbol, Decimal]]]]:
         """
         Get sorted price change percentage for all non-ETF stocks grouped by GICS sector
 
@@ -212,7 +212,7 @@ class StockApi:
         return price_change_percentage
 
     @error_handling("financialmodelingprep", default_val=[])
-    def get_stock_info(self, stock_list: Iterable[StockSymbol]) -> List[StockSymbol]:
+    def get_stock_info(self, stock_list: Iterable[StockSymbol]) -> list[StockSymbol]:
         """
         Get stock info, including gics_sector, gics_subsector, etc, ...
 
@@ -261,7 +261,7 @@ class StockApi:
         return result
 
     @error_handling("eodhd", default_val={})
-    def get_top_market_cap_stocks(self, top_n: int = 100) -> List[List[Union[FinancialMetricsData, StockSymbol]]]:
+    def get_top_market_cap_stocks(self, top_n: int = 100) -> list[list[FinancialMetricsData | StockSymbol]]:
         """
         Get top market cap stocks
 
@@ -297,7 +297,7 @@ class StockApi:
 
     @error_handling("financialmodelingprep", default_val=[])
     def get_top_market_cap_stocks_by_market_cap_threshold(self, market_cap_threshold: int = 10 ** 6) \
-            -> List[StockSymbol]:
+            -> list[StockSymbol]:
         """
         Get top market cap stocks by market cap threshold
 
@@ -321,8 +321,8 @@ class StockApi:
         return res
 
     @error_handling("financialmodelingprep", default_val={})
-    def get_close_price_sma_status(self, stock_list: List[StockSymbol], num_of_days_list: List[int],
-                                   timeframes: List[str]) -> Dict[StockSymbol, Dict[str, bool]]:
+    def get_close_price_sma_status(self, stock_list: list[StockSymbol], num_of_days_list: list[int],
+                                   timeframes: list[str]) -> dict[StockSymbol, dict[str, bool]]:
         """
         Get the mapping for whether the close price is higher than sma
         :param stock_list: [StockSymbol, ...]
@@ -338,7 +338,7 @@ class StockApi:
                 continue
             close_price = response[0].get("price", 0)
 
-            for num_of_day, timeframe in zip(num_of_days_list, timeframes):
+            for num_of_day, timeframe in zip(num_of_days_list, timeframes, strict=False):
                 from_day = get_datetime_now() - datetime.timedelta(days=2)
                 sma_url = f"{self.FMP_API_URL}/v3/technical_indicator/{timeframe}/{stock}" \
                           f"?type=sma&period={num_of_day}&apikey={self.FMP_API_KEY}" \
@@ -352,7 +352,7 @@ class StockApi:
         return res
 
     @error_handling("financialmodelingprep", default_val={})
-    def get_stocks_market_cap(self, stock_list: List[StockSymbol]) -> Dict[StockSymbol, FinancialMetricsData]:
+    def get_stocks_market_cap(self, stock_list: list[StockSymbol]) -> dict[StockSymbol, FinancialMetricsData]:
         """
         Get stock market cap
 
@@ -367,8 +367,8 @@ class StockApi:
                 res[stock] = FinancialMetricsData(response[0].get("marketCap", 0))
         return res
 
-    def get_stocks_stats_by_num_of_timeframe(self, stock_list: List[StockSymbol], timeframe: str, num: int) \
-            -> Dict[StockSymbol, List[Dict[str, FinancialMetricsData]]]:
+    def get_stocks_stats_by_num_of_timeframe(self, stock_list: list[StockSymbol], timeframe: str, num: int) \
+            -> dict[StockSymbol, list[dict[str, FinancialMetricsData]]]:
         """
         Get stock free cash flow, net income, free cash flow margin
 
@@ -432,7 +432,7 @@ class StockApi:
                           for free_cash_flow, net_income, free_cash_flow_margin,
                           revenue, gross_margin, gross_profit, operating_margin in
                           zip(free_cash_flows, net_incomes, free_cash_flow_margins,
-                              revenues, gross_margins, gross_profits, operating_margins)]
+                              revenues, gross_margins, gross_profits, operating_margins, strict=False)]
         pool = ThreadPool(8)
         pool.map(get_stock_stats_by_num_of_quarter, stock_list)
         pool.close()
@@ -440,8 +440,8 @@ class StockApi:
 
         return res
 
-    def get_stocks_revenue_cagr(self, stock_list: List[StockSymbol]) \
-            -> Dict[StockSymbol, Dict[str, FinancialMetricsData]]:
+    def get_stocks_revenue_cagr(self, stock_list: list[StockSymbol]) \
+            -> dict[StockSymbol, dict[str, FinancialMetricsData]]:
         """
         Get revenue CAGR
 
@@ -481,7 +481,7 @@ class StockApi:
 
     @error_handling("eodhd", default_val=[])
     def get_stock_close_prices_by_timeframe_num_of_ticks(
-            self, stock: StockSymbol, timeframe: str, num_of_ticks: int) -> List[Tuple[str, float]]:
+            self, stock: StockSymbol, timeframe: str, num_of_ticks: int) -> list[tuple[str, float]]:
         """
         Get stock close prices by timeframe and num of ticks
 
@@ -506,7 +506,7 @@ class StockApi:
         return res
 
     @error_handling("eodhd", default_val=[])
-    def get_stock_current_close_price(self, stock: StockSymbol) -> Tuple[str, float]:
+    def get_stock_current_close_price(self, stock: StockSymbol) -> tuple[str, float]:
         """
         Get stock current close price
 
@@ -521,7 +521,7 @@ class StockApi:
         return get_date_from_timestamp(response["timestamp"] * 1000), float(response["close"])
 
     @error_handling("financialmodelingprep", default_val=[])
-    def get_all_8k_filings_for_today(self) -> List[Dict[str, Union[str, bool]]]:
+    def get_all_8k_filings_for_today(self) -> list[dict[str, str | bool]]:
         """
         Get all 8k filings for today
 
@@ -545,7 +545,7 @@ class StockApi:
             page += 1
 
         # filter out repeated filings
-        symbol_set = set([filing.get("symbol", None) for filing in res])
+        symbol_set = {filing.get("symbol", None) for filing in res}
         if None in symbol_set:
             symbol_set.remove(None)
 
@@ -557,8 +557,8 @@ class StockApi:
         return filtered_res
 
     @error_handling("financialmodelingprep", default_val=defaultdict(list))
-    def get_floating_shares_change(self, stock_list: List[StockSymbol]) \
-            -> Dict[StockSymbol, Dict[str, FinancialMetricsData]]:
+    def get_floating_shares_change(self, stock_list: list[StockSymbol]) \
+            -> dict[StockSymbol, dict[str, FinancialMetricsData]]:
         """
         Get outstanding shares
 
@@ -593,7 +593,7 @@ class StockApi:
         return res
 
     @error_handling("financialmodelingprep", default_val=defaultdict(lambda: 0))
-    def get_stocks_enterprise_value(self, stock_list: List[StockSymbol]) -> Dict[StockSymbol, FinancialMetricsData]:
+    def get_stocks_enterprise_value(self, stock_list: list[StockSymbol]) -> dict[StockSymbol, FinancialMetricsData]:
         """
         Get enterprise value
 
@@ -613,7 +613,7 @@ class StockApi:
         return res
 
     @error_handling("financialmodelingprep", default_val=defaultdict(lambda: 0))
-    def get_stocks_valuation_score(self, stock_list: List[StockSymbol]) -> Dict[StockSymbol, FinancialMetricsData]:
+    def get_stocks_valuation_score(self, stock_list: list[StockSymbol]) -> dict[StockSymbol, FinancialMetricsData]:
         """
         Get stock valuation score
         valuation score = enterprise value / (gross profit * estimated revenue growth * 100)
@@ -652,7 +652,7 @@ class StockApi:
         return res
 
     @error_handling("financialmodelingprep", default_val=defaultdict(lambda: 0))
-    def get_stocks_revenue(self, stock_list: List[StockSymbol]) -> Dict[StockSymbol, FinancialMetricsData]:
+    def get_stocks_revenue(self, stock_list: list[StockSymbol]) -> dict[StockSymbol, FinancialMetricsData]:
         """
         Get stock revenue
 
@@ -669,8 +669,8 @@ class StockApi:
         return res
 
     @error_handling("financialmodelingprep", default_val=defaultdict(dict))
-    def get_stocks_growth_score(self, stock_list: List[StockSymbol], full: bool = False) \
-            -> Dict[StockSymbol, Dict[str, FinancialMetricsData]]:
+    def get_stocks_growth_score(self, stock_list: list[StockSymbol], full: bool = False) \
+            -> dict[StockSymbol, dict[str, FinancialMetricsData]]:
         """
         Get stock growth score
         Growth Score = most 2 recent quarterly revenue YOY growth + avg(2 recent quarterly FCF margin)
@@ -708,8 +708,8 @@ class StockApi:
         return res
 
     @error_handling("financialmodelingprep", default_val=defaultdict(list))
-    def get_stocks_quarterly_revenue_yoy_growth(self, stock_list: List[StockSymbol], num_of_quarters: int) \
-            -> Dict[StockSymbol, List[FinancialMetricsData]]:
+    def get_stocks_quarterly_revenue_yoy_growth(self, stock_list: list[StockSymbol], num_of_quarters: int) \
+            -> dict[StockSymbol, list[FinancialMetricsData]]:
         """
         Get stock quarterly revenue growth
 

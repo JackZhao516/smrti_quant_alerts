@@ -1,6 +1,6 @@
 import time
 
-from peewee import Model, CharField, IntegerField, DateTimeField, CompositeKey, DecimalField, BooleanField
+from peewee import Model, CharField, IntegerField, DateTimeField, CompositeKey, DecimalField
 from playhouse.shortcuts import ThreadSafeDatabaseMetadata
 
 

@@ -1,7 +1,7 @@
 import json
 import os
 import logging
-from typing import Dict, Any, List
+from typing import Any
 
 import pytz
 import datetime
@@ -94,7 +94,7 @@ class Config:
                               "run_time_input_args", "database_name", "alert_type"]
         for alert_name, alert_setting in self.SETTINGS.items():
             for key in alert_setting_keys:
-                if key not in alert_setting.keys():
+                if key not in alert_setting:
                     logging.error(f'configs.json does not contain "{key}" for {alert_name}')
                     exit(1)
             alert_type = alert_setting["alert_type"]
@@ -138,7 +138,7 @@ class Config:
                 self._validate_individual_configs([], ["tg_type", "rate_threshold"], alert_setting, alert_name)
 
     @staticmethod
-    def _validate_run_time_input_args(run_time_input_args: Dict[str, Any], alert_name: str) -> None:
+    def _validate_run_time_input_args(run_time_input_args: dict[str, Any], alert_name: str) -> None:
         """
         validate the configs inside run_time_input_args
 
@@ -185,8 +185,8 @@ class Config:
                 exit(1)
 
     @staticmethod
-    def _validate_individual_configs(param_keys: List[str], input_args_keys: List[str],
-                                     alert_settings: Dict[str, Any], alert_name: str) -> None:
+    def _validate_individual_configs(param_keys: list[str], input_args_keys: list[str],
+                                     alert_settings: dict[str, Any], alert_name: str) -> None:
         """
         validate price_volume alert configs
 

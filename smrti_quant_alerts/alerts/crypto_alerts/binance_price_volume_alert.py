@@ -3,7 +3,8 @@ import math
 import json
 import logging
 import threading
-from typing import List, Any, Optional, Sequence, Iterable
+from typing import Any
+from collections.abc import Sequence, Iterable
 from collections import defaultdict
 from abc import ABC, abstractmethod
 
@@ -44,7 +45,7 @@ class BinancePriceVolumeBase(ABC, BaseAlert, BinanceApi):
                                                            is_combined=True, timeout=2000)
 
     # ------alert helper functions-------
-    def _exchanges_to_subscription_stream_names(self, exchanges: Iterable[BinanceExchange]) -> List[str]:
+    def _exchanges_to_subscription_stream_names(self, exchanges: Iterable[BinanceExchange]) -> list[str]:
         """
         Convert exchanges to subscription stream names
         """
@@ -76,7 +77,7 @@ class BinancePriceVolumeBase(ABC, BaseAlert, BinanceApi):
             f"ticker volume alert monthly count:"
             f" {monthly_count}")
 
-    def _handle_tick_message_pre_check(self, msg: str) -> Optional[ExchangeTick]:
+    def _handle_tick_message_pre_check(self, msg: str) -> ExchangeTick | None:
         """
         Pre check for tick message
 
@@ -340,7 +341,7 @@ class BinancePriceVolumeAlert(BaseAlert):
             "binance_volume_1h": BinanceVolume1hAlert,
         }
 
-        for alert_type, tg_type in zip(self._alert_types, self._tg_types):
+        for alert_type, tg_type in zip(self._alert_types, self._tg_types, strict=False):
             alert = alert_type_to_class[alert_type](alert_name=self._alert_name, tg_type=tg_type)
             threading.Thread(target=alert.run).start()
 

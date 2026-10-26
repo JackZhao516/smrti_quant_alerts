@@ -38,7 +38,7 @@ class CGAltsAlert(BaseAlert, CoingeckoApi):
 
         # second filter: volume change >= 50% in 24 hours, volume >= 10k in USD
         res = []
-        for i, coin in enumerate(market_info_filtered):
+        for _i, coin in enumerate(market_info_filtered):
             data = self.get_coin_market_info(coin, ["total_volumes"], days=1)
             if not data or len(data["total_volumes"]) < 2:
                 continue

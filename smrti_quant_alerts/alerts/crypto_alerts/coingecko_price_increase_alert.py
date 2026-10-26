@@ -1,5 +1,5 @@
 import time
-from typing import Union, Sequence, List, Dict, Any, Iterable
+from collections.abc import Sequence, Iterable
 
 from smrti_quant_alerts.alerts.base_alert import BaseAlert
 from smrti_quant_alerts.stock_crypto_api import CoingeckoApi
@@ -8,7 +8,7 @@ from smrti_quant_alerts.alerts.crypto_alerts.utility import send_coins_info_to_t
 
 
 class CoingeckoPriceIncreaseAlert(BaseAlert, CoingeckoApi):
-    def __init__(self, alert_name: str, top_range: Union[Sequence[int], Sequence[Sequence[int]]] = (0, 500),
+    def __init__(self, alert_name: str, top_range: Sequence[int] | Sequence[Sequence[int]] = (0, 500),
                  top_n: int = 100, timeframe: str = "14d", coin_info: bool = True,
                  tg_type: str = "CG_PRICE_INCREASE") -> None:
         """
@@ -31,7 +31,7 @@ class CoingeckoPriceIncreaseAlert(BaseAlert, CoingeckoApi):
         self._timeframe = timeframe.lower()
         self._coin_info = coin_info
 
-    def get_coins_price_change_percentage(self, coins: List[CoingeckoCoin]) -> Dict[CoingeckoCoin, float]:
+    def get_coins_price_change_percentage(self, coins: list[CoingeckoCoin]) -> dict[CoingeckoCoin, float]:
         """
         Get price change percentage for the list of coins
 
@@ -62,7 +62,7 @@ class CoingeckoPriceIncreaseAlert(BaseAlert, CoingeckoApi):
         return coin_price_change_map
 
     def filter_top_n_coins_with_daily_volume_over_threshold(
-            self, coins: Iterable[CoingeckoCoin], threshold: float = 1000000) -> List[CoingeckoCoin]:
+            self, coins: Iterable[CoingeckoCoin], threshold: float = 1000000) -> list[CoingeckoCoin]:
         """
         Filter out coins with daily volume over the threshold
 

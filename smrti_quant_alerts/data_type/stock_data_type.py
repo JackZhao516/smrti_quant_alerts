@@ -1,5 +1,4 @@
 from __future__ import annotations
-from typing import Tuple
 
 from .base_data_type import TradingSymbol
 
@@ -102,7 +101,7 @@ class StockSymbol(TradingSymbol):
         return StockSymbol(symbol)
 
     @staticmethod
-    def parse_symbol_market(symbol: str) -> Tuple[str, str]:
+    def parse_symbol_market(symbol: str) -> tuple[str, str]:
         if "@" in symbol:
             symbol, market = symbol.split("@")
             return symbol, market

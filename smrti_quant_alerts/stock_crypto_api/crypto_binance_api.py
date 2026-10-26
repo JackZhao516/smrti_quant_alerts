@@ -1,7 +1,6 @@
 import time
 from decimal import Decimal
 from datetime import datetime
-from typing import List, Union, Set, Optional, Tuple
 
 from binance.spot import Spot
 from binance.um_futures import UMFutures
@@ -10,7 +9,7 @@ from smrti_quant_alerts.exception import error_handling
 from smrti_quant_alerts.settings import Config
 from smrti_quant_alerts.data_type import BinanceExchange, CoingeckoCoin, TradingSymbol
 from smrti_quant_alerts.stock_crypto_api.utility import read_exclude_coins_from_file, \
-    get_date_from_timestamp, get_datetime_now
+    get_date_from_timestamp
 
 
 class BinanceApi:
@@ -44,8 +43,8 @@ class BinanceApi:
         self.active_exchanges_timestamp = 0
 
     def get_exclude_coins(
-            self, input_exclude_coins: Union[List[TradingSymbol], Set[TradingSymbol], None] = None) \
-            -> Set[BinanceExchange]:
+            self, input_exclude_coins: list[TradingSymbol] | set[TradingSymbol] | None = None) \
+            -> set[BinanceExchange]:
         """
         expand exclude coins to include all quotes for each base
 
@@ -82,7 +81,7 @@ class BinanceApi:
         return exclude_coins
 
     @error_handling("binance", default_val=[])
-    def get_all_binance_exchanges(self, exchange_type: str = "SPOT") -> List[BinanceExchange]:
+    def get_all_binance_exchanges(self, exchange_type: str = "SPOT") -> list[BinanceExchange]:
         """
         Get all exchanges on binance, default is SPOT
 
@@ -100,7 +99,7 @@ class BinanceApi:
         return binance_exchanges
 
     @error_handling("binance", default_val=Decimal(0))
-    def get_future_exchange_funding_rate(self, exchange: Optional[BinanceExchange]) -> Decimal:
+    def get_future_exchange_funding_rate(self, exchange: BinanceExchange | None) -> Decimal:
         """
         Get funding rate of a future exchange
 
@@ -116,7 +115,7 @@ class BinanceApi:
         return Decimal(0)
 
     @error_handling("binance", default_val=Decimal(0))
-    def get_exchange_current_price(self, binance_exchange: Optional[BinanceExchange]) -> Decimal:
+    def get_exchange_current_price(self, binance_exchange: BinanceExchange | None) -> Decimal:
         """
         Get exchange current close price
 
@@ -135,7 +134,7 @@ class BinanceApi:
 
     @error_handling("binance", default_val=[])
     def get_exchange_history_hourly_close_price(
-            self, exchange: Optional[BinanceExchange], days: int = 10) -> List[Decimal]:
+            self, exchange: BinanceExchange | None, days: int = 10) -> list[Decimal]:
         """
         Get exchange past close price for the history <days> days
 
@@ -153,7 +152,7 @@ class BinanceApi:
         prices = [Decimal(i[4]) for i in response][::-1]
         return prices
 
-    def get_all_spot_exchanges_in_usdt_fdusd_btc(self) -> List[BinanceExchange]:
+    def get_all_spot_exchanges_in_usdt_fdusd_btc(self) -> list[BinanceExchange]:
         """
         Get all exchanges in either USDT, FDUSD, or BTC format on binance
 
@@ -173,7 +172,7 @@ class BinanceApi:
 
     @error_handling("binance", default_val=[])
     def get_exchange_close_prices_by_timeframe_num_of_ticks(self, exchange: BinanceExchange, timeframe: str,
-                                                            num_of_tick: int = 10) -> List[Tuple[str, float]]:
+                                                            num_of_tick: int = 10) -> list[tuple[str, float]]:
         """
         Get exchange past close price for the history <timeframe> number of ticks
 

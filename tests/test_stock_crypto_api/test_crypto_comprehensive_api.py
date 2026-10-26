@@ -1,11 +1,8 @@
-import os
 import unittest
 from unittest import mock
-from decimal import Decimal
 
 
 from smrti_quant_alerts.stock_crypto_api import CryptoComprehensiveApi
-from smrti_quant_alerts.settings import Config
 from smrti_quant_alerts.data_type import BinanceExchange, CoingeckoCoin
 
 

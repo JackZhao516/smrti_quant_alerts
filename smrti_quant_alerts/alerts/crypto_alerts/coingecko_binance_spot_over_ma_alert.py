@@ -3,7 +3,6 @@ import statistics
 from collections import defaultdict
 from time import sleep, time
 from multiprocessing.pool import ThreadPool
-from typing import List, Set, Tuple, Union
 from abc import ABC, abstractmethod
 
 from smrti_quant_alerts.alerts.base_alert import BaseAlert
@@ -16,8 +15,8 @@ db_utils = SpotOverMaDBUtils()
 
 
 class SpotOverMABase(ABC, CryptoComprehensiveApi):
-    def __init__(self, exclude_coins: Union[List[TradingSymbol], Set[TradingSymbol]],
-                 trading_symbols: Union[List[TradingSymbol], Set[TradingSymbol]],
+    def __init__(self, exclude_coins: list[TradingSymbol] | set[TradingSymbol],
+                 trading_symbols: list[TradingSymbol] | set[TradingSymbol],
                  timeframe: int = 1, window: int = 200, alert_type: str = "alert_300") -> None:
         CryptoComprehensiveApi.__init__(self)
         self._trading_symbols = trading_symbols
@@ -50,7 +49,7 @@ class SpotOverMABase(ABC, CryptoComprehensiveApi):
 
         logging.info(f"spot_over_ma_{self.alert_type}: {self._spot_over_ma}")
 
-    def _compare_last_time(self) -> Tuple[List[TradingSymbol], List[TradingSymbol]]:
+    def _compare_last_time(self) -> tuple[list[TradingSymbol], list[TradingSymbol]]:
         """
         compare last time _spot_over_ma with current _spot_over_ma
         read/write to the database
@@ -74,7 +73,7 @@ class SpotOverMABase(ABC, CryptoComprehensiveApi):
         db_utils.update_last_count(list(self._spot_over_ma.keys()), self.alert_type)
         return newly_deleted, newly_added
 
-    def run(self) -> Tuple[List[Tuple[TradingSymbol, int]], List[TradingSymbol], List[TradingSymbol]]:
+    def run(self) -> tuple[list[tuple[TradingSymbol, int]], list[TradingSymbol], list[TradingSymbol]]:
         """
         run the alert
 
@@ -82,13 +81,13 @@ class SpotOverMABase(ABC, CryptoComprehensiveApi):
         """
         self._coins_spot_over_ma()
         newly_deleted, newly_added = self._compare_last_time()
-        spot_over_ma = list(sorted(self._spot_over_ma.items(), key=lambda x: (-x[1], x[0])))
+        spot_over_ma = sorted(self._spot_over_ma.items(), key=lambda x: (-x[1], x[0]))
         return spot_over_ma, newly_deleted, newly_added
 
 
 class CoingeckoSpotOverMA(SpotOverMABase):
-    def __init__(self, exclude_coins: Union[List[TradingSymbol], Set[TradingSymbol]],
-                 coingecko_coins: Union[List[CoingeckoCoin], Set[CoingeckoCoin]],
+    def __init__(self, exclude_coins: list[TradingSymbol] | set[TradingSymbol],
+                 coingecko_coins: list[CoingeckoCoin] | set[CoingeckoCoin],
                  timeframe: int = 1, window: int = 200, alert_type: str = "alert_300") -> None:
         super().__init__(exclude_coins, coingecko_coins, timeframe, window, alert_type)
         self._symbol_type = CoingeckoCoin
@@ -115,8 +114,8 @@ class CoingeckoSpotOverMA(SpotOverMABase):
 
 
 class BinanceSpotOverMA(SpotOverMABase):
-    def __init__(self, exclude_coins: Union[List[TradingSymbol], Set[TradingSymbol]],
-                 binance_exchanges: Union[List[BinanceExchange], Set[BinanceExchange]],
+    def __init__(self, exclude_coins: list[TradingSymbol] | set[TradingSymbol],
+                 binance_exchanges: list[BinanceExchange] | set[BinanceExchange],
                  timeframe: int = 1, window: int = 200, alert_type: str = "alert_300") -> None:
         super().__init__(exclude_coins, binance_exchanges, timeframe, window, alert_type)
         self._symbol_type = BinanceExchange
@@ -149,7 +148,7 @@ class BinanceSpotOverMA(SpotOverMABase):
         """
         super()._coins_spot_over_ma(threads=threads)
         bases = defaultdict(set)
-        for binance_exchange in self._spot_over_ma.keys():
+        for binance_exchange in self._spot_over_ma:
             base = binance_exchange.base_symbol
             bases[base].add(binance_exchange.quote_symbol)
         self._spot_over_ma = {}
@@ -208,8 +207,8 @@ class SpotOverMAAlert(BaseAlert, CryptoComprehensiveApi):
                 self.get_coins_with_daily_volume_threshold_later_than_2023(threshold=3000000)
 
     def _alert_spot_cross_ma_by_alert_type(
-            self, exclude_coins: Union[List[TradingSymbol], Set[TradingSymbol], None] = None,
-            alert_type: str = "alert_300") -> Tuple[Set[TradingSymbol], List[TradingSymbol]]:
+            self, exclude_coins: list[TradingSymbol] | set[TradingSymbol] | None = None,
+            alert_type: str = "alert_300") -> tuple[set[TradingSymbol], list[TradingSymbol]]:
         """
         if provided with excluded coins, deleted coins, and added coins,
         the function will not alert those coins
@@ -265,8 +264,8 @@ class SpotOverMAAlert(BaseAlert, CryptoComprehensiveApi):
         return exclude_coins.union(set(coins + newly_added_coins)), coins
 
     def _sequential_alert(self) \
-            -> Tuple[Union[List[TradingSymbol], Set[TradingSymbol]],
-                     Union[List[TradingSymbol], Set[TradingSymbol]]]:
+            -> tuple[list[TradingSymbol] | set[TradingSymbol],
+                     list[TradingSymbol] | set[TradingSymbol]]:
         """
         sequentially alert 100, 300, 500 coins
         """

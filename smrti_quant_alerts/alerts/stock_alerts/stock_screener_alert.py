@@ -3,7 +3,6 @@ import time
 import os
 import uuid
 import threading
-from typing import List, Dict, Tuple, Set
 from collections import defaultdict
 from concurrent.futures import ThreadPoolExecutor
 
@@ -17,7 +16,7 @@ from smrti_quant_alerts.db import StockAlertDBUtils, close_database
 
 
 class StockScreenerAlert(BaseAlert, StockApi):
-    def __init__(self, alert_name: str, price_top_percent: int = 20, top_performer_exclude_sectors: List[str] = None,
+    def __init__(self, alert_name: str, price_top_percent: int = 20, top_performer_exclude_sectors: list[str] = None,
                  email: bool = True, market_cap_threshold: int = 10 ** 8) -> None:
         BaseAlert.__init__(self, alert_name)
         StockApi.__init__(self)
@@ -41,7 +40,7 @@ class StockScreenerAlert(BaseAlert, StockApi):
             threading.Thread(target=self.get_top_percent_stock_price_top_performer_by_gics_sector_timeframe)
         self._get_price_top_performer_thread.start()
 
-    def _get_stocks(self) -> List[StockSymbol]:
+    def _get_stocks(self) -> list[StockSymbol]:
         """
         Get stocks from the initial filter
         """
@@ -55,7 +54,7 @@ class StockScreenerAlert(BaseAlert, StockApi):
         self.get_stock_info(stocks)
 
     @staticmethod
-    def _get_newly_added_stocks_str(stocks: List[StockSymbol], screener_name: str) -> Set[StockSymbol]:
+    def _get_newly_added_stocks_str(stocks: list[StockSymbol], screener_name: str) -> set[StockSymbol]:
         """
         Find newly added stocks
 
@@ -68,7 +67,7 @@ class StockScreenerAlert(BaseAlert, StockApi):
         StockAlertDBUtils.add_stocks(stocks, screener_name)
         return new_stocks
 
-    def _get_enterprise_value_over_gross_profit(self, stocks: List[StockSymbol]) -> None:
+    def _get_enterprise_value_over_gross_profit(self, stocks: list[StockSymbol]) -> None:
         """
         Get enterprise value over revenue
         """
@@ -85,7 +84,7 @@ class StockScreenerAlert(BaseAlert, StockApi):
             {stock: (enterprise_values[stock] / stocks_stats[stock][0][FinancialMetricType.GROSS_PROFIT])
              for stock in stocks if len(stocks_stats[stock]) > 0})
 
-    def _parallel_get_stocks_valuation_score(self, stocks: List[StockSymbol]) -> None:
+    def _parallel_get_stocks_valuation_score(self, stocks: list[StockSymbol]) -> None:
         """
         Get stocks valuation score
 
@@ -101,7 +100,7 @@ class StockScreenerAlert(BaseAlert, StockApi):
         for res in valuation_scores_res:
             self._stocks_valuation_score.update(res)
 
-    def _get_stocks_eight_quarters_stats(self, stocks: List[StockSymbol]) -> None:
+    def _get_stocks_eight_quarters_stats(self, stocks: list[StockSymbol]) -> None:
         """
         Get eight quarters stats: quarterly revenue yoy growth, operating margin, gross margin, FCF margin
 
@@ -133,7 +132,7 @@ class StockScreenerAlert(BaseAlert, StockApi):
             self.get_all_non_etf_stocks_price_change_percentage_by_gics_sector_timeframes(["5D", "1M"])
         if self._top_performer_exclude_sectors:
             for sector in self._top_performer_exclude_sectors:
-                for key in self._stock_price_top_performer_by_gics_sector_timeframe.keys():
+                for key in self._stock_price_top_performer_by_gics_sector_timeframe:
                     if sector in self._stock_price_top_performer_by_gics_sector_timeframe[key]:
                         del self._stock_price_top_performer_by_gics_sector_timeframe[key][sector]
         for timeframe, value in self._stock_price_top_performer_by_gics_sector_timeframe.items():
@@ -143,8 +142,8 @@ class StockScreenerAlert(BaseAlert, StockApi):
                     self._stock_price_top_performer_by_gics_sector_timeframe[timeframe][key][:num_kept]
 
     # ---------------------------screener rules--------------------------------
-    def _growth_score_filter(self, stocks: List[StockSymbol]) \
-            -> Tuple[List[StockSymbol], Dict[StockSymbol, Dict[str, FinancialMetricsData]]]:
+    def _growth_score_filter(self, stocks: list[StockSymbol]) \
+            -> tuple[list[StockSymbol], dict[StockSymbol, dict[str, FinancialMetricsData]]]:
         """
         last two quarterly revenue yoy growth + avg (last two quarters) FCF margin > 80%
         """
@@ -159,7 +158,7 @@ class StockScreenerAlert(BaseAlert, StockApi):
                                  reverse=True)
         return filtered_stocks, growth_scores
 
-    def _quarterly_revenue_yoy_growth_operating_margin_filter(self, stocks: List[StockSymbol]) -> List[StockSymbol]:
+    def _quarterly_revenue_yoy_growth_operating_margin_filter(self, stocks: list[StockSymbol]) -> list[StockSymbol]:
         """
         latest quarterly revenue yoy growth + operating margin > 40%
 
@@ -177,7 +176,7 @@ class StockScreenerAlert(BaseAlert, StockApi):
 
         return filtered_stocks
 
-    def _quarterly_revenue_yoy_growth_revenue_cagr_filter(self, stocks: List[StockSymbol]) -> List[StockSymbol]:
+    def _quarterly_revenue_yoy_growth_revenue_cagr_filter(self, stocks: list[StockSymbol]) -> list[StockSymbol]:
         """
         latest quarterly revenue yoy growth > 30% and
         3Y revenue CAGR > 30% or avg (last 6 quarterly revenue yoy growth) > 30%
@@ -198,7 +197,7 @@ class StockScreenerAlert(BaseAlert, StockApi):
 
         return filtered_stocks
 
-    def _quarterly_revenue_yoy_growth_filter(self, stocks: List[StockSymbol]) -> List[StockSymbol]:
+    def _quarterly_revenue_yoy_growth_filter(self, stocks: list[StockSymbol]) -> list[StockSymbol]:
         """
         latest quarterly revenue yoy growth > 30% and avg(last 3 quarterly revenue yoy growth) > 30%
         """
@@ -243,9 +242,9 @@ class StockScreenerAlert(BaseAlert, StockApi):
         return content + "\n"
 
     # ---------------------------build csv/xlsx-----------------------
-    def _build_growth_filter_docs(self, stocks: List[StockSymbol],
-                                  growth_scores: Dict[StockSymbol, Dict[str, FinancialMetricsData]],
-                                  growth_score_file_break_threshold: int = 1) -> List[str]:
+    def _build_growth_filter_docs(self, stocks: list[StockSymbol],
+                                  growth_scores: dict[StockSymbol, dict[str, FinancialMetricsData]],
+                                  growth_score_file_break_threshold: int = 1) -> list[str]:
         """
         Build growth filter xlsx files
 
@@ -275,7 +274,7 @@ class StockScreenerAlert(BaseAlert, StockApi):
             writer_industry_maps[index][stock.gics_sector].append(
                 [stock.ticker] + [str(growth_scores[stock][header]) for header in headers[1:]])
 
-        for filename, writer_industry_map in zip(filenames, writer_industry_maps):
+        for filename, writer_industry_map in zip(filenames, writer_industry_maps, strict=False):
             with pd.ExcelWriter(filename) as writer:
                 for industry, rows in writer_industry_map.items():
                     rows.insert(0, headers)
@@ -286,7 +285,7 @@ class StockScreenerAlert(BaseAlert, StockApi):
 
         return filenames
 
-    def _build_standard_filter_xlsx(self, stocks: List[StockSymbol], screener_name: str) -> str:
+    def _build_standard_filter_xlsx(self, stocks: list[StockSymbol], screener_name: str) -> str:
         """
         Build csv file
 
@@ -329,8 +328,8 @@ class StockScreenerAlert(BaseAlert, StockApi):
         return file_name
 
     # ---------------------------send email--------------------------------
-    def _send_email(self, csv_files: List[str] = None,
-                    pdf_xlsx_files: List[str] = None, email_content_add_on: str = "") -> None:
+    def _send_email(self, csv_files: list[str] = None,
+                    pdf_xlsx_files: list[str] = None, email_content_add_on: str = "") -> None:
         """
         Send email
 

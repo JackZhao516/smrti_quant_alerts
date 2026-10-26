@@ -2,14 +2,14 @@ import pytz
 import logging
 import datetime
 import time
-from typing import Callable, Union, Iterable, Optional, List
+from collections.abc import Callable, Iterable
 
 from smrti_quant_alerts.settings import Config
 
 
-def run_task_at_daily_time(task: Callable, daily_times: Union[Iterable[str], str],
-                           excluded_week_days: Optional[List[str]] = None,
-                           timezone: Optional[str] = None) -> None:
+def run_task_at_daily_time(task: Callable, daily_times: Iterable[str] | str,
+                           excluded_week_days: list[str] | None = None,
+                           timezone: str | None = None) -> None:
     """
     :param task: function to run
     :param daily_times: time to run the task, format: "HH:MM"

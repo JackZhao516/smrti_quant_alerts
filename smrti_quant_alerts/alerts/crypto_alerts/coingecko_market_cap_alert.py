@@ -5,14 +5,14 @@ top n market cap coins
 import time
 import logging
 from collections import defaultdict
-from typing import Union, Iterable
+from collections.abc import Iterable
 
 from smrti_quant_alerts.alerts.base_alert import BaseAlert
 from smrti_quant_alerts.stock_crypto_api import CoingeckoApi
 
 
 class CoingeckoMarketCapAlert(BaseAlert, CoingeckoApi):
-    def __init__(self, alert_name: str, top_n: Union[Iterable[int], int] = 200, tg_type: str = "CG_MAR_CAP") -> None:
+    def __init__(self, alert_name: str, top_n: Iterable[int] | int = 200, tg_type: str = "CG_MAR_CAP") -> None:
         BaseAlert.__init__(self, alert_name, tg_type)
         CoingeckoApi.__init__(self)
         if isinstance(top_n, int):
@@ -37,7 +37,7 @@ class CoingeckoMarketCapAlert(BaseAlert, CoingeckoApi):
 
             if cur_set != new_set:
                 deleted_list = list(cur_set - new_set)
-                for i, coin in enumerate(new_list):
+                for _i, coin in enumerate(new_list):
                     if coin not in cur_set:
                         added_list.append(coin)
                 self._top_n_list[n] = new_list

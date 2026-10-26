@@ -1,7 +1,6 @@
 import os
 import re
 import logging
-from typing import Tuple, List, Union
 from time import time, sleep
 from datetime import datetime
 
@@ -25,10 +24,10 @@ class LLMAPI:
         else:
             # Fallback to environment variable
             self._api_key = os.getenv('OPENAI_API_KEY')
-        
+
         if not self._api_key:
             logging.warning("No OpenAI API key found in tokens.json or environment variables")
-        
+
         self._model = "gpt-4.1"
         self._client = OpenAI(api_key=self._api_key) if self._api_key else None
 
@@ -54,7 +53,7 @@ class LLMAPI:
         return int(digits[0]) if digits else 0
 
     @staticmethod
-    def _get_max_timeframe(timeframe: List[str]) -> str:
+    def _get_max_timeframe(timeframe: list[str]) -> str:
         """
         get max timeframe
 
@@ -77,17 +76,17 @@ class LLMAPI:
             return max(hours, key=LLMAPI._parse_timeframe_number)
         return timeframe[0]
 
-    def get_ai_response(self, prompt: str) -> Tuple[str, str]:
+    def get_ai_response(self, prompt: str) -> tuple[str, str]:
         """
         Get response from OpenAI API with web search
-        
+
         Args:
             prompt: The prompt to send to the AI
-            
+
         Returns:
             Tuple[str, str]: (response_content, citations)
         """
-        try:                        
+        try:
             response = self._client.chat.completions.create(
                 model=self._model,
                 messages=[
@@ -109,29 +108,29 @@ class LLMAPI:
                 temperature=0.7,
                 max_tokens=2000
             )
-            
+
             # Extract main response and citations
             response_content = response.choices[0].message.content or ""
             citations = []
-            
+
             # Extract citations from the response using markdown link format
             urls = re.findall(r'\[([^\]]+)\]\(([^)]+)\)', response_content)
             if urls:
                 for domain, url in urls:
                     citations.append(f"- [{domain}]({url})")
-                    
+
             # remove duplicate citations
-            citations = "\n\n## Sources:\n" + "\n".join(sorted(list(set(citations)))) if citations else ""
+            citations = "\n\n## Sources:\n" + "\n".join(sorted(set(citations))) if citations else ""
 
             return response_content, citations
-            
+
         except Exception as e:
             error_msg = f"Error getting AI response: {e}"
             logging.error(error_msg)
             return "", ""
 
     @error_handling("openai", default_val="")
-    def get_stock_increase_reason(self, company_stock_code: StockSymbol, timeframe: Union[List[str], str]) -> str:
+    def get_stock_increase_reason(self, company_stock_code: StockSymbol, timeframe: list[str] | str) -> str:
         """
         get stock increase reason
 
@@ -147,15 +146,15 @@ class LLMAPI:
         timeframe = [timeframe] if isinstance(timeframe, str) else timeframe
         date_str = datetime.now().strftime("%Y-%m-%d")
 
-        prompt = f"""You are an artificial intelligence trading market analyst. 
-        With the latest market data, news, and company information, 
+        prompt = f"""You are an artificial intelligence trading market analyst.
+        With the latest market data, news, and company information,
         please do analysis on the companies with stock code {company_stock_code}.
-        Then answer the following questions: 
+        Then answer the following questions:
         IMPORTANT: The date of the stock price increase is {date_str}.
-        What is the company with stock code {company_stock_code}? 
-        Why did {company_stock_code} stock appreciate so much since 
+        What is the company with stock code {company_stock_code}?
+        Why did {company_stock_code} stock appreciate so much since
         {self._get_max_timeframe(timeframe)} timeframe ago since {date_str}?
-        
+
         Please provide a comprehensive analysis including (but not limited to):
         1. Company overview and business model
         2. Recent news and events that may have impacted the stock
@@ -163,9 +162,9 @@ class LLMAPI:
         4. Technical analysis factors
         5. Any regulatory or industry-specific developments
         6. Any other relevant information"""
-        
+
         response_content, citations = self.get_ai_response(prompt)
-        
+
         # Combine response with citations
         if citations:
             return response_content + citations

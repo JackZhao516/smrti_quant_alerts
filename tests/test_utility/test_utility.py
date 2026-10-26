@@ -20,7 +20,7 @@ class TestUtility(unittest.TestCase):
         times = ["00:00", ["00:00", "00:01"]]
         with patch('datetime.datetime', wraps=datetime.datetime) as dt:
             dt.now.return_value = \
-                datetime.datetime(2023, 6, 14, 0, 0, 0).replace(tzinfo=datetime.timezone.utc)
+                datetime.datetime(2023, 6, 14, 0, 0, 0).replace(tzinfo=datetime.UTC)
             for time in times:
                 with self.assertRaises(SystemExit) as cm:
                     run_task_at_daily_time(lambda: exit(1), time)
@@ -28,7 +28,7 @@ class TestUtility(unittest.TestCase):
 
         with patch('datetime.datetime', wraps=datetime.datetime) as dt:
             dt.now.return_value = \
-                datetime.datetime(2023, 6, 14, 0, 0, 0).replace(tzinfo=datetime.timezone.utc)
+                datetime.datetime(2023, 6, 14, 0, 0, 0).replace(tzinfo=datetime.UTC)
             with patch('time.sleep', side_effect=lambda x: exit(1) if x == 60 else print("")):
                 with self.assertRaises(SystemExit) as cm:
                     run_task_at_daily_time(lambda: print(""), "00:00")

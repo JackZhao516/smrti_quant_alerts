@@ -1,8 +1,6 @@
 import unittest
-from unittest.mock import patch, ANY
 
 from smrti_quant_alerts.alerts import StockPriceTopPerformerAlert
-from smrti_quant_alerts.data_type import StockSymbol
 
 
 class TestStockAlert(unittest.TestCase):

@@ -1,15 +1,10 @@
 import unittest
 import datetime
-import importlib
 from unittest import mock
 
-import pandas as pd
-import pytz
 
-import smrti_quant_alerts.stock_crypto_api.stock_api
 from smrti_quant_alerts.stock_crypto_api import StockApi
-from smrti_quant_alerts.data_type import StockSymbol, FinancialMetricsData, FinancialDataType, FinancialMetricType
-from smrti_quant_alerts.stock_crypto_api.utility import get_datetime_now
+from smrti_quant_alerts.data_type import StockSymbol, FinancialMetricsData
 
 
 class MockStock:

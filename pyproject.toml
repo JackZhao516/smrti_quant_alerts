@@ -1,0 +1,25 @@
+[tool.ruff]
+line-length = 120
+target-version = "py312"
+extend-exclude = ["build", "dist"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "B", "UP", "SIM", "C4"]
+ignore = [
+    # Opening a file without a context manager is sometimes intentional, e.g. when
+    # the handle must outlive the surrounding scope. Rewriting those sites is not a
+    # mechanical change, so keep them out of the lint baseline.
+    "SIM115",
+    # The formatter owns code line width. E501 also fires on long strings, URLs and
+    # comments that the formatter intentionally leaves alone.
+    "E501",
+]
+
+[tool.ruff.lint.per-file-ignores]
+# Package __init__ modules intentionally re-export names for a stable public API.
+"__init__.py" = ["F401"]
+# Nested context managers keep mock setup in tests readable.
+"tests/**" = ["SIM117"]
+
+[tool.ruff.format]
+quote-style = "double"

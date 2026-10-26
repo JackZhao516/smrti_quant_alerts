@@ -1,6 +1,5 @@
 import time
 import math
-from typing import Tuple, List, Optional, Union, Set
 from multiprocessing.pool import ThreadPool
 
 import numpy as np
@@ -18,8 +17,8 @@ class CryptoComprehensiveApi(BinanceApi, CoingeckoApi):
         self._match_binance_exchange_to_coingecko_coins()
 
     def get_exclude_coins(
-            self, input_exclude_coins: Union[List[TradingSymbol], Set[TradingSymbol], None] = None) \
-            -> Set[TradingSymbol]:
+            self, input_exclude_coins: list[TradingSymbol] | set[TradingSymbol] | None = None) \
+            -> set[TradingSymbol]:
         """
         expand exclude coins to include all quotes for each base
 
@@ -51,7 +50,7 @@ class CryptoComprehensiveApi(BinanceApi, CoingeckoApi):
 
     @error_handling("coingecko", default_val=([], []))
     def get_coins_with_daily_volume_threshold_later_than_2023(
-            self, threshold: int = 3000000) -> Tuple[List[BinanceExchange], List[CoingeckoCoin]]:
+            self, threshold: int = 3000000) -> tuple[list[BinanceExchange], list[CoingeckoCoin]]:
         """
         Get all coins with 24h volume larger than threshold (in USD)
         coin/usdt coin/eth coin/fdusd coin/btc exchanges on binance:
@@ -104,9 +103,9 @@ class CryptoComprehensiveApi(BinanceApi, CoingeckoApi):
 
     @error_handling("coingecko", default_val=([], []))
     def get_top_market_cap_coins_with_volume_threshold(
-            self, num: int = 300, daily_volume_threshold: Optional[int] = None,
-            weekly_volume_threshold: Optional[int] = None) \
-            -> Tuple[List[BinanceExchange], List[CoingeckoCoin]]:
+            self, num: int = 300, daily_volume_threshold: int | None = None,
+            weekly_volume_threshold: int | None = None) \
+            -> tuple[list[BinanceExchange], list[CoingeckoCoin]]:
         """
         get the top <num> market cap
         coin/usdt coin/eth coin/fdusd coin/btc exchanges on binance:
@@ -165,7 +164,7 @@ class CryptoComprehensiveApi(BinanceApi, CoingeckoApi):
     @error_handling("coingecko", default_val=([], []))
     def get_coins_with_weekly_volume_increase(
             self, volume_threshold: float = 1.3,
-            num: int = 500) -> Tuple[List[BinanceExchange], List[CoingeckoCoin]]:
+            num: int = 500) -> tuple[list[BinanceExchange], list[CoingeckoCoin]]:
         """
         Get top <num> market cap coins with weekly volume increase larger than volume_threshold
         for alt/btc, alt/eth, ignore the volume increase threshold
@@ -207,7 +206,7 @@ class CryptoComprehensiveApi(BinanceApi, CoingeckoApi):
         pool.close()
 
         coin_volume_increase_detail = sorted(coin_volume_increase_detail, key=lambda x: x[0], reverse=True)
-        for volume_increase, symbol, coin_id in coin_volume_increase_detail:
+        for _volume_increase, symbol, coin_id in coin_volume_increase_detail:
             binance_exchange = False
             for quote in ["USDT", "FDUSD", "BTC", "ETH"]:
                 if BinanceExchange(symbol, quote) in self.active_binance_spot_exchanges_set:

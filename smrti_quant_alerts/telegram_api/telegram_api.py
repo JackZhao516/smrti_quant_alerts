@@ -3,7 +3,7 @@ import time
 import threading
 import requests
 import csv
-from typing import List, Any
+from typing import Any
 
 from smrti_quant_alerts.exception import error_handling
 from smrti_quant_alerts.settings import Config
@@ -109,7 +109,7 @@ class TelegramBot:
         return requests.post(api_url, data=data, files=files, stream=True, timeout=1000)
 
     @error_handling("telegram", default_val=None)
-    def send_data_as_csv_file(self, output_file_name: str, headers: List[str], data: List[List[Any]]) -> Any:
+    def send_data_as_csv_file(self, output_file_name: str, headers: list[str], data: list[list[Any]]) -> Any:
         """
         send data as csv file to telegram group
 

@@ -3,7 +3,6 @@ from unittest.mock import patch
 
 from smrti_quant_alerts.alerts import CoingeckoPriceIncreaseAlert
 from smrti_quant_alerts.data_type import CoingeckoCoin
-from smrti_quant_alerts.alerts.crypto_alerts.utility import send_coins_info_to_telegram
 
 
 class TestPriceIncreaseAlert(unittest.TestCase):
@@ -30,7 +29,7 @@ class TestPriceIncreaseAlert(unittest.TestCase):
         return_value = [100, 50]
         with patch.object(CoingeckoPriceIncreaseAlert, "get_coin_history_hourly_close_price",
                           return_value=return_value) as mock_get_price:
-            for timeframe, days in zip(["5d", "3m", "2y"], [5, 90, 730]):
+            for timeframe, days in zip(["5d", "3m", "2y"], [5, 90, 730], strict=False):
                 alert = CoingeckoPriceIncreaseAlert(
                     "<price_increase_alert_example_name>", [0, 1], 1, timeframe, False, "TEST")
                 res = alert.get_coins_price_change_percentage([test_coin])

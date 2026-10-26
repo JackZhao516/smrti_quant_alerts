@@ -1,6 +1,6 @@
 import time
 from decimal import Decimal
-from typing import Union, Type, Dict, Optional, List, Tuple, Iterable, Set
+from collections.abc import Iterable
 from threading import RLock
 
 
@@ -69,8 +69,8 @@ class PriceVolumeDBUtils:
                 return 1
 
     @classmethod
-    def get_count(cls, alert_type: str, exchange: Optional[BinanceExchange] = None,
-                  count_type: str = "daily") -> Dict[BinanceExchange, Tuple[int, float]]:
+    def get_count(cls, alert_type: str, exchange: BinanceExchange | None = None,
+                  count_type: str = "daily") -> dict[BinanceExchange, tuple[int, float]]:
         """
         get daily/monthly count for a certian exchange or all exchanges
 
@@ -121,7 +121,7 @@ class SpotOverMaDBUtils:
     db_lock = RLock()
 
     @classmethod
-    def remove_older_count(cls, start_timestamp: Union[int, float]) -> None:
+    def remove_older_count(cls, start_timestamp: int | float) -> None:
         """
         remove older count
         :param start_timestamp: start timestamp
@@ -132,8 +132,8 @@ class SpotOverMaDBUtils:
             cls.db_lock.release()
 
     @classmethod
-    def get_last_count(cls, symbol_type: Optional[Type[TradingSymbol]] = None,
-                       alert_type: Optional[str] = None) -> Dict[TradingSymbol, int]:
+    def get_last_count(cls, symbol_type: type[TradingSymbol] | None = None,
+                       alert_type: str | None = None) -> dict[TradingSymbol, int]:
         """
         get all last count or by symbol type
         :param symbol_type: symbol type
@@ -164,7 +164,7 @@ class SpotOverMaDBUtils:
             return res
 
     @classmethod
-    def update_last_count(cls, last_counts: List[TradingSymbol], alert_type: str) -> None:
+    def update_last_count(cls, last_counts: list[TradingSymbol], alert_type: str) -> None:
         """
         write/update last count for exchanges, only for the first time
 
@@ -189,7 +189,7 @@ class SpotOverMaDBUtils:
 
 class StockAlertDBUtils:
     @staticmethod
-    def get_stocks(alert_type: str = "") -> Set[StockSymbol]:
+    def get_stocks(alert_type: str = "") -> set[StockSymbol]:
         """
         get all stocks
         :param alert_type: alert type
@@ -199,7 +199,7 @@ class StockAlertDBUtils:
                 StockAlertCount.alert_type == alert_type)}
 
     @staticmethod
-    def get_all_stocks() -> Set[StockSymbol]:
+    def get_all_stocks() -> set[StockSymbol]:
         """
         get all stocks
         """
@@ -230,8 +230,8 @@ class StockAlertDBUtils:
             StockAlertCount.delete().where(StockAlertCount.alert_type == alert_type).execute()
 
     @staticmethod
-    def get_stocks_info(stocks: Union[Iterable[StockSymbol], Iterable[str]], full: bool = True) \
-            -> Tuple[List[StockSymbol], List[StockSymbol]]:
+    def get_stocks_info(stocks: Iterable[StockSymbol] | Iterable[str], full: bool = True) \
+            -> tuple[list[StockSymbol], list[StockSymbol]]:
         """
         get stock info
         :param stocks: list of stock symbols
@@ -280,7 +280,7 @@ class StockAlertDBUtils:
 
 class MACDAlertDBUtils(StockAlertDBUtils):
     @staticmethod
-    def get_last_week_value(symbol_left: str, symbol_right: str) -> Optional[float]:
+    def get_last_week_value(symbol_left: str, symbol_right: str) -> float | None:
         """
         get last week value
         :param symbol_left: symbol left

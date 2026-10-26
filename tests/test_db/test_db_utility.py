@@ -3,7 +3,6 @@ import os
 import threading
 import time
 from unittest.mock import patch
-from typing import Dict, Tuple
 
 from smrti_quant_alerts.db import init_database_runtime, PriceVolumeDBUtils, \
     SpotOverMaDBUtils, StockAlertDBUtils, close_database
@@ -52,8 +51,8 @@ class TestDBUtility(unittest.TestCase):
 
 class TestPriceVolumeDBUtils(unittest.TestCase):
     @staticmethod
-    def convert_timestamp_to_zero(count_dict: Dict[BinanceExchange, Tuple[int, float]]) \
-            -> Dict[BinanceExchange, Tuple[int, float]]:
+    def convert_timestamp_to_zero(count_dict: dict[BinanceExchange, tuple[int, float]]) \
+            -> dict[BinanceExchange, tuple[int, float]]:
         """
         convert timestamp to 0
         """

@@ -1,6 +1,5 @@
 import unittest
 import os
-from typing import List
 from dataclasses import dataclass
 from unittest.mock import patch, create_autospec
 
@@ -22,7 +21,7 @@ class OpenAIMessageWrapper:
 
 @dataclass
 class OpenAIResponse:
-    choices: List[OpenAIMessageWrapper]
+    choices: list[OpenAIMessageWrapper]
 
 
 class TestLLMApi(unittest.TestCase):
