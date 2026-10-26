@@ -36,7 +36,7 @@ jobs:
         ruff format --check .
     - name: Test with pytest
       run: |
-        pytest tests/* --cov smrti_quant_alerts --cov-config=.coveragerc --cov-report term-missing --disable-warnings --cov-fail-under=90
+        pytest tests --cov smrti_quant_alerts --cov-config=.coveragerc --cov-report term-missing --disable-warnings --cov-fail-under=90
     - name: Report Coverage
       run: |
         if [ ${{ matrix.python-version }} == "3.8" ]; then coveralls --rcfile=.coveragerc; fi
