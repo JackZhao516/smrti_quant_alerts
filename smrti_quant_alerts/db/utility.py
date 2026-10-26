@@ -254,12 +254,7 @@ class StockAlertDBUtils:
                 stock = StockSymbol(
                     i["symbol"], i["security_name"], i["gics_sector"], i["gics_sub_industry"],
                     i["location"], i["cik"], i["founded_time"])
-                if full:
-                    if stock.has_stock_info:
-                        stocks_with_info.append(stock)
-                    else:
-                        stocks_without_info.append(stock)
-                else:
+                if not full or stock.has_stock_info:
                     stocks_with_info.append(stock)
         stocks_with_info_set = set(stocks_with_info)
         for stock in stocks:

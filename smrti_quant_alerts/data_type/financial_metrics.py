@@ -45,7 +45,7 @@ class FinancialMetricsData:
                  has_percentage: bool = False) -> None:
         if isinstance(data, FinancialMetricsData):
             data = data.float_data
-        if np.isnan(data) or np.isinf(data):
+        if isinstance(data, (int, float, np.integer, np.floating)) and (np.isnan(data) or np.isinf(data)):
             data = 0.0
 
         self._has_percentage = has_percentage
