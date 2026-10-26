@@ -18,6 +18,7 @@ dummy_token_json = json.load(open(os.path.join(PWD, "dummy_token.json")))
 class TestConfig(unittest.TestCase):
     def setUp(self) -> None:
         Config.PROJECT_DIR = PWD
+        Config.IS_SETUP = False
 
     def test_config_basics(self) -> None:
         config = Config(verbose=True)
