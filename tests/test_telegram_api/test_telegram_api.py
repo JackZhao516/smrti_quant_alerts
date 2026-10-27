@@ -53,3 +53,11 @@ class TestTelegramBot(unittest.TestCase):
             telegram_bot = TelegramBot(daemon=False)
             res = telegram_bot.send_data_as_csv_file("test.csv", ["test1", "test2"], [["test3", "test4"]])
             self.assertEqual(res, b"test1,test2\r\ntest3,test4\r\n")
+
+    def test_injected_tokens(self) -> None:
+        telegram_bot = TelegramBot(
+            tg_type="TEST", daemon=False, tokens={"TOKEN": "test-token", "TELEGRAM_IDS": {"TEST": "test-chat"}}
+        )
+
+        self.assertEqual(telegram_bot.TOKEN, "test-token")
+        self.assertEqual(telegram_bot.telegram_chat_id, "test-chat")

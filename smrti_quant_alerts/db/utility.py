@@ -21,7 +21,9 @@ def is_database_runtime_initialized() -> bool:
 
 
 def close_database() -> None:
-    database_runtime.close()
+    if database_runtime.obj is not None:
+        database_runtime.close()
+    database_runtime.initialize(None)
 
 
 # -------------- price_volume ----------------

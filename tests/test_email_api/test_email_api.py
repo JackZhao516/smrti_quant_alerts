@@ -40,3 +40,16 @@ class TestEmailApi(unittest.TestCase):
             server.sendmail.assert_called_once()
             self.assertEqual(server.sendmail.call_args[0][0], "sender@example.com")
             self.assertEqual(server.sendmail.call_args[0][1], ["receiver@example.com"])
+
+    def test_injected_tokens(self) -> None:
+        email_api = EmailApi(
+            tokens={
+                "SENDER_EMAIL": "sender@example.com",
+                "RECEIVER_EMAIL": ["receiver@example.com"],
+                "PASSWORD": "password",
+            }
+        )
+
+        self.assertEqual(email_api.sender_email, "sender@example.com")
+        self.assertEqual(email_api.receiver_emails, ["receiver@example.com"])
+        self.assertEqual(email_api.password, "password")

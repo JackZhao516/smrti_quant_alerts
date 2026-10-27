@@ -12,11 +12,14 @@ from smrti_quant_alerts.stock_crypto_api.utility import read_exclude_coins_from_
 
 
 class CoingeckoApi:
-    COINGECKO_API_KEY = Config().TOKENS["COINGECKO_API_KEY"]
     PWD = Config.PROJECT_DIR
 
-    def __init__(self) -> None:
-        self._cg = CoinGeckoAPI(api_key=self.COINGECKO_API_KEY)
+    def __init__(self, api_key: str | None = None, client: CoinGeckoAPI | None = None) -> None:
+        self.COINGECKO_API_KEY = api_key
+        if client is None:
+            self.COINGECKO_API_KEY = api_key if api_key is not None else Config().TOKENS["COINGECKO_API_KEY"]
+            client = CoinGeckoAPI(api_key=self.COINGECKO_API_KEY)
+        self._cg = client
 
     def get_exclude_coins(
         self, input_exclude_coins: list[TradingSymbol] | set[TradingSymbol] | None = None

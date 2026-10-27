@@ -1,3 +1,5 @@
+from collections.abc import Callable
+
 from smrti_quant_alerts.settings import Config
 from smrti_quant_alerts.telegram_api import TelegramBot
 from smrti_quant_alerts.db import init_database_runtime
@@ -16,11 +18,19 @@ class BaseAlert:
     CONFIG = Config(verbose=False)
     PWD = CONFIG.PROJECT_DIR
 
-    def __init__(self, alert_name: str, tg_type: str = "TEST") -> None:
+    def __init__(
+        self,
+        alert_name: str,
+        tg_type: str = "TEST",
+        tg_bot: TelegramBot | None = None,
+        config: Config | None = None,
+        init_db: Callable[[str], None] = init_database_runtime,
+    ) -> None:
         self._alert_name = alert_name
-        self._tg_bot = TelegramBot(tg_type=tg_type)
-        database_name = f"{self.CONFIG.SETTINGS[self._alert_name].get('database_name', self._alert_name)}.db"
-        init_database_runtime(database_name)
+        self._config = config if config is not None else self.CONFIG
+        self._tg_bot = tg_bot if tg_bot is not None else TelegramBot(tg_type=tg_type)
+        database_name = f"{self._config.SETTINGS[self._alert_name].get('database_name', self._alert_name)}.db"
+        init_db(database_name)
 
     def __str__(self) -> str:
         return self.__class__.__name__

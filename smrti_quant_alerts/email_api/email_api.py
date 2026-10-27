@@ -4,15 +4,22 @@ from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from email.mime.application import MIMEApplication
 from collections.abc import Iterable
+from typing import Any
 
 from smrti_quant_alerts.settings import Config
 from smrti_quant_alerts.exception import error_handling
 
 
 class EmailApi:
-    email_tokens = Config().TOKENS["GMAIL"]
-
-    def __init__(self, sender_email: str = None, receiver_email: str = None, password: str = None) -> None:
+    def __init__(
+        self,
+        sender_email: str = None,
+        receiver_email: str = None,
+        password: str = None,
+        tokens: dict[str, Any] | None = None,
+    ) -> None:
+        tokens = tokens if tokens is not None else Config().TOKENS["GMAIL"]
+        self.email_tokens = tokens
         self.port = 465  # For SSL
         self.smtp_server = "smtp.gmail.com"
         self.sender_email = sender_email if sender_email else self.email_tokens["SENDER_EMAIL"]

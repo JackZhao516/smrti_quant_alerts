@@ -17,6 +17,26 @@ class TestStockApi(unittest.TestCase):
     def setUp(self) -> None:
         self.stock_api = StockApi()
 
+    def test_injected_config(self) -> None:
+        config = mock.Mock()
+        config.TOKENS = {"FMP_API_KEY": "fmp-key", "EODHD_API_KEY": "eodhd-key"}
+        config.API_ENDPOINTS = {
+            "FMP_API_URL": "https://fmp.test/api",
+            "EODHD_API_URL": "https://eodhd.test/api",
+        }
+        config.PROJECT_DIR = "/tmp/project"
+
+        with mock.patch(
+            "smrti_quant_alerts.stock_crypto_api.stock_api.is_database_runtime_initialized", return_value=True
+        ):
+            stock_api = StockApi(config=config)
+
+        self.assertEqual(stock_api.FMP_API_KEY, "fmp-key")
+        self.assertEqual(stock_api.EODHD_API_KEY, "eodhd-key")
+        self.assertEqual(stock_api.FMP_API_URL, "https://fmp.test/api")
+        self.assertEqual(stock_api.EODHD_API_URL, "https://eodhd.test/api")
+        self.assertEqual(stock_api.PWD, "/tmp/project")
+
     def test_get_sp_500_list(self) -> None:
         with mock.patch(
             "requests.get",
