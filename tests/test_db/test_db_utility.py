@@ -1,6 +1,6 @@
 import unittest
 import os
-import threading
+from concurrent.futures import ThreadPoolExecutor
 import time
 from unittest.mock import patch
 
@@ -11,6 +11,7 @@ from smrti_quant_alerts.db import (
     StockAlertDBUtils,
     close_database,
 )
+from smrti_quant_alerts.db.database import database_runtime
 from smrti_quant_alerts.data_type import BinanceExchange, CoingeckoCoin, TradingSymbol, StockSymbol
 from smrti_quant_alerts.settings import Config
 
@@ -122,6 +123,9 @@ class TestPriceVolumeDBUtils(unittest.TestCase):
 
     def test_multithreading_access(self) -> None:
         with TestConfig() as _:
+            # Ten writers can exceed SQLite's default five-second lock timeout
+            # on a busy CI runner, especially with coverage enabled.
+            database_runtime.obj.timeout = 60
 
             def update_count() -> None:
                 for _ in range(100):
@@ -130,13 +134,15 @@ class TestPriceVolumeDBUtils(unittest.TestCase):
                     PriceVolumeDBUtils.update_count(BinanceExchange("test2", "test3"), "test_alert", 0, "monthly")
                     PriceVolumeDBUtils.update_count(BinanceExchange("test4", "test5"), "test_alert", 10000, "monthly")
 
-            threads = []
-            for _ in range(10):
-                threads.append(threading.Thread(target=update_count))
-            for thread in threads:
-                thread.start()
-            for thread in threads:
-                thread.join()
+            def worker() -> None:
+                with database_runtime.connection_context():
+                    update_count()
+
+            with ThreadPoolExecutor(max_workers=10) as executor:
+                futures = [executor.submit(worker) for _ in range(10)]
+                for future in futures:
+                    # Surface worker failures instead of only seeing a short count.
+                    future.result()
 
             count = PriceVolumeDBUtils.get_count("test_alert", None, "daily")
             self.assertEqual(self.convert_timestamp_to_zero(count), {BinanceExchange("test", "test1"): (1000, 0)})

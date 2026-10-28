@@ -1,6 +1,5 @@
 import unittest
 import os
-import time
 from unittest.mock import patch
 
 from smrti_quant_alerts.telegram_api import TelegramBot
@@ -10,19 +9,22 @@ import contextlib
 
 class TestTelegramBot(unittest.TestCase):
     def setUp(self) -> None:
-        Config.PROJECT_DIR = os.path.dirname(os.path.abspath(__file__))
+        Config.PROJECT_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "test_settings")
+        Config.IS_SETUP = False
         with contextlib.suppress(OSError):
             os.rmdir(TelegramBot.PWD)
 
     def test_release_msg_from_queue(self) -> None:
         telegram_bot = TelegramBot(daemon=False)
         telegram_bot.msg_queue = [["test", True], ["test1", False], ["test2", True]]
-        start = time.time()
-        with patch("requests.get", side_effect=lambda x, timeout: {"ok": True}):
+        with (
+            patch("requests.get", side_effect=lambda x, timeout: {"ok": True}),
+            patch("time.sleep") as sleep,
+        ):
             telegram_bot._release_msg_from_queue()
             self.assertEqual(telegram_bot.msg_queue, [])
             self.assertFalse(telegram_bot.running)
-            self.assertTrue(time.time() - start > 6)  # up to 20 msg/min
+            self.assertEqual([call.args[0] for call in sleep.call_args_list], [3.1, 3.1, 3.1])
 
     def test_send_message(self) -> None:
         with patch("requests.get", side_effect=lambda x, timeout: {"ok": True}):
