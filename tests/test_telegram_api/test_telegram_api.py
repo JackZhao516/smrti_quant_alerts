@@ -4,15 +4,18 @@ from unittest.mock import patch
 
 from smrti_quant_alerts.telegram_api import TelegramBot
 from smrti_quant_alerts.settings import Config
-import contextlib
+import tempfile
 
 
 class TestTelegramBot(unittest.TestCase):
     def setUp(self) -> None:
         Config.PROJECT_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "test_settings")
         Config.IS_SETUP = False
-        with contextlib.suppress(OSError):
-            os.rmdir(TelegramBot.PWD)
+        temp_dir = tempfile.TemporaryDirectory()
+        self.addCleanup(temp_dir.cleanup)
+        pwd_patch = patch.object(TelegramBot, "PWD", temp_dir.name)
+        pwd_patch.start()
+        self.addCleanup(pwd_patch.stop)
 
     def test_release_msg_from_queue(self) -> None:
         telegram_bot = TelegramBot(daemon=False)

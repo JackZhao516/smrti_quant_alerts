@@ -1,24 +1,31 @@
-import unittest
 import os
+import tempfile
+import unittest
 
 from smrti_quant_alerts.pdf_api import PDFApi
 from smrti_quant_alerts.data_type import StockSymbol
 
 
 class TestPDFApi(unittest.TestCase):
-    PWD = os.path.dirname(os.path.abspath(__file__))
-
     def setUp(self) -> None:
-        self.pdf_api = PDFApi("test.pdf")
-
-    def tearDown(self) -> None:
-        if os.path.exists(self.pdf_api._file_name):
-            os.remove(self.pdf_api._file_name)
-        if os.path.exists(self.pdf_api._tmp_file_name):
-            os.remove(self.pdf_api._tmp_file_name)
+        self._temp_dir = tempfile.TemporaryDirectory()
+        self.addCleanup(self._temp_dir.cleanup)
+        self._file_name = os.path.join(self._temp_dir.name, "test.pdf")
+        self.pdf_api = PDFApi(self._file_name)
 
     def test_file_name(self) -> None:
-        self.assertEqual(self.pdf_api.file_name, "test.pdf")
+        self.assertEqual(self.pdf_api.file_name, self._file_name)
+
+    def test_default_file_name(self) -> None:
+        self.assertEqual(PDFApi().file_name, "output.pdf")
+
+    def test_start_new_pdf(self) -> None:
+        next_file = os.path.join(self._temp_dir.name, "next.pdf")
+        self.pdf_api.start_new_pdf(next_file)
+
+        self.assertEqual(self.pdf_api.file_name, next_file)
+        self.assertEqual(self.pdf_api._tmp_file_name, f"{next_file}.txt")
+        self.assertEqual(self.pdf_api._old_file_names, [self._file_name])
 
     def test_append_text(self) -> None:
         self.pdf_api.append_text("test")

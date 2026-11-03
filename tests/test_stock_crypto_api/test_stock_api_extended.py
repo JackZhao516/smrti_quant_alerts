@@ -236,15 +236,16 @@ def test_get_stock_info_with_info_in_missing_list(mock_get, api: StockApi) -> No
 
 
 @mock.patch("smrti_quant_alerts.stock_crypto_api.stock_api.requests.get")
-def test_get_stock_info_alias_symbol_raises(mock_get, api: StockApi) -> None:
+def test_get_stock_info_alias_symbol_returns_default_after_retries(mock_get, api: StockApi) -> None:
     mock_get.return_value = _response([])
 
     with (
         mock.patch.object(StockAlertDBUtils, "get_stocks_info", return_value=([], [StockSymbol("BRK.B")])),
         mock.patch.object(StockAlertDBUtils, "add_stocks_info"),
-        pytest.raises(ValueError),
     ):
-        StockApi.get_stock_info.__wrapped__(api, [StockSymbol("BRK.B")])
+        assert api.get_stock_info([StockSymbol("BRK.B")]) == []
+
+    assert mock_get.call_count == 5
 
 
 @mock.patch("smrti_quant_alerts.stock_crypto_api.stock_api.requests.get")
