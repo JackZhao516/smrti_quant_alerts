@@ -8,27 +8,24 @@ from smrti_quant_alerts.data_type import StockSymbol
 
 class TestPDFApi(unittest.TestCase):
     def setUp(self) -> None:
-        self._original_cwd = os.getcwd()
         self._temp_dir = tempfile.TemporaryDirectory()
-        os.chdir(self._temp_dir.name)
-        self.pdf_api = PDFApi("test.pdf")
-
-    def tearDown(self) -> None:
-        os.chdir(self._original_cwd)
-        self._temp_dir.cleanup()
+        self.addCleanup(self._temp_dir.cleanup)
+        self._file_name = os.path.join(self._temp_dir.name, "test.pdf")
+        self.pdf_api = PDFApi(self._file_name)
 
     def test_file_name(self) -> None:
-        self.assertEqual(self.pdf_api.file_name, "test.pdf")
+        self.assertEqual(self.pdf_api.file_name, self._file_name)
 
     def test_default_file_name(self) -> None:
         self.assertEqual(PDFApi().file_name, "output.pdf")
 
     def test_start_new_pdf(self) -> None:
-        self.pdf_api.start_new_pdf("next.pdf")
+        next_file = os.path.join(self._temp_dir.name, "next.pdf")
+        self.pdf_api.start_new_pdf(next_file)
 
-        self.assertEqual(self.pdf_api.file_name, "next.pdf")
-        self.assertEqual(self.pdf_api._tmp_file_name, "next.pdf.txt")
-        self.assertEqual(self.pdf_api._old_file_names, ["test.pdf"])
+        self.assertEqual(self.pdf_api.file_name, next_file)
+        self.assertEqual(self.pdf_api._tmp_file_name, f"{next_file}.txt")
+        self.assertEqual(self.pdf_api._old_file_names, [self._file_name])
 
     def test_append_text(self) -> None:
         self.pdf_api.append_text("test")
