@@ -7,6 +7,7 @@ SQLite database for tests that need persistence.
 
 import copy
 import json
+import time
 from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import MagicMock
@@ -37,6 +38,12 @@ def restore_config():
     )
     yield
     Config.PROJECT_DIR, Config.TOKENS, Config.SETTINGS, Config.IS_SETUP = original
+
+
+@pytest.fixture(autouse=True)
+def no_sleep(monkeypatch):
+    """Skip real sleeps so retry/queue logic runs instantly in tests."""
+    monkeypatch.setattr(time, "sleep", lambda _seconds: None)
 
 
 @pytest.fixture
