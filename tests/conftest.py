@@ -76,3 +76,17 @@ def runtime_database(tmp_path: Path):
 def fake_telegram_bot() -> MagicMock:
     """A TelegramBot stand-in that records messages instead of sending them."""
     return MagicMock()
+
+
+@pytest.fixture
+def alert_runtime(runtime_database, monkeypatch):
+    """Temporary database and explicit dummy configuration for alert tests."""
+    monkeypatch.setattr(Config, "TOKENS", _load_json("dummy_token.json"))
+    monkeypatch.setattr(Config, "SETTINGS", _load_json("dummy_configs.json"))
+    monkeypatch.setattr(Config, "IS_SETUP", True)
+
+    def fail_request(*args, **kwargs):
+        pytest.fail("Alert tests must mock external HTTP requests")
+
+    monkeypatch.setattr("requests.sessions.Session.request", fail_request)
+    return runtime_database
