@@ -2,6 +2,7 @@
 
 
 [![License](https://img.shields.io/badge/license-MIT-green)](https://github.com/JackZhao516/smrti_quant_alerts/blob/main/LICENSE)
+[![Coverage Status](https://coveralls.io/repos/github/JackZhao516/smrti_quant_alerts/badge.svg?branch=main)](https://coveralls.io/github/JackZhao516/smrti_quant_alerts?branch=main)
 ![smrti_quant_alert Python Versions](https://img.shields.io/pypi/pyversions/python-bitget?logo=pypi)
 
 This repo includes several real-time alerts for crypto/stock trading, built with 
