@@ -407,43 +407,52 @@ class StockScreenerAlert(BaseAlert, StockApi):
 
     # ---------------------------main--------------------------------
     def run(self) -> None:
-        stocks = self._get_stocks()
-        logging.warning(f"Total stocks: {len(stocks)}")
+        xlsx_files = []
+        try:
+            stocks = self._get_stocks()
+            logging.warning(f"Total stocks: {len(stocks)}")
 
-        with ThreadPoolExecutor(max_workers=8) as executor:
-            screener_1_res = executor.submit(self._growth_score_filter, stocks)
-            screener_2_res = executor.submit(self._quarterly_revenue_yoy_growth_operating_margin_filter, stocks)
-            screener_3_res = executor.submit(self._quarterly_revenue_yoy_growth_revenue_cagr_filter, stocks)
-            screener_4_res = executor.submit(self._quarterly_revenue_yoy_growth_filter, stocks)
-            self._get_stock_info_thread.join()
+            with ThreadPoolExecutor(max_workers=8) as executor:
+                screener_1_res = executor.submit(self._growth_score_filter, stocks)
+                screener_2_res = executor.submit(self._quarterly_revenue_yoy_growth_operating_margin_filter, stocks)
+                screener_3_res = executor.submit(self._quarterly_revenue_yoy_growth_revenue_cagr_filter, stocks)
+                screener_4_res = executor.submit(self._quarterly_revenue_yoy_growth_filter, stocks)
+                self._get_stock_info_thread.join()
 
-            current_stocks = set()
-            screener_1_res_stocks, growth_scores = screener_1_res.result()
-            xlsx_files = self._build_growth_filter_docs(screener_1_res_stocks, growth_scores)
-            xlsx_files.append(self._build_standard_filter_xlsx(screener_1_res_stocks, "screener_1_8-quarters_stats"))
-            screener_2_res = screener_2_res.result()
-            xlsx_files.append(
-                self._build_standard_filter_xlsx(screener_2_res, "screener_2_quarter_rev_yoy_growth_operating_margin")
-            )
-            current_stocks.update(screener_1_res_stocks + screener_2_res)
-            for stocks_res, screener_name in [
-                (screener_3_res, "screener_3_quarter_rev_yoy_growth_revenue_cagr"),
-                (screener_4_res, "screener_4_quarter_rev_yoy_growth"),
-            ]:
-                stocks = set(stocks_res.result()) - current_stocks
-                xlsx_files.append(self._build_standard_filter_xlsx(list(stocks), screener_name))
-                current_stocks.update(stocks)
+                current_stocks = set()
+                screener_1_res_stocks, growth_scores = screener_1_res.result()
+                xlsx_files.extend(self._build_growth_filter_docs(screener_1_res_stocks, growth_scores))
+                xlsx_files.append(
+                    self._build_standard_filter_xlsx(screener_1_res_stocks, "screener_1_8-quarters_stats")
+                )
+                screener_2_res = screener_2_res.result()
+                xlsx_files.append(
+                    self._build_standard_filter_xlsx(
+                        screener_2_res, "screener_2_quarter_rev_yoy_growth_operating_margin"
+                    )
+                )
+                current_stocks.update(screener_1_res_stocks + screener_2_res)
+                for stocks_res, screener_name in [
+                    (screener_3_res, "screener_3_quarter_rev_yoy_growth_revenue_cagr"),
+                    (screener_4_res, "screener_4_quarter_rev_yoy_growth"),
+                ]:
+                    stocks = set(stocks_res.result()) - current_stocks
+                    xlsx_files.append(self._build_standard_filter_xlsx(list(stocks), screener_name))
+                    current_stocks.update(stocks)
 
-        # after this point, all stocks are already calculated
-        email_content_add_on = self._get_screener_stocks_in_top_performer()
+            # after this point, all stocks are already calculated
+            email_content_add_on = self._get_screener_stocks_in_top_performer()
 
-        if self._email:
-            self._send_email(pdf_xlsx_files=xlsx_files, email_content_add_on=email_content_add_on)
+            if self._email:
+                self._send_email(pdf_xlsx_files=xlsx_files, email_content_add_on=email_content_add_on)
 
-        for file in xlsx_files:
-            if os.path.exists(file):
-                os.remove(file)
-        close_database()
+        finally:
+            try:
+                for file in xlsx_files:
+                    if os.path.exists(file):
+                        os.remove(file)
+            finally:
+                close_database()
         logging.warning("Stock Screener Alert finished")
 
 

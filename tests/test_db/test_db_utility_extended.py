@@ -23,9 +23,12 @@ def test_get_all_stocks_returns_symbols_from_every_alert_type(runtime_database) 
 
 
 def test_add_stocks_ignores_empty_input(runtime_database) -> None:
+    existing = StockSymbol("ZZKEEP")
+    StockAlertDBUtils.add_stocks([existing])
+
     StockAlertDBUtils.add_stocks([])
 
-    assert StockAlertDBUtils.get_all_stocks() == set()
+    assert StockAlertDBUtils.get_all_stocks() == {existing}
 
 
 def test_get_stocks_info_returns_empty_lists_for_no_input(runtime_database) -> None:
@@ -53,10 +56,13 @@ def test_get_stocks_info_accepts_strings(runtime_database) -> None:
 
 
 def test_add_stocks_info_ignores_empty_input(runtime_database) -> None:
+    existing = _full_stock("ZZKEEP")
+    StockAlertDBUtils.add_stocks_info([existing])
+
     StockAlertDBUtils.add_stocks_info([])
 
-    with_info, without_info = StockAlertDBUtils.get_stocks_info([StockSymbol("ZZFF")])
-    assert with_info == []
+    with_info, without_info = StockAlertDBUtils.get_stocks_info([existing, StockSymbol("ZZFF")])
+    assert [stock.ticker for stock in with_info] == [existing.ticker]
     assert [stock.ticker for stock in without_info] == ["ZZFF"]
 
 
