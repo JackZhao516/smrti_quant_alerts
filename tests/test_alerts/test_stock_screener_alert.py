@@ -452,8 +452,10 @@ def test_send_email_contains_screener_descriptions(alert):
     assert args[3] == ["stocks.xlsx"]
 
 
-@pytest.mark.parametrize("email_enabled", [True, False])
-def test_run_builds_screeners_deduplicates_and_removes_files(alert, monkeypatch, tmp_path, email_enabled):
+@pytest.mark.parametrize(("email_enabled", "email_failure"), [(True, False), (False, False), (True, True)])
+def test_run_builds_screeners_deduplicates_and_removes_files(
+    alert, monkeypatch, tmp_path, email_enabled, email_failure
+):
     monkeypatch.chdir(tmp_path)
     stock_a = _stock("RUN1")
     stock_b = _stock("RUN2")
@@ -486,7 +488,12 @@ def test_run_builds_screeners_deduplicates_and_removes_files(alert, monkeypatch,
     close_database = MagicMock()
     monkeypatch.setattr(stock_screener_alert, "close_database", close_database)
 
-    alert.run()
+    if email_failure:
+        alert._send_email.side_effect = RuntimeError("email unavailable")
+        with pytest.raises(RuntimeError, match="email unavailable"):
+            alert.run()
+    else:
+        alert.run()
 
     alert._get_stock_info_thread.join.assert_called_once_with()
     alert._get_stocks.assert_called_once_with()
