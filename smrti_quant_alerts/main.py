@@ -1,4 +1,4 @@
-import sys
+import argparse
 import logging
 
 from smrti_quant_alerts.settings import Config
@@ -16,8 +16,6 @@ from smrti_quant_alerts.alerts import (
 )
 from smrti_quant_alerts.utility import run_alert
 
-logging.warning("alert system started")
-configs = Config(True)
 
 alert_type_to_alert_class = {
     "market_cap": CoingeckoMarketCapAlert,
@@ -37,12 +35,15 @@ alert_type_to_alert_class = {
 }
 
 
-def main():
-    if len(sys.argv) == 1:
-        raise ValueError("Please specify the alert name; Alert names are defined in configs.json")
-    alert_name = sys.argv[1]
+def main(argv=None):
+    parser = argparse.ArgumentParser(description="Run a configured crypto or stock alert")
+    parser.add_argument("alert_name", help="Entry name in configs.json")
+    args = parser.parse_args(argv)
+    configs = Config(True)
+    logging.warning("alert system started")
+    alert_name = args.alert_name
     if alert_name not in configs.SETTINGS:
-        raise ValueError(f"Alert name {alert_name} is not defined in configs.json")
+        parser.error("Alert name is not defined in configs.json")
 
     alert_type = configs.SETTINGS[alert_name]["alert_type"]
     alert_class = alert_type_to_alert_class[alert_type]

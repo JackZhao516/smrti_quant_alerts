@@ -10,7 +10,7 @@ logging.basicConfig(level=logging.WARN, format="%(asctime)s - %(levelname)s - %(
 
 
 class Config:
-    PROJECT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    PROJECT_DIR = os.environ.get("SMRTI_CONFIG_DIR", os.getcwd())
     TOKENS = None
     SETTINGS = None
     API_ENDPOINTS = {
