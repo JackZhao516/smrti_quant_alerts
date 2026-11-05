@@ -60,3 +60,13 @@ Alert databases, generated files and logs live in the `alert-data` volume. Do no
 folder is separate from the working directory, so no credentials are baked into the image.
 Use `docker compose run --rm --entrypoint smrti-diagnose alerts --config-root /config`
 for offline checks; add `--live` only for explicit API probes.
+
+## Local GUI
+
+Run `smrti-gui --config-root /absolute/path/to/configuration`, then open the printed
+`http://127.0.0.1:8765` address. The editor validates registered alert types,
+constructor arguments, schedules and database filenames before replacing configs.json
+atomically. Reload discards unsaved edits. Credentials remain in token.json and are
+not served. The server binds only to loopback, checks the Host and Origin, and requires
+a per-session CSRF token for writes. This is a single-user local tool; do not reverse
+proxy it or expose it to the internet.
