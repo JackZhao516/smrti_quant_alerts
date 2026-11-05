@@ -19,6 +19,8 @@ jobs:
 
     steps:
     - uses: actions/checkout@v5
+      with:
+        fetch-depth: 0
     - name: Set up Python ${{ matrix.python-version }}
       uses: actions/setup-python@v6
       with:
@@ -29,14 +31,30 @@ jobs:
         pip install -r requirements.txt
         pip install binance-connector==3.5.0
         python3 setup.py develop
-        pip install ruff==0.17.2 coveralls PyYAML
+        pip install ruff==0.17.2 coveralls PyYAML diff-cover==11.0.1
     - name: Lint with ruff
       run: |
         ruff check .
         ruff format --check .
     - name: Test with pytest
       run: |
-        pytest tests --cov smrti_quant_alerts --cov-config=.coveragerc --cov-report term-missing --disable-warnings --cov-fail-under=90
+        pytest tests --cov smrti_quant_alerts --cov-config=.coveragerc --cov-report term-missing --cov-report xml --disable-warnings --cov-fail-under=90
+    - name: Incremental test coverage (90% of changed executable lines)
+      if: github.event_name == 'pull_request'
+      env:
+        BASE_SHA: ${{ github.event.pull_request.base.sha }}
+      run: |
+        git fetch origin "$BASE_SHA"
+        diff-cover coverage.xml --compare-branch="$BASE_SHA" --fail-under=90 --total-percent-float --format markdown:diff-coverage.md
+        cat diff-coverage.md >> "$GITHUB_STEP_SUMMARY"
+    - name: Upload coverage evidence
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: coverage-${{ matrix.python-version }}
+        path: |
+          coverage.xml
+          diff-coverage.md
     - name: Report Coverage
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

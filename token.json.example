@@ -1,8 +1,8 @@
 {
-  "TelegramBot": {
+  "TELEGRAMBOT": {
     "TOKEN": "<TelegramBot ID>",
     "TELEGRAM_IDS": {
-      "CG_ALERT": "<Group/Channel ID, starting with -, like "-4002220002">",
+      "CG_ALERT": "-1000000000000",
       "CG_SUM": "<Group/Channel ID>",
       "TEST": "<Group/Channel ID>",
       "VOLUME_15M": "<Group/Channel ID>",
@@ -26,7 +26,7 @@
   "OPENAI_API_KEY": "<API Token>",
   "GMAIL": {
     "SENDER_EMAIL": "<gmail address>",
-    "PASSWORD": "<gmail password>",
+    "PASSWORD": "<Gmail app password>",
     "RECEIVER_EMAIL": ["<email address>", "<email address>"]
   }
 }
