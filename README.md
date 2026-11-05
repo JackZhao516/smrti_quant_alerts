@@ -12,10 +12,9 @@ Alerts are sent to [Telegram](https://telegram.org/) groups/channels.
 
 ## Next Steps
 
-1. **Write examples for each alert — in progress.** The JSON templates cover every registered alert type. Next: isolated, offline examples with expected outputs, then opt-in live examples after API compatibility checks.
-2. **Enhance documentation — next.** Document configuration, supported timeframes, provider permissions, API migrations, rate limits, and troubleshooting. Audit and update provider adapters before treating examples as live-verified.
-3. **Set up Docker — planned.** Provide a reproducible image, read-only configuration mounts, persistent database/log volumes, and graceful shutdown after installation and API compatibility are verified.
-4. **Add a GUI for configuring/running alerts — planned.** Start with configuration editing and validation, then add process start/stop, status, and logs using the same backend as the CLI.
+1. **Enhance documentation — next.** Document configuration, supported timeframes, provider permissions, API migrations, rate limits, and troubleshooting. Audit and update provider adapters before treating examples as live-verified.
+2. **Set up Docker — planned.** Provide a reproducible image, read-only configuration mounts, persistent database/log volumes, and graceful shutdown after installation and API compatibility are verified.
+3. **Add a GUI for configuring/running alerts — planned.** Start with configuration editing and validation, then add process start/stop, status, and logs using the same backend as the CLI.
 
 ## Template setup
 
@@ -31,6 +30,9 @@ python3 -m json.tool configs.json > /dev/null
 The syntax checks do not authenticate with providers. Optional email and AI flags default to false. Alerts that always send email still require Gmail credentials; use an app password, not your normal account password. `PERPLEXITY_API_KEY` and `XAI_API_KEY` are legacy template entries; the current LLM integration uses OpenAI.
 
 ## Get Started and Documentation
+
+See [per-alert CLI commands and expected outputs](examples/README.md).
+
 * pre-requisites: 
   * ``All coingecko alerts``: [CoinGecko pro api token](https://www.coingecko.com/en/api/pricing), 
     at least ``Analyst`` subscription
