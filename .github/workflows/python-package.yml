@@ -29,7 +29,6 @@ jobs:
       run: |
         python -m pip install --upgrade pip
         pip install -r requirements.txt
-        pip install binance-connector==3.5.0
         python3 setup.py develop
         pip install ruff==0.17.2 coveralls PyYAML diff-cover==11.0.1
     - name: Lint with ruff

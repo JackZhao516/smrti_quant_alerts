@@ -8,7 +8,7 @@ from collections.abc import Sequence, Iterable
 from collections import defaultdict
 from abc import ABC, abstractmethod
 
-from binance.websocket.spot.websocket_stream import SpotWebsocketStreamClient
+from smrti_quant_alerts.stock_crypto_api.binance_stream import SpotWebsocketStreamClient
 
 from smrti_quant_alerts.alerts.base_alert import BaseAlert
 from smrti_quant_alerts.stock_crypto_api import BinanceApi
@@ -214,6 +214,7 @@ class BinancePriceVolumeBase(ABC, BaseAlert, BinanceApi):
             if self._websocket_client.socket_manager.is_alive():
                 time.sleep(5)
             else:
+                self._websocket_client.stop()
                 self._websocket_client = SpotWebsocketStreamClient(
                     on_message=self._handle_tick_message, is_combined=True, timeout=2000
                 )
