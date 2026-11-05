@@ -3,6 +3,7 @@ import random
 import time
 import json
 import functools
+from copy import deepcopy
 from json import JSONDecodeError
 from typing import Any
 from collections.abc import Callable
@@ -11,6 +12,7 @@ from requests.exceptions import RequestException
 from requests.models import Response
 
 from .error_type import ClientError, ServerError
+from smrti_quant_alerts.http_client import PermanentAPIError, redact
 
 
 def error_handling(api: str = "binance", retry: int = 5, default_val: Any | None = None) -> Callable:
@@ -62,12 +64,15 @@ def error_handling(api: str = "binance", retry: int = 5, default_val: Any | None
                     else:
                         return response
 
+                except PermanentAPIError as e:
+                    logging.error("%s: %s", error_msg, redact(e))
+                    return deepcopy(default_val)
                 except (RequestException, ClientError, ServerError) as e:
-                    logging.error(f"{error_msg}: {e}, retrying {i + 1} times")
+                    logging.error(f"{error_msg}: {redact(e)}, retrying {i + 1} times")
                 except Exception as e:
-                    logging.error(f"{error_msg}: {e}, retrying {i + 1} times")
+                    logging.error(f"{error_msg}: {redact(e)}, retrying {i + 1} times")
                 time.sleep(random.random() * 2)
-            return default_val
+            return deepcopy(default_val)
 
         return wrapper
 

@@ -21,7 +21,7 @@ class TestTelegramBot(unittest.TestCase):
         telegram_bot = TelegramBot(daemon=False)
         telegram_bot.msg_queue = [["test", True], ["test1", False], ["test2", True]]
         with (
-            patch("requests.get", side_effect=lambda x, timeout: {"ok": True}),
+            patch("requests.post", side_effect=lambda x, json, timeout: {"ok": True}),
             patch("time.sleep") as sleep,
         ):
             telegram_bot._release_msg_from_queue()
@@ -30,14 +30,14 @@ class TestTelegramBot(unittest.TestCase):
             self.assertEqual([call.args[0] for call in sleep.call_args_list], [3.1, 3.1, 3.1])
 
     def test_send_message(self) -> None:
-        with patch("requests.get", side_effect=lambda x, timeout: {"ok": True}):
+        with patch("requests.post", side_effect=lambda x, json, timeout: {"ok": True}):
             with patch.object(TelegramBot, "_release_msg_from_queue") as mock_release_msg_from_queue:
                 telegram_bot = TelegramBot(daemon=False)
                 telegram_bot.send_message("test", blue_text=True)
                 telegram_bot.send_message("test", blue_text=False)
             mock_release_msg_from_queue.assert_not_called()
 
-        with patch("requests.get", side_effect=lambda x, timeout: {"ok": True}):
+        with patch("requests.post", side_effect=lambda x, json, timeout: {"ok": True}):
             with patch.object(TelegramBot, "_release_msg_from_queue") as mock_release_msg_from_queue:
                 telegram_bot = TelegramBot(daemon=True)
                 telegram_bot.send_message("test", blue_text=True)
@@ -48,10 +48,13 @@ class TestTelegramBot(unittest.TestCase):
         path = os.path.dirname(os.path.abspath(__file__))
         mock_file_path = os.path.join(path, "mock_file.txt")
 
-        with patch("requests.post", side_effect=lambda x, data, files, stream, timeout: {"data": data, "files": files}):
+        with patch(
+            "requests.post",
+            side_effect=lambda x, data, files, stream, timeout: {"data": data, "content": files["document"].read()},
+        ):
             telegram_bot = TelegramBot(daemon=False)
             res = telegram_bot.send_file(mock_file_path, "test.csv")
-            self.assertEqual(res["files"]["document"].read(), open(mock_file_path, "rb").read())
+            self.assertEqual(res["content"], open(mock_file_path, "rb").read())
 
     def test_send_data_as_csv_file(self) -> None:
         with patch.object(TelegramBot, "send_file", side_effect=lambda x, y: open(x, "rb").read()):
