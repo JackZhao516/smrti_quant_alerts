@@ -100,7 +100,7 @@ class FloatingSharesAlert(BaseAlert, StockApi):
         headers = ["stock", "7d change %", "90d change %"]
         for stock, floating_share in floating_shares.items():
             industry_stock_floating_shares_mapping[stock.gics_sector].append(
-                [stock.ticker] + [str(floating_share["7d"]), str(floating_share["90d"])]
+                [stock.ticker] + [str(floating_share.get("7d", "N/A")), str(floating_share.get("90d", "N/A"))]
             )
         with pd.ExcelWriter(self._floating_shares_summary_filename) as writer:
             for industry, rows in industry_stock_floating_shares_mapping.items():
