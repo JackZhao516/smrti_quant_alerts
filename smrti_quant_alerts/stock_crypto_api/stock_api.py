@@ -456,11 +456,9 @@ class StockApi:
 
         @error_handling("financialmodelingprep", default_val=None)
         def get_stock_stats_by_num_of_quarter(stock: StockSymbol) -> None:
-            api_url = (
-                f"{self.FMP_API_URL}/v3/income-statement/{stock.ticker}?"
-                f"period=quarter&limit={timeframes[timeframe] * num}&apikey={self.FMP_API_KEY}"
+            response = self._fmp.get(
+                "income-statement", symbol=stock.ticker, period="quarter", limit=timeframes[timeframe] * num
             )
-            response = requests.get(api_url, timeout=self.TIMEOUT).json()
             if not response:
                 res[stock] = empty_res * num
                 return
@@ -477,14 +475,12 @@ class StockApi:
                 gross_profits[i // timeframes[timeframe]] += quarter.get("grossProfit", 0)
                 operating_incomes[i // timeframes[timeframe]] += quarter.get("operatingIncome", 0)
 
-            gross_margins = gross_profits / revenues
-            operating_margins = operating_incomes / revenues
+            gross_margins = np.divide(gross_profits, revenues, out=np.zeros(num), where=revenues != 0)
+            operating_margins = np.divide(operating_incomes, revenues, out=np.zeros(num), where=revenues != 0)
 
-            api_url = (
-                f"{self.FMP_API_URL}/v3/cash-flow-statement/{stock.ticker}?"
-                f"period=quarter&limit={timeframes[timeframe] * num}&apikey={self.FMP_API_KEY}"
+            response = self._fmp.get(
+                "cash-flow-statement", symbol=stock.ticker, period="quarter", limit=timeframes[timeframe] * num
             )
-            response = requests.get(api_url, timeout=self.TIMEOUT).json()
             if not response:
                 res[stock] = empty_res * num
                 return
@@ -492,7 +488,7 @@ class StockApi:
             for i, quarter in enumerate(response):
                 free_cash_flows[i // timeframes[timeframe]] += quarter.get("freeCashFlow", 0)
 
-            free_cash_flow_margins = free_cash_flows / revenues
+            free_cash_flow_margins = np.divide(free_cash_flows, revenues, out=np.zeros(num), where=revenues != 0)
             res[stock] = [
                 {
                     FinancialMetricType.FREE_CASH_FLOW: FinancialMetricsData(free_cash_flow),
@@ -537,11 +533,7 @@ class StockApi:
 
         @error_handling("financialmodelingprep", default_val=None)
         def get_stock_revenue_cagr(stock: StockSymbol) -> None:
-            api_url = (
-                f"{self.FMP_API_URL}/v3/income-statement/{stock.ticker}?"
-                f"period=quarter&limit=24&apikey={self.FMP_API_KEY}"
-            )
-            response = requests.get(api_url, timeout=self.TIMEOUT).json()
+            response = self._fmp.get("income-statement", symbol=stock.ticker, period="quarter", limit=24)
             res[stock] = {f"revenue_{i}y_cagr": FinancialMetricsData(has_percentage=True) for i in [1, 3, 5]}
             if not response:
                 return
@@ -695,10 +687,7 @@ class StockApi:
         res = defaultdict(FinancialMetricsData)
         market_caps = self.get_stocks_market_cap(stock_list)
         for stock in stock_list:
-            api_url = (
-                f"{self.FMP_API_URL}/v3/balance-sheet-statement/{stock.ticker}?period=quarter&apikey={self.FMP_API_KEY}"
-            )
-            response = requests.get(api_url, timeout=self.TIMEOUT).json()
+            response = self._fmp.get("balance-sheet-statement", symbol=stock.ticker, period="quarter")
             if response:
                 res[stock] = FinancialMetricsData(
                     response[0].get("totalLiabilities", 0)
@@ -724,8 +713,7 @@ class StockApi:
         for stock in stock_list:
             if gross_profits[stock] == 0 or enterprise_values[stock] == 0:
                 continue
-            estimated_revenue_url = f"{self.FMP_API_URL}/v3/analyst-estimates/{stock.ticker}?apikey={self.FMP_API_KEY}"
-            response = requests.get(estimated_revenue_url, timeout=self.TIMEOUT).json()
+            response = self._fmp.get("analyst-estimates", symbol=stock.ticker, period="annual", limit=10)
             top, bottom = 0, 0
 
             if response and len(response) > 0:
@@ -756,11 +744,7 @@ class StockApi:
         """
         res = defaultdict(FinancialMetricsData)
         for stock in stock_list:
-            api_url = (
-                f"{self.FMP_API_URL}/v3/income-statement/{stock.ticker}?"
-                f"period=quarter&limit=1&apikey={self.FMP_API_KEY}"
-            )
-            response = requests.get(api_url, timeout=self.TIMEOUT).json()
+            response = self._fmp.get("income-statement", symbol=stock.ticker, period="quarter", limit=1)
             if response and len(response) > 0:
                 res[stock] = FinancialMetricsData(response[0].get("revenue", 0))
         return res
@@ -821,11 +805,9 @@ class StockApi:
         res = defaultdict(list)
         for stock in stock_list:
             res[stock] = [FinancialMetricsData(has_percentage=True) for _ in range(num_of_quarters)]
-            api_url = (
-                f"{self.FMP_API_URL}/v3/income-statement/{stock.ticker}?"
-                f"period=quarter&limit={num_of_quarters + 4}&apikey={self.FMP_API_KEY}"
+            response = self._fmp.get(
+                "income-statement", symbol=stock.ticker, period="quarter", limit=num_of_quarters + 4
             )
-            response = requests.get(api_url, timeout=self.TIMEOUT).json()
             if not response:
                 continue
 
