@@ -43,3 +43,20 @@ regenerate a token if it was exposed by the legacy blue-text link behavior.
 Schedules execute once per configured local minute, polling at most once per
 minute; excluded weekdays and timezones apply. Missed slots are not replayed.
 A nonexistent DST slot is skipped. Restart after changing schedule configuration.
+
+## Docker
+
+Create real `configs.json` and `token.json` before starting Compose (do not commit them).
+Run `ALERT_NAME=your_entry docker compose up --build -d` and inspect
+`docker compose logs -f`. Configuration is mounted read-only; edit it on the host,
+then restart the service. Run one Compose project per alert if running several alerts.
+Compose mounts the configuration directory (set host `SMRTI_CONFIG_DIR` to select
+it), so atomic editor saves are visible after restart. In container configuration,
+use absolute `/config/...` paths for symbol files. The image runs as UID 10001, with an init process, a read-only root and writable
+`/tmp`. Grant UID 10001 read access to the two configuration files on Linux.
+
+Alert databases, generated files and logs live in the `alert-data` volume. Do not use
+`docker compose down -v` unless you intend to delete state. A mounted configuration
+folder is separate from the working directory, so no credentials are baked into the image.
+Use `docker compose run --rm --entrypoint smrti-diagnose alerts --config-root /config`
+for offline checks; add `--live` only for explicit API probes.
