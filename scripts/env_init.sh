@@ -23,5 +23,4 @@ export TA_INCLUDE_PATH=/usr/include
 export TA_LIBRARY_PATH=/usr/lib
 pip install TA-Lib
 pip install -r requirements.txt --no-cache-dir
-pip install binance-connector==3.5.0 # Have to install this separately to avoid a dependency conflict
 python3 setup.py develop
