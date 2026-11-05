@@ -12,6 +12,7 @@ import numpy as np
 from smrti_quant_alerts.exception import error_handling
 from smrti_quant_alerts.http_client import get_json, PermanentAPIError
 from smrti_quant_alerts.stock_crypto_api.fmp_client import FMPClient
+from smrti_quant_alerts.stock_crypto_api.share_history import ShareHistory
 from smrti_quant_alerts.settings import Config
 from smrti_quant_alerts.data_type import StockSymbol, FinancialMetricsData, FinancialDataType, FinancialMetricType
 from smrti_quant_alerts.stock_crypto_api.utility import get_datetime_now, get_date_from_timestamp
@@ -607,20 +608,34 @@ class StockApi:
             "process": bool, "link": str, "hasFinancials": bool}, ...]
         """
         today = get_datetime_now().strftime("%Y-%m-%d")
-        api_url = f"{self.FMP_API_URL}/v4/rss_feed_8k?from={today}&to={today}&apikey={self.FMP_API_KEY}&limit=1000"
-        page = 0
         res = []
-        while True:
-            url = f"{api_url}&page={page}"
-            response = requests.get(url, timeout=self.TIMEOUT).json()
+        seen_pages = set()
+        for page in range(100):
+            response = self._fmp.get(
+                "sec-filings-search/form-type",
+                formType="8-K",
+                **{"from": today, "to": today, "page": page, "limit": 100},
+            )
             if not response:
                 break
-
-            tmp = [filing for filing in response if filing.get("date")[:10] == today]
+            response = [
+                {
+                    **row,
+                    "date": row.get("filingDate", row.get("date", "")),
+                    **({"link": row["finalLink"]} if "finalLink" in row else {}),
+                }
+                for row in response
+            ]
+            signature = repr(response)
+            if signature in seen_pages:
+                raise PermanentAPIError(200, "SEC pagination made no progress")
+            seen_pages.add(signature)
+            tmp = [filing for filing in response if str(filing.get("date", ""))[:10] == today]
             res.extend(tmp)
             if len(tmp) != len(response):
                 break
-            page += 1
+        else:
+            raise PermanentAPIError(200, "SEC pagination exceeded page budget")
 
         # filter out repeated filings
         symbol_set = {filing.get("symbol", None) for filing in res}
@@ -646,8 +661,10 @@ class StockApi:
         """
         res = defaultdict(dict)
         for stock in stock_list:
-            api_url = f"{self.FMP_API_URL}/v4/historical/shares_float?symbol={stock.ticker}&apikey={self.FMP_API_KEY}"
-            response = requests.get(api_url, timeout=self.TIMEOUT).json()
+            rows = self._fmp.get("shares-float", symbol=stock.ticker)
+            response = ShareHistory(self.PWD).update(stock.ticker, rows)
+            if rows:
+                res[stock] = {}
             if response:
                 try:
                     date_now, floating_shares_now = (
@@ -655,7 +672,6 @@ class StockApi:
                         int(response[0].get("floatShares", "0")),
                     )
                     for target_days in [7, 90]:
-                        res[stock][f"{target_days}d"] = FinancialMetricsData(has_percentage=True)
                         target_date_previous = datetime.datetime.strptime(date_now, "%Y-%m-%d") - datetime.timedelta(
                             days=target_days
                         )

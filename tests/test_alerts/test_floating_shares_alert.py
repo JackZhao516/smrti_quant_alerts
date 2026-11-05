@@ -176,3 +176,19 @@ def test_run_without_symbols_skips_file_filter(alert: FloatingSharesAlert, tmp_p
 
     alert._tg_bot.send_message.assert_called_once_with("floating_shares_test\n\n\n")
     alert._tg_bot.send_file.assert_not_called()
+
+
+@pytest.mark.parametrize("partial_history", [False, True])
+def test_spreadsheet_handles_missing_dated_float_history(alert, tmp_path, partial_history):
+    import pandas as pd
+
+    alert._load_stocks_info_thread = mock.Mock()
+    alert._floating_shares_summary_filename = str(tmp_path / "first-run.xlsx")
+    history = {"7d": FinancialMetricsData(0.05, has_percentage=True)} if partial_history else {}
+    alert._generate_floating_shares_summary_xlsx({_stock("AAA"): history})
+    frame = pd.read_excel(alert._floating_shares_summary_filename, sheet_name="Technology", keep_default_na=False)
+    assert frame.loc[0, "stock"] == "AAA"
+    assert frame.loc[0, "90d change %"] == "N/A"
+    assert (
+        frame.loc[0, "7d change %"] == str(history["7d"]) if partial_history else frame.loc[0, "7d change %"] == "N/A"
+    )
