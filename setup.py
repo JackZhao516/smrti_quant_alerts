@@ -4,11 +4,12 @@ setup(
     name="smrti_quant_alerts",
     version="0.9.0",
     packages=find_packages(include=["smrti_quant_alerts", "smrti_quant_alerts.*"]),
-    package_data={"smrti_quant_alerts.pdf_api": ["*.ttf"]},
+    package_data={"smrti_quant_alerts.pdf_api": ["*.ttf"], "smrti_quant_alerts.gui": ["*.html"]},
     python_requires=">=3.12",
     extras_require={"dev": ["pytest", "pytest-cov", "pycodestyle", "ruff==0.17.2"]},
     entry_points={
         "console_scripts": [
+            "smrti-gui=smrti_quant_alerts.gui.server:main",
             "smrti-alerts=smrti_quant_alerts.main:main",
             "smrti-diagnose=smrti_quant_alerts.diagnostics:main",
         ]
