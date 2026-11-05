@@ -10,6 +10,7 @@ import requests
 import numpy as np
 
 from smrti_quant_alerts.exception import error_handling
+from smrti_quant_alerts.http_client import get_json, PermanentAPIError
 from smrti_quant_alerts.settings import Config
 from smrti_quant_alerts.data_type import StockSymbol, FinancialMetricsData, FinancialDataType, FinancialMetricType
 from smrti_quant_alerts.stock_crypto_api.utility import get_datetime_now, get_date_from_timestamp
@@ -158,25 +159,29 @@ class StockApi:
         if target_date.weekday() > 4:
             target_date -= datetime.timedelta(days=target_date.weekday() - 4)
 
-        response = None
-        target_date_str = target_date.strftime("%Y-%m-%d")
-        while response is None or response.status_code != 200 or not response.json():
+        for _ in range(10):
             target_date_str = target_date.strftime("%Y-%m-%d")
-            url = (
-                f"{self.EODHD_API_URL}/eod-bulk-last-day/US?api_token="
-                f"{self.EODHD_API_KEY}&date={target_date_str}&fmt=json"
+            rows = get_json(
+                f"{self.EODHD_API_URL}/eod-bulk-last-day/US",
+                params={"api_token": self.EODHD_API_KEY, "date": target_date_str, "fmt": "json"},
+                timeout=self.TIMEOUT,
             )
-            response = requests.get(url, timeout=self.TIMEOUT)
+            if not isinstance(rows, list):
+                raise PermanentAPIError(200, "Expected bulk price array")
+            if rows:
+                break
             target_date -= datetime.timedelta(days=1)
+        else:
+            raise PermanentAPIError(200, "No bulk data within ten calendar days")
 
         prices = {}
         volumes = {}
-        for stock in response.json():
+        for stock in rows:
             if (
                 stock.get("code")
                 and stock.get("adjusted_close")
                 and stock.get("adjusted_close") > 0
-                and stock.get("volume") > 0
+                and stock.get("volume", 0) > 0
                 and stock.get("date") == target_date_str
                 and stock.get("exchange_short_name") == "US"
             ):
@@ -584,13 +589,11 @@ class StockApi:
             f"{self.EODHD_API_URL}/eod/{self._parse_eodhd_symbol(stock)}?api_token={self.EODHD_API_KEY}"
             f"&fmt=json&from={from_str}&period={timeframe}"
         )
-        response = requests.get(api_url, timeout=self.TIMEOUT).json()[::-1]
-        res = [(tick["date"], float(tick["adjusted_close"])) for i, tick in enumerate(response)][:num_of_ticks]
-        # prepend latest close price
-        latest_close = self.get_stock_current_close_price(stock)
-        if latest_close[0] and (len(res) == 0 or latest_close[0][:7] != res[0][0][:7]):
-            res.insert(0, latest_close)
-        return res
+        response = get_json(api_url, timeout=self.TIMEOUT)
+        if not isinstance(response, list):
+            raise PermanentAPIError(200, "Expected historical price array")
+        # Keep corporate-action-adjusted completed bars separate from raw live quotes.
+        return [(tick["date"], float(tick["adjusted_close"])) for tick in reversed(response)][:num_of_ticks]
 
     @error_handling("eodhd", default_val=[])
     def get_stock_current_close_price(self, stock: StockSymbol) -> tuple[str, float]:
@@ -603,8 +606,8 @@ class StockApi:
         api_url = (
             f"{self.EODHD_API_URL}/real-time/{self._parse_eodhd_symbol(stock)}?api_token={self.EODHD_API_KEY}&fmt=json"
         )
-        response = requests.get(api_url, timeout=self.TIMEOUT).json()
-        if not isinstance(response["timestamp"], int):
+        response = get_json(api_url, timeout=self.TIMEOUT)
+        if not isinstance(response.get("timestamp"), int):
             return "", 0
         return get_date_from_timestamp(response["timestamp"] * 1000), float(response["close"])
 

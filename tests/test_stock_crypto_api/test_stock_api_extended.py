@@ -392,11 +392,11 @@ def test_get_stock_close_prices_by_timeframe_num_of_ticks(mock_get, api: StockAp
     ):
         result = api.get_stock_close_prices_by_timeframe_num_of_ticks(stock, "1d", 2)
 
-    assert result == [("2024-06-01", 11.0), ("2024-05-02", 10.0), ("2024-05-01", 9.0)]
+    assert result == [("2024-05-02", 10.0), ("2024-05-01", 9.0)]
 
 
 @mock.patch("smrti_quant_alerts.stock_crypto_api.stock_api.requests.get")
-def test_get_stock_close_prices_skips_same_month_latest_price(mock_get, api: StockApi) -> None:
+def test_get_stock_close_prices_excludes_unadjusted_latest_price(mock_get, api: StockApi) -> None:
     stock = StockSymbol("AAA")
     mock_get.return_value = _response([{"date": "2024-05-02", "adjusted_close": "10"}])
 
@@ -631,4 +631,4 @@ def test_request_failure_retries_then_returns_empty_result(api: StockApi, method
     ) as get:
         assert not getattr(api, method)(argument)
 
-    assert get.call_count == 5
+    assert get.call_count == (15 if method == "get_stock_current_close_price" else 5)
