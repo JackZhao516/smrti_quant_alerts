@@ -1,0 +1,26 @@
+services:
+  alerts:
+    build: .
+    user: "10001:10001"
+    init: true
+    restart: unless-stopped
+    command: ["${ALERT_NAME:?Set ALERT_NAME to a configs.json entry}"]
+    environment:
+      SMRTI_CONFIG_DIR: /config
+    volumes:
+      - type: bind
+        source: ${SMRTI_CONFIG_DIR:-.}
+        target: /config
+        read_only: true
+        bind:
+          create_host_path: false
+      - alert-data:/data
+    read_only: true
+    tmpfs:
+      - /tmp:mode=1777
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+volumes:
+  alert-data:
