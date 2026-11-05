@@ -11,6 +11,7 @@ import numpy as np
 
 from smrti_quant_alerts.exception import error_handling
 from smrti_quant_alerts.http_client import get_json, PermanentAPIError
+from smrti_quant_alerts.stock_crypto_api.fmp_client import FMPClient
 from smrti_quant_alerts.settings import Config
 from smrti_quant_alerts.data_type import StockSymbol, FinancialMetricsData, FinancialDataType, FinancialMetricType
 from smrti_quant_alerts.stock_crypto_api.utility import get_datetime_now, get_date_from_timestamp
@@ -49,6 +50,7 @@ class StockApi:
         self.FMP_API_URL = config.API_ENDPOINTS["FMP_API_URL"]
         self.EODHD_API_URL = config.API_ENDPOINTS["EODHD_API_URL"]
         self.PWD = config.PROJECT_DIR
+        self._fmp = FMPClient(self.FMP_API_URL, self.FMP_API_KEY, self.TIMEOUT)
         if not is_database_runtime_initialized():
             init_database_runtime("test.db")
 
@@ -63,9 +65,7 @@ class StockApi:
 
         :return: [StockSymbol, ...]
         """
-        api_url = f"{self.FMP_API_URL}/v3/sp500_constituent?apikey={self.FMP_API_KEY}"
-        response = requests.get(api_url, timeout=self.TIMEOUT)
-        response = response.json()
+        response = self._fmp.get("sp500-constituent")
 
         stock_list = [
             StockSymbol(
@@ -91,9 +91,7 @@ class StockApi:
 
         :return: [StockSymbol, ...]
         """
-        api_url = f"{self.FMP_API_URL}/v3/available-traded/list?apikey={self.FMP_API_KEY}"
-        response = requests.get(api_url, timeout=self.TIMEOUT)
-        response = response.json()
+        response = self._fmp.universe()
 
         stock_list = [
             StockSymbol(stock["symbol"], stock["name"], nasdaq=True)
@@ -113,9 +111,7 @@ class StockApi:
 
         :return: [StockSymbol, ...]
         """
-        api_url = f"{self.FMP_API_URL}/v3/available-traded/list?apikey={self.FMP_API_KEY}"
-        response = requests.get(api_url, timeout=self.TIMEOUT)
-        response = response.json()
+        response = self._fmp.universe()
 
         stock_list = [
             StockSymbol(stock["symbol"], stock["name"], nyse=True)
@@ -296,9 +292,9 @@ class StockApi:
             stocks_sub = stocks[i * 100 : (i + 1) * 100]
             stock_str = ",".join([stock.ticker for stock in stocks_sub])
 
-            api_url = f"{self.FMP_API_URL}/v3/profile/{stock_str}?apikey={self.FMP_API_KEY}"
-            response = requests.get(api_url, timeout=self.TIMEOUT)
-            response = response.json()
+            if not stocks_sub:
+                continue
+            response = self._fmp.profiles(stock_str.split(","))
             res += [
                 StockSymbol(
                     stock["symbol"],
@@ -373,9 +369,9 @@ class StockApi:
         n = len(all_stocks) // 100 + 1
         for i in range(n):
             symbols = ",".join([stock.ticker for stock in all_stocks[i * 100 : (i + 1) * 100]])
-            api_url = f"{self.FMP_API_URL}/v3/quote/{symbols}?apikey={self.FMP_API_KEY}"
-            response = requests.get(api_url, timeout=self.TIMEOUT)
-            response = response.json()
+            if not symbols:
+                continue
+            response = self._fmp.get("batch-quote", symbols=symbols)
             for stock in response:
                 if stock.get("marketCap", 0) >= market_cap_threshold:
                     res.append(StockSymbol(stock["symbol"], stock["name"]))
@@ -395,20 +391,20 @@ class StockApi:
         """
         res = defaultdict(dict)
         for stock in stock_list:
-            close_price_url = f"{self.FMP_API_URL}/v3/quote-short/{stock}?apikey={self.FMP_API_KEY}"
-            response = requests.get(close_price_url, timeout=self.TIMEOUT).json()
+            response = self._fmp.get("quote-short", symbol=stock.ticker)
             if not response:
                 continue
             close_price = response[0].get("price", 0)
 
             for num_of_day, timeframe in zip(num_of_days_list, timeframes, strict=False):
                 from_day = get_datetime_now() - datetime.timedelta(days=2)
-                sma_url = (
-                    f"{self.FMP_API_URL}/v3/technical_indicator/{timeframe}/{stock}"
-                    f"?type=sma&period={num_of_day}&apikey={self.FMP_API_KEY}"
-                    f"&from={from_day.strftime('%Y-%m-%d')}"
+                response = self._fmp.get(
+                    "technical-indicators/sma",
+                    symbol=stock.ticker,
+                    timeframe=timeframe,
+                    periodLength=num_of_day,
+                    **{"from": from_day.strftime("%Y-%m-%d")},
                 )
-                response = requests.get(sma_url, timeout=self.TIMEOUT).json()
                 if not response:
                     continue
                 sma = response[0].get("sma", 0)
@@ -426,8 +422,7 @@ class StockApi:
         """
         res = defaultdict(FinancialMetricsData)
         for stock in stock_list:
-            api_url = f"{self.FMP_API_URL}/v3/market-capitalization/{stock.ticker}?apikey={self.FMP_API_KEY}"
-            response = requests.get(api_url, timeout=self.TIMEOUT).json()
+            response = self._fmp.get("market-capitalization", symbol=stock.ticker)
             if response:
                 res[stock] = FinancialMetricsData(response[0].get("marketCap", 0))
         return res
