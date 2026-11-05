@@ -7,7 +7,8 @@ setup(
     include_package_data=True,
     install_requires=[
         "TA-Lib>=0.6.4",
-        "binance-futures-connector>=4.0.0",
+        "binance-sdk-spot==13.4.0",
+        "binance-sdk-derivatives-trading-usds-futures==18.2.0",
         "binance-connector>=3.5.0",
         "numpy",
         "pycoingecko==3.1.0",
@@ -16,7 +17,7 @@ setup(
         "pandas",
         "lxml",
         "peewee",
-        "urllib3>=1.26.9,<2.0.0",
+        "urllib3>=2.0,<3",
         "openai",
         "fpdf2==2.7.9",
         "pycodestyle",
