@@ -10,10 +10,12 @@ import json
 import os
 from pathlib import Path
 import secrets
+import signal
 import tempfile
 
 from smrti_quant_alerts.main import alert_type_to_alert_class
 from smrti_quant_alerts.settings import Config
+from smrti_quant_alerts.gui.workers import Workers
 
 MAX_BODY = 1_000_000
 
@@ -128,6 +130,8 @@ class Handler(BaseHTTPRequestHandler):
         if self.path == "/":
             page = Path(__file__).with_name("index.html").read_text().replace("__CSRF__", self.server.csrf)
             return self.reply(200, page, "text/html")
+        if self.path == "/api/status":
+            return self.reply(200, self.server.workers.status())
         if self.path == "/api/config":
             try:
                 settings, version = self.server.store.snapshot()
@@ -144,6 +148,20 @@ class Handler(BaseHTTPRequestHandler):
             if not 0 < length <= MAX_BODY:
                 return self.reply(413, {"error": "Invalid request size"})
             payload = json.loads(self.rfile.read(length))
+            if self.path in ("/api/start", "/api/stop", "/api/logs"):
+                if not isinstance(payload, dict) or not isinstance(payload.get("name"), str):
+                    raise ValueError("Missing alert name")
+                name = payload["name"]
+                if self.path == "/api/start":
+                    settings = validate(self.server.store.read())
+                    if name not in settings:
+                        raise ValueError("Unknown alert")
+                    self.server.workers.start(name)
+                elif self.path == "/api/stop":
+                    self.server.workers.stop(name)
+                else:
+                    return self.reply(200, {"logs": self.server.workers.logs(name)})
+                return self.reply(200, {"ok": True})
             if self.path != "/api/config":
                 return self.reply(404, {"error": "Not found"})
             expected = self.headers.get("If-Match")
@@ -157,12 +175,14 @@ class Handler(BaseHTTPRequestHandler):
             logging.error("GUI storage operation failed: %s", type(error).__name__)
             return self.reply(500, {"error": "Storage operation failed; check directory permissions and free space"})
         except (ValueError, TypeError):
-            return self.reply(400, {"error": "Invalid configuration; file unchanged"})
+            return self.reply(400, {"error": "Invalid request or configuration"})
 
 
 def create_server(root, port=8765):
     server = ThreadingHTTPServer(("127.0.0.1", port), Handler)
+    server.daemon_threads = True
     server.store = ConfigStore(root)
+    server.workers = Workers(root)
     server.csrf = secrets.token_urlsafe(32)
     return server
 
@@ -172,10 +192,19 @@ def main(argv=None):
     parser.add_argument("--config-root", default=os.getcwd())
     parser.add_argument("--port", type=int, default=8765)
     args = parser.parse_args(argv)
+
+    def terminate(_signum, _frame):
+        raise KeyboardInterrupt
+
+    previous = signal.signal(signal.SIGTERM, terminate)
     with create_server(args.config_root, args.port) as server:
         print(f"Open http://127.0.0.1:{server.server_port}", flush=True)
-        with suppress(KeyboardInterrupt):
-            server.serve_forever()
+        try:
+            with suppress(KeyboardInterrupt):
+                server.serve_forever()
+        finally:
+            server.workers.close()
+            signal.signal(signal.SIGTERM, previous)
 
 
 if __name__ == "__main__":
