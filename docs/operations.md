@@ -70,3 +70,14 @@ atomically. Reload discards unsaved edits. Credentials remain in token.json and 
 not served. The server binds only to loopback, checks the Host and Origin, and requires
 a per-session CSRF token for writes. This is a single-user local tool; do not reverse
 proxy it or expose it to the internet.
+
+The GUI's Start button launches the same CLI in a separate process with an argument
+list (no shell). Starting an alert can contact providers and send notifications.
+Status shows exit codes, Stop first terminates then kills after a timeout, and exiting
+the GUI stops its owned workers. Existing processes started elsewhere are not controlled.
+Logs are saved under `logs/` with hashed filenames and private permissions; the GUI
+returns at most 16 KiB with current and session-start credential strings redacted.
+The logs directory must be private (mode 700); symlink and hardlink log files are
+rejected. Starting an alert clears that alert's previous session log. This GUI
+process controller currently requires POSIX file permissions (Linux/macOS). Local log files
+may contain provider output; protect the configuration directory and rotate old logs.

@@ -10,10 +10,6 @@ This repo includes several real-time alerts for crypto/stock trading, built with
 [EODHD](https://eodhd.com/), and [Financial Modeling Prep](https://site.financialmodelingprep.com/) APIs. 
 Alerts are sent to [Telegram](https://telegram.org/) groups/channels.
 
-## Next Steps
-
-1. **Add a GUI for configuring/running alerts — planned.** Start with configuration editing and validation, then add process start/stop, status, and logs using the same backend as the CLI.
-
 ## Template setup
 
 Copy missing templates without overwriting existing settings, replace credential/channel placeholders, and keep only the alerts you intend to run. Use shell-safe entry names (for example `daily_crypto`), or quote example names containing `<` and `>` when running alerts:

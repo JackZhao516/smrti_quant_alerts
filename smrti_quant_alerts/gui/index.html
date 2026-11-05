@@ -6,6 +6,7 @@
 <p>Edit configs.json. Keep API credentials in token.json on disk. Saving settings does not run alerts.</p>
 <textarea id="config" aria-label="Alert configuration" spellcheck="false"></textarea>
 <div><button id="load">Reload</button><button id="save">Validate and save</button></div>
+<h2>Run alerts</h2><p>Starting an alert can send real notifications using token.json. These controls manage processes started in this session.</p><div id="workers"></div><pre id="logs"></pre>
 <p role="status" id="message"></p>
 <script>
 const csrf='__CSRF__';let revision=null;
@@ -17,5 +18,21 @@ async function request(path, data, captureRevision=false){
 async function load(){try{editor.value=JSON.stringify(await request('/api/config',undefined,true),null,2);message.textContent='Loaded';}catch(e){message.textContent=e.message;}}
 document.querySelector('#load').onclick=load;
 document.querySelector('#save').onclick=async()=>{try{await request('/api/config',JSON.parse(editor.value));message.textContent='Saved. Restart running alerts to apply changes.';}catch(e){message.textContent=e.message;}};
-load();
+async function refresh(){
+ try{
+  const settings=await request('/api/config'), status=await request('/api/status');
+  const container=document.querySelector('#workers');container.replaceChildren();
+  for(const name of Object.keys(settings)){
+   const row=document.createElement('div'), label=document.createElement('span');
+   label.textContent=name+' — '+(status[name]?.running?'running':status[name]?'stopped ('+status[name].exit_code+')':'not started');row.append(label);
+   for(const action of ['start','stop','logs']){
+    const button=document.createElement('button');button.textContent=action;
+    button.disabled=action==='start'?!!status[name]?.running:!status[name];
+    button.onclick=async()=>{try{const result=await request('/api/'+action,{name});if(action==='logs')document.querySelector('#logs').textContent=result.logs;await refresh();}catch(e){message.textContent=e.message;}};
+    row.append(button);
+   }container.append(row);
+  }
+ }catch(e){message.textContent=e.message;}
+}
+load();refresh();setInterval(refresh,5000);
 </script></html>
