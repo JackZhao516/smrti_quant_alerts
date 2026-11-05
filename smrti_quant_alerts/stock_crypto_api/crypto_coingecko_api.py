@@ -14,11 +14,23 @@ from smrti_quant_alerts.stock_crypto_api.utility import read_exclude_coins_from_
 class CoingeckoApi:
     PWD = Config.PROJECT_DIR
 
-    def __init__(self, api_key: str | None = None, client: CoinGeckoAPI | None = None) -> None:
+    def __init__(
+        self, api_key: str | None = None, client: CoinGeckoAPI | None = None, api_tier: str | None = None
+    ) -> None:
         self.COINGECKO_API_KEY = api_key
         if client is None:
-            self.COINGECKO_API_KEY = api_key if api_key is not None else Config().TOKENS["COINGECKO_API_KEY"]
-            client = CoinGeckoAPI(api_key=self.COINGECKO_API_KEY)
+            tokens = Config().TOKENS if api_key is None and api_tier != "public" else (Config.TOKENS or {})
+            self.COINGECKO_API_KEY = api_key if api_key is not None else tokens.get("COINGECKO_API_KEY", "")
+            tier = api_tier or tokens.get("COINGECKO_API_TIER", "pro")
+            if tier not in {"pro", "demo", "public"}:
+                raise ValueError("COINGECKO_API_TIER must be pro, demo, or public")
+            client = CoinGeckoAPI(api_key=self.COINGECKO_API_KEY if tier == "pro" else "")
+            # Select the Pro host before disabling query-string authentication.
+            client.api_key = ""
+            if tier != "public":
+                header = "x-cg-pro-api-key" if tier == "pro" else "x-cg-demo-api-key"
+                client.session.headers[header] = self.COINGECKO_API_KEY
+            client.request_timeout = 30
         self._cg = client
 
     def get_exclude_coins(
