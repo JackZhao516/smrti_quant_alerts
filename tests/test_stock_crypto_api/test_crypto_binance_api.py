@@ -3,8 +3,7 @@ import unittest
 from unittest import mock
 from decimal import Decimal
 
-from binance.spot import Spot
-from binance.um_futures import UMFutures
+from smrti_quant_alerts.stock_crypto_api.binance_client import Spot, UMFutures
 
 from smrti_quant_alerts.stock_crypto_api import BinanceApi
 from smrti_quant_alerts.settings import Config

@@ -2,8 +2,7 @@ import time
 from decimal import Decimal
 from datetime import datetime
 
-from binance.spot import Spot
-from binance.um_futures import UMFutures
+from smrti_quant_alerts.stock_crypto_api.binance_client import Spot, UMFutures
 
 from smrti_quant_alerts.exception import error_handling
 from smrti_quant_alerts.settings import Config

@@ -1,6 +1,7 @@
 setuptools
 TA-Lib>=0.6.4
-binance-futures-connector>=4.0.0
+binance-sdk-spot==13.4.0
+binance-sdk-derivatives-trading-usds-futures==18.2.0
 numpy==1.26.4
 pycoingecko==3.1.0
 requests
@@ -8,7 +9,7 @@ pytz
 pandas[excel]
 lxml
 peewee
-urllib3>=1.26.9,<2.0.0
+urllib3>=2.0,<3
 openai
 fpdf2==2.7.9
 pycodestyle
