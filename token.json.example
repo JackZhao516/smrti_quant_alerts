@@ -19,6 +19,7 @@
     }
   },
   "COINGECKO_API_KEY": "<API Token>",
+  "COINGECKO_API_TIER": "pro",
   "FMP_API_KEY": "<API Token>",
   "EODHD_API_KEY": "<API Token>",
   "PERPLEXITY_API_KEY": "<API Token>",
