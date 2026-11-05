@@ -12,9 +12,8 @@ Alerts are sent to [Telegram](https://telegram.org/) groups/channels.
 
 ## Next Steps
 
-1. **Enhance documentation — next.** Document configuration, supported timeframes, provider permissions, API migrations, rate limits, and troubleshooting. Audit and update provider adapters before treating examples as live-verified.
-2. **Set up Docker — planned.** Provide a reproducible image, read-only configuration mounts, persistent database/log volumes, and graceful shutdown after installation and API compatibility are verified.
-3. **Add a GUI for configuring/running alerts — planned.** Start with configuration editing and validation, then add process start/stop, status, and logs using the same backend as the CLI.
+1. **Set up Docker — planned.** Provide a reproducible image, read-only configuration mounts, persistent database/log volumes, and graceful shutdown after installation and API compatibility are verified.
+2. **Add a GUI for configuring/running alerts — planned.** Start with configuration editing and validation, then add process start/stop, status, and logs using the same backend as the CLI.
 
 ## Template setup
 
@@ -31,7 +30,7 @@ The syntax checks do not authenticate with providers. Optional email and AI flag
 
 ## Get Started and Documentation
 
-See [per-alert CLI commands and expected outputs](examples/README.md).
+See [per-alert CLI commands and expected outputs](examples/README.md). See [installation, diagnostics, Docker and GUI operations](docs/operations.md) for setup and troubleshooting.
 
 * pre-requisites: 
   * ``All coingecko alerts``: [CoinGecko pro api token](https://www.coingecko.com/en/api/pricing), 

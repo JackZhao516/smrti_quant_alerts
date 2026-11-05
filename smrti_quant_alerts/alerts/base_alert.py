@@ -5,6 +5,14 @@ from smrti_quant_alerts.telegram_api import TelegramBot
 from smrti_quant_alerts.db import init_database_runtime
 
 
+class _RuntimeConfig:
+    def __get__(self, instance, owner):
+        config = Config(verbose=False)
+        if instance is not None:
+            instance.CONFIG = config
+        return config
+
+
 class BaseAlert:
     """
     Base class for all alerts.
@@ -15,8 +23,8 @@ class BaseAlert:
     All alerts should implement the run method, which is the main method for running the alert.
     """
 
-    CONFIG = Config(verbose=False)
-    PWD = CONFIG.PROJECT_DIR
+    CONFIG = _RuntimeConfig()
+    PWD = Config.PROJECT_DIR
 
     def __init__(
         self,
