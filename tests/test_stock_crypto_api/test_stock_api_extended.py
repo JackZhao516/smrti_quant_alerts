@@ -245,7 +245,7 @@ def test_get_stock_info_alias_symbol_returns_default_after_retries(mock_get, api
     ):
         assert api.get_stock_info([StockSymbol("BRK.B")]) == []
 
-    assert mock_get.call_count == 5
+    assert mock_get.call_count == 10
 
 
 @mock.patch("smrti_quant_alerts.stock_crypto_api.stock_api.requests.get")
