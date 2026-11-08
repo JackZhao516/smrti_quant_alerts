@@ -13,6 +13,10 @@ class FMPClient:
         rows = get_json(f"{self.root}/{endpoint}", params={**params, "apikey": self.api_key}, timeout=self.timeout)
         if not isinstance(rows, list):
             raise PermanentAPIError(200, "Expected FMP result array")
+        if endpoint == "analyst-estimates":
+            rows = [
+                {**row, "estimatedRevenueAvg": row.get("revenueAvg", row.get("estimatedRevenueAvg", 0))} for row in rows
+            ]
         return rows
 
     def profiles(self, symbols):

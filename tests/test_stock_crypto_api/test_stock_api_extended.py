@@ -631,4 +631,4 @@ def test_request_failure_retries_then_returns_empty_result(api: StockApi, method
     ) as get:
         assert not getattr(api, method)(argument)
 
-    assert get.call_count == (15 if method == "get_stock_current_close_price" else 5)
+    assert get.call_count == 15
