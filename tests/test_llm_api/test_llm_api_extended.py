@@ -30,12 +30,14 @@ def api() -> LLMAPI:
 
 
 def _completion(content: str | None) -> mock.Mock:
-    message = mock.Mock()
-    message.content = content
-    choice = mock.Mock()
-    choice.message = message
     response = mock.Mock()
-    response.choices = [choice]
+    response.output_text = content
+    annotations = (
+        [{"type": "url_citation", "url": "https://b.com"}, {"type": "url_citation", "url": "https://a.com"}]
+        if content and "Answer with [" in content
+        else []
+    )
+    response.output = [{"content": [{"annotations": annotations}]}]
     return response
 
 
@@ -86,36 +88,47 @@ def test_build_chat_message_omits_empty_parts() -> None:
 
 
 def test_get_ai_response_returns_content_and_sorted_citations(api: LLMAPI) -> None:
-    api._client.chat.completions.create.return_value = _completion(
-        "Answer with [b.com](https://b.com), [a.com](https://a.com) and [a.com](https://a.com)."
-    )
+    response = _completion("Answer with no generated links.")
+    response.output = [
+        {
+            "content": [
+                {
+                    "annotations": [
+                        {"type": "url_citation", "url": "https://b.com"},
+                        {"type": "url_citation", "url": "https://a.com"},
+                    ]
+                }
+            ]
+        }
+    ]
+    api._client.responses.create.return_value = response
 
     content, citations = api.get_ai_response("question")
 
     assert content.startswith("Answer with")
     assert citations == "\n\n## Sources:\n- [a.com](https://a.com)\n- [b.com](https://b.com)"
-    kwargs = api._client.chat.completions.create.call_args.kwargs
+    kwargs = api._client.responses.create.call_args.kwargs
     assert kwargs["model"] == "gpt-4.1"
-    assert kwargs["temperature"] == 0.7
-    assert kwargs["max_tokens"] == 2000
-    assert kwargs["messages"][0]["role"] == "system"
-    assert kwargs["messages"][1]["content"].strip().endswith("question")
+    assert kwargs["tools"] == [{"type": "web_search"}]
+    assert kwargs["max_output_tokens"] == 2000
+    assert "web search" in kwargs["instructions"]
+    assert kwargs["input"] == "question"
 
 
 def test_get_ai_response_without_citations(api: LLMAPI) -> None:
-    api._client.chat.completions.create.return_value = _completion("Answer without links")
+    api._client.responses.create.return_value = _completion("Answer without links")
 
     assert api.get_ai_response("question") == ("Answer without links", "")
 
 
 def test_get_ai_response_handles_empty_content(api: LLMAPI) -> None:
-    api._client.chat.completions.create.return_value = _completion(None)
+    api._client.responses.create.return_value = _completion(None)
 
     assert api.get_ai_response("question") == ("", "")
 
 
 def test_get_ai_response_swallows_client_errors(api: LLMAPI) -> None:
-    api._client.chat.completions.create.side_effect = RuntimeError("boom")
+    api._client.responses.create.side_effect = RuntimeError("boom")
 
     assert api.get_ai_response("question") == ("", "")
 
@@ -183,3 +196,24 @@ def test_get_stock_increase_reason_returns_empty_after_retries(api: LLMAPI, monk
 
     assert result == ""
     assert get_response.call_count == 5
+
+
+def test_search_can_be_disabled_and_unverified_links_are_not_sources(api):
+    api._web_search = False
+    api._client.responses.create.return_value = _completion("Unverified [link](https://unverified.example)")
+    assert api.get_ai_response("question")[1] == ""
+    assert api._client.responses.create.call_args.kwargs["tools"] == []
+
+
+def test_missing_client_returns_empty_without_request(api):
+    api._client = None
+    assert api.get_ai_response("question") == ("", "")
+
+
+@pytest.mark.parametrize("options", [None, "invalid", {"WEB_SEARCH": "false"}])
+def test_invalid_openai_options_fail_before_client_creation(monkeypatch, options):
+    monkeypatch.setattr(Config, "IS_SETUP", True)
+    monkeypatch.setattr(Config, "TOKENS", {"OPENAI_API_KEY": "key", "OPENAI": options})
+    with mock.patch.object(llm_api_module, "OpenAI") as client, pytest.raises(ValueError, match="OPENAI"):
+        LLMAPI()
+    client.assert_not_called()

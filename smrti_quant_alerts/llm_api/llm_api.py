@@ -3,6 +3,9 @@ import re
 import logging
 from time import time, sleep
 from datetime import datetime
+from urllib.parse import urlsplit
+
+from smrti_quant_alerts.http_client import redact
 
 from openai import OpenAI
 
@@ -28,7 +31,13 @@ class LLMAPI:
         if not self._api_key:
             logging.warning("No OpenAI API key found in tokens.json or environment variables")
 
-        self._model = "gpt-4.1"
+        options = config.TOKENS.get("OPENAI", {}) if config.TOKENS else {}
+        if not isinstance(options, dict):
+            raise ValueError("OPENAI must be a JSON object")
+        if not isinstance(options.get("WEB_SEARCH", True), bool):
+            raise ValueError("OPENAI.WEB_SEARCH must be a JSON boolean")
+        self._model = options.get("MODEL", "gpt-4.1")
+        self._web_search = options.get("WEB_SEARCH", True)
         self._client = OpenAI(api_key=self._api_key) if self._api_key else None
 
     @staticmethod
@@ -78,7 +87,7 @@ class LLMAPI:
 
     def get_ai_response(self, prompt: str) -> tuple[str, str]:
         """
-        Get response from OpenAI API with web search
+        Get a response, optionally using web search according to OPENAI.WEB_SEARCH.
 
         Args:
             prompt: The prompt to send to the AI
@@ -86,47 +95,39 @@ class LLMAPI:
         Returns:
             Tuple[str, str]: (response_content, citations)
         """
+        if self._client is None:
+            return "", ""
         try:
-            response = self._client.chat.completions.create(
+            search = getattr(self, "_web_search", True)
+            response = self._client.responses.create(
                 model=self._model,
-                messages=[
-                    {
-                        "role": "system",
-                        "content": """You are a helpful assistant with access to current information through web search.
-                        IMPORTANT: You MUST search the web for accurate information and cite your sources.
-                        For each fact or piece of information you provide:
-                        1. Include the specific URL where you found it
-                        2. Format citations as markdown links: [domain.com](full_url)
-                        3. Use multiple sources when possible for comprehensive information""",
-                    },
-                    {
-                        "role": "user",
-                        "content": f"""Please search the web to answer this question accurately. Include URLs for your sources:
-                        {prompt}""",
-                    },
-                ],
-                temperature=0.7,
-                max_tokens=2000,
+                tools=[{"type": "web_search"}] if search else [],
+                instructions=(
+                    "Use web search to verify current facts and cite sources."
+                    if search
+                    else "Use only supplied information. Do not claim to have searched the web."
+                ),
+                input=prompt,
+                max_output_tokens=2000,
             )
 
-            # Extract main response and citations
-            response_content = response.choices[0].message.content or ""
-            citations = []
+            def read(item, key, default=None):
+                return item.get(key, default) if isinstance(item, dict) else getattr(item, key, default)
 
-            # Extract citations from the response using markdown link format
-            urls = re.findall(r"\[([^\]]+)\]\(([^)]+)\)", response_content)
-            if urls:
-                for domain, url in urls:
-                    citations.append(f"- [{domain}]({url})")
-
-            # remove duplicate citations
-            citations = "\n\n## Sources:\n" + "\n".join(sorted(set(citations))) if citations else ""
-
-            return response_content, citations
-
-        except Exception as e:
-            error_msg = f"Error getting AI response: {e}"
-            logging.error(error_msg)
+            citations = set()
+            for item in response.output or []:
+                for content in read(item, "content", []) or []:
+                    for annotation in read(content, "annotations", []) or []:
+                        if read(annotation, "type") != "url_citation":
+                            continue
+                        url = read(annotation, "url", "")
+                        parsed = urlsplit(url)
+                        if parsed.scheme in {"http", "https"} and parsed.netloc:
+                            citations.add(f"- [{parsed.netloc}]({url})")
+            sources = "\n\n## Sources:\n" + "\n".join(sorted(citations)) if citations else ""
+            return response.output_text or "", sources
+        except Exception as error:
+            logging.error("Error getting AI response: %s", redact(error))
             return "", ""
 
     @error_handling("openai", default_val="")

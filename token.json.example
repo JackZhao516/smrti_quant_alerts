@@ -24,6 +24,7 @@
   "PERPLEXITY_API_KEY": "<API Token>",
   "XAI_API_KEY": "<API Token>",
   "OPENAI_API_KEY": "<API Token>",
+  "OPENAI": {"MODEL": "gpt-4.1", "WEB_SEARCH": true},
   "GMAIL": {
     "SENDER_EMAIL": "<gmail address>",
     "PASSWORD": "<Gmail app password>",
