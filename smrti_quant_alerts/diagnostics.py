@@ -2,6 +2,7 @@
 
 import argparse
 import json
+import os
 from pathlib import Path
 
 from smrti_quant_alerts.http_client import APIError, get_json
@@ -79,7 +80,7 @@ def diagnose(tokens, live=False, providers=None):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--config-root", type=Path, default=Path.cwd())
+    parser.add_argument("--config-root", type=Path, default=Path(os.environ.get("SMRTI_CONFIG_DIR", Path.cwd())))
     parser.add_argument("--live", action="store_true", help="Make one read-only probe per provider (may consume quota)")
     parser.add_argument("--provider", action="append", choices=["binance", *KEYS])
     args = parser.parse_args()
