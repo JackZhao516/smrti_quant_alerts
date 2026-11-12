@@ -10,7 +10,7 @@ logging.basicConfig(level=logging.WARN, format="%(asctime)s - %(levelname)s - %(
 
 
 class Config:
-    PROJECT_DIR = os.environ.get("SMRTI_CONFIG_DIR", os.getcwd())
+    PROJECT_DIR = os.getcwd()
     TOKENS = None
     SETTINGS = None
     API_ENDPOINTS = {
@@ -33,13 +33,14 @@ class Config:
         """
         read configs.json and token.json
         """
+        config_dir = os.environ.get("SMRTI_CONFIG_DIR", cls.PROJECT_DIR)
         for file in ["token.json", "configs.json"]:
-            if not os.path.isfile(os.path.join(cls.PROJECT_DIR, file)):
+            if not os.path.isfile(os.path.join(config_dir, file)):
                 logging.error(f"{file} not found")
                 exit(1)
         try:
-            cls.TOKENS = json.load(open(os.path.join(cls.PROJECT_DIR, "token.json")))
-            cls.SETTINGS = json.load(open(os.path.join(cls.PROJECT_DIR, "configs.json")))
+            cls.TOKENS = json.load(open(os.path.join(config_dir, "token.json")))
+            cls.SETTINGS = json.load(open(os.path.join(config_dir, "configs.json")))
         except json.decoder.JSONDecodeError:
             logging.error("token.json/configs.json is not a valid json file")
             exit(1)
@@ -229,5 +230,7 @@ class Config:
                 exit(1)
 
     def reload_settings(self) -> None:
-        self.SETTINGS = json.load(open(os.path.join(self.PROJECT_DIR, "configs.json")))
+        self.SETTINGS = json.load(
+            open(os.path.join(os.environ.get("SMRTI_CONFIG_DIR", self.PROJECT_DIR), "configs.json"))
+        )
         self._validate_configs()

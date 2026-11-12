@@ -12,8 +12,7 @@ Alerts are sent to [Telegram](https://telegram.org/) groups/channels.
 
 ## Next Steps
 
-1. **Set up Docker — planned.** Provide a reproducible image, read-only configuration mounts, persistent database/log volumes, and graceful shutdown after installation and API compatibility are verified.
-2. **Add a GUI for configuring/running alerts — planned.** Start with configuration editing and validation, then add process start/stop, status, and logs using the same backend as the CLI.
+1. **Add a GUI for configuring/running alerts — planned.** Start with configuration editing and validation, then add process start/stop, status, and logs using the same backend as the CLI.
 
 ## Template setup
 
