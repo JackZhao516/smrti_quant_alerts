@@ -105,7 +105,6 @@ def alert(alert_runtime, monkeypatch):
     monkeypatch.setattr(alert_module, "PDFApi", MagicMock)
     monkeypatch.setattr(base_alert_module, "TelegramBot", MagicMock)
     monkeypatch.setattr(alert_module, "close_database", MagicMock())
-    monkeypatch.setattr(alert_module, "init_database_runtime", MagicMock())
     monkeypatch.setattr(StockAlertDBUtils, "get_all_stocks", MagicMock(return_value=set()))
 
     Config.TOKENS = {
@@ -140,40 +139,26 @@ def test_constructor_uses_default_timeframes(alert):
 
 # ----------------- stock screener results -----------------
 def test_get_stock_screener_alert_results_empty_name(alert, monkeypatch):
-    close_database = MagicMock()
-    init_database_runtime = MagicMock()
     get_all_stocks = MagicMock()
-    monkeypatch.setattr(alert_module, "close_database", close_database)
-    monkeypatch.setattr(alert_module, "init_database_runtime", init_database_runtime)
     monkeypatch.setattr(StockAlertDBUtils, "get_all_stocks", get_all_stocks)
 
     assert alert._get_stock_screener_alert_results("") == set()
     assert alert._get_stock_screener_alert_results(None) == set()
-    close_database.assert_not_called()
-    init_database_runtime.assert_not_called()
     get_all_stocks.assert_not_called()
 
 
 def test_get_stock_screener_alert_results_success(alert, monkeypatch):
     stock = _stock("SCR1")
-    close_database = MagicMock()
-    init_database_runtime = MagicMock()
-    get_all_stocks = MagicMock(return_value=[stock])
-    monkeypatch.setattr(alert_module, "close_database", close_database)
-    monkeypatch.setattr(alert_module, "init_database_runtime", init_database_runtime)
+    get_all_stocks = MagicMock(return_value={stock})
     monkeypatch.setattr(StockAlertDBUtils, "get_all_stocks", get_all_stocks)
 
-    result = alert._get_stock_screener_alert_results("stock_screener.db")
-
-    assert result == {stock}
-    assert init_database_runtime.call_args_list == [call("stock_screener.db"), call("stock_alert.db")]
-    assert close_database.call_count == 2
-    get_all_stocks.assert_called_once_with()
+    assert alert._get_stock_screener_alert_results("stock_screener.db") == {stock}
+    get_all_stocks.assert_called_once_with("stock_screener.db")
 
 
 def test_get_stock_screener_alert_results_exception(alert, monkeypatch, caplog):
-    init_database_runtime = MagicMock(side_effect=RuntimeError("db unavailable"))
-    monkeypatch.setattr(alert_module, "init_database_runtime", init_database_runtime)
+    get_all_stocks = MagicMock(side_effect=RuntimeError("db unavailable"))
+    monkeypatch.setattr(StockAlertDBUtils, "get_all_stocks", get_all_stocks)
 
     with caplog.at_level(logging.ERROR):
         assert alert._get_stock_screener_alert_results("stock_screener.db") == set()

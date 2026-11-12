@@ -5,7 +5,7 @@ from binance_common.errors import ForbiddenError, UnauthorizedError
 from binance_sdk_spot.spot import Spot as SpotSDK
 from binance_sdk_derivatives_trading_usds_futures.derivatives_trading_usds_futures import DerivativesTradingUsdsFutures
 
-from smrti_quant_alerts.http_client import PermanentAPIError
+from smrti_quant_alerts.gateway.http_client import PermanentAPIError
 
 
 def plain(value):

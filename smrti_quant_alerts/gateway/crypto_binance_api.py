@@ -2,12 +2,13 @@ import time
 from decimal import Decimal
 from datetime import datetime
 
-from smrti_quant_alerts.stock_crypto_api.binance_client import Spot, UMFutures
+from smrti_quant_alerts.gateway.binance_client import Spot, UMFutures
 
 from smrti_quant_alerts.exception import error_handling
 from smrti_quant_alerts.settings import Config
 from smrti_quant_alerts.data_type import BinanceExchange, CoingeckoCoin, TradingSymbol
-from smrti_quant_alerts.stock_crypto_api.utility import read_exclude_coins_from_file, get_date_from_timestamp
+from smrti_quant_alerts.coin_exclusions import read_exclude_coins_from_file
+from smrti_quant_alerts.market_time import get_date_from_timestamp
 
 
 class BinanceApi:

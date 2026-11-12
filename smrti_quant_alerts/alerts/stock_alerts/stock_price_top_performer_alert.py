@@ -6,13 +6,13 @@ import os
 from decimal import Decimal
 from collections import defaultdict
 
-from smrti_quant_alerts.email_api import EmailApi
+from smrti_quant_alerts.gateway.email_api import EmailApi
 from smrti_quant_alerts.data_type import StockSymbol, FinancialMetricType, FinancialMetricsData
-from smrti_quant_alerts.stock_crypto_api import StockApi
+from smrti_quant_alerts.gateway.stock_api import StockApi
 from smrti_quant_alerts.alerts.base_alert import BaseAlert
-from smrti_quant_alerts.llm_api import LLMAPI
+from smrti_quant_alerts.gateway.llm_api import LLMAPI
 from smrti_quant_alerts.pdf_api import PDFApi
-from smrti_quant_alerts.db import close_database, StockAlertDBUtils, init_database_runtime
+from smrti_quant_alerts.db import close_database, StockAlertDBUtils
 
 logging.basicConfig(level=logging.INFO)
 
@@ -74,12 +74,7 @@ class StockPriceTopPerformerAlert(BaseAlert, StockApi):
         if not stock_screener_alert_db_name:
             return set()
         try:
-            close_database()
-            init_database_runtime(stock_screener_alert_db_name)
-            stocks = set(StockAlertDBUtils.get_all_stocks())
-            close_database()
-            database_name = f"{self.CONFIG.SETTINGS[self._alert_name].get('database_name', self._alert_name)}.db"
-            init_database_runtime(database_name)
+            stocks = StockAlertDBUtils.get_all_stocks(stock_screener_alert_db_name)
             return stocks
         except Exception as e:
             logging.error(f"Failed to get stock screener alert results: {e}")

@@ -5,7 +5,7 @@ import json
 import os
 from pathlib import Path
 
-from smrti_quant_alerts.http_client import APIError, get_json
+from smrti_quant_alerts.gateway.http_client import APIError, get_json
 
 KEYS = {
     "coingecko": "COINGECKO_API_KEY",

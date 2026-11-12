@@ -3,7 +3,7 @@ Alert daily for top 500-3000 market cap coins.
 """
 
 from smrti_quant_alerts.alerts.base_alert import BaseAlert
-from smrti_quant_alerts.stock_crypto_api import CoingeckoApi
+from smrti_quant_alerts.gateway.crypto_coingecko_api import CoingeckoApi
 
 
 class CGAltsAlert(BaseAlert, CoingeckoApi):

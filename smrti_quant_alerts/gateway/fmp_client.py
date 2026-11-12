@@ -1,6 +1,6 @@
 """FMP Stable adapter. No silent fallback to account-restricted legacy routes."""
 
-from smrti_quant_alerts.http_client import PermanentAPIError, get_json
+from smrti_quant_alerts.gateway.http_client import PermanentAPIError, get_json
 
 
 class FMPClient:

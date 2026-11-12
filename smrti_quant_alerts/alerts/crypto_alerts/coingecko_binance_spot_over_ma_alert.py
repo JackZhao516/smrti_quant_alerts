@@ -6,7 +6,7 @@ from multiprocessing.pool import ThreadPool
 from abc import ABC, abstractmethod
 
 from smrti_quant_alerts.alerts.base_alert import BaseAlert
-from smrti_quant_alerts.stock_crypto_api import CryptoComprehensiveApi
+from smrti_quant_alerts.gateway.crypto_comprehensive_api import CryptoComprehensiveApi
 from smrti_quant_alerts.data_type import CoingeckoCoin, BinanceExchange, TradingSymbol
 from smrti_quant_alerts.db import close_database, SpotOverMaDBUtils
 from smrti_quant_alerts.alerts.crypto_alerts.utility import send_coins_info_to_telegram

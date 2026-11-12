@@ -9,7 +9,7 @@ from collections import defaultdict
 from collections.abc import Iterable
 
 from smrti_quant_alerts.alerts.base_alert import BaseAlert
-from smrti_quant_alerts.stock_crypto_api import CoingeckoApi
+from smrti_quant_alerts.gateway.crypto_coingecko_api import CoingeckoApi
 
 
 class CoingeckoMarketCapAlert(BaseAlert, CoingeckoApi):

@@ -9,7 +9,7 @@ import subprocess
 import sys
 import threading
 
-from smrti_quant_alerts.http_client import redact
+from smrti_quant_alerts.gateway.http_client import redact
 
 
 class Workers:
