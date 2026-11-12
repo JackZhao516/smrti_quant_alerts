@@ -2,9 +2,10 @@ import time
 from decimal import Decimal
 from collections.abc import Iterable
 from threading import RLock
+from peewee import SqliteDatabase
 
 
-from smrti_quant_alerts.db.database import database_runtime, init_database
+from smrti_quant_alerts.db.database import database_runtime, init_database, runtime_database_path
 from smrti_quant_alerts.db.models import LastCount, ExchangeCount, StockAlertCount, MACDAlertValue, StockInfo
 from smrti_quant_alerts.data_type import TradingSymbol, get_class, BinanceExchange, StockSymbol
 
@@ -209,12 +210,25 @@ class StockAlertDBUtils:
             }
 
     @staticmethod
-    def get_all_stocks() -> set[StockSymbol]:
-        """
-        get all stocks
-        """
-        with database_runtime.atomic():
-            return {StockSymbol.get_symbol_object(i.stock_symbol) for i in StockAlertCount.select()}
+    def _read_all_stocks(database) -> set[StockSymbol]:
+        with database.atomic():
+            rows = StockAlertCount.select(StockAlertCount.stock_symbol).tuples().execute(database)
+            return {StockSymbol.get_symbol_object(symbol) for (symbol,) in rows}
+
+    @classmethod
+    def get_all_stocks(cls, database_name: str | None = None) -> set[StockSymbol]:
+        """Read stored tickers from the active DB or an existing named alert DB."""
+        if database_name is None:
+            return cls._read_all_stocks(database_runtime)
+
+        path = runtime_database_path(database_name)
+        if not path.is_file():
+            return set()
+        database = SqliteDatabase(f"{path.absolute().as_uri()}?mode=ro", uri=True, timeout=30)
+        with database.connection_context():
+            if not database.table_exists(StockAlertCount._meta.table_name):
+                return set()
+            return cls._read_all_stocks(database)
 
     @staticmethod
     def add_stocks(stock_symbols: Iterable[StockSymbol], alert_type: str = "") -> None:

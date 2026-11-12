@@ -469,31 +469,20 @@ def test_get_stock_screener_alert_results_success(alert_runtime: Path, monkeypat
     stock2 = StockSymbol("MSFT", gics_sector="Tech")
     stock3 = StockSymbol("NVDA", gics_sector="Chips")
     alert._stock_api.get_stock_info.return_value = [stock1, stock2, stock3]
-    with (
-        patch.object(macd_alert, "StockAlertDBUtils") as db_utils,
-        patch.object(macd_alert, "close_database") as close_database,
-        patch.object(macd_alert, "init_database_runtime") as init_database,
-    ):
+    with patch.object(macd_alert, "StockAlertDBUtils") as db_utils:
         db_utils.get_all_stocks.return_value = {stock1, stock2, stock3}
-
         result = alert._get_stock_screener_alert_results("screener.db")
 
+    db_utils.get_all_stocks.assert_called_once_with("screener.db")
     assert result == [(stock1, None), (stock2, None), (stock3, None)]
     assert alert._sectors["share"]["Tech"] == [(stock1, None), (stock2, None)]
     assert alert._sectors["share"]["Chips"] == [(stock3, None)]
-    assert close_database.call_count == 2
-    assert init_database.call_args_list == [call("screener.db"), call(f"{ALERT_NAME}.db")]
 
 
 def test_get_stock_screener_alert_results_exception(alert_runtime: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     alert = _make_alert(monkeypatch)
-    with (
-        patch.object(macd_alert, "StockAlertDBUtils") as db_utils,
-        patch.object(macd_alert, "close_database"),
-        patch.object(macd_alert, "init_database_runtime"),
-    ):
+    with patch.object(macd_alert, "StockAlertDBUtils") as db_utils:
         db_utils.get_all_stocks.side_effect = RuntimeError("database unavailable")
-
         result = alert._get_stock_screener_alert_results("screener.db")
 
     assert result == []

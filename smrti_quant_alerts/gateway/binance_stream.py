@@ -9,8 +9,8 @@ from concurrent.futures import ThreadPoolExecutor
 from binance_common.configuration import ConfigurationWebSocketStreams
 from binance_sdk_spot.spot import Spot
 
-from smrti_quant_alerts.http_client import redact
-from smrti_quant_alerts.stock_crypto_api.binance_client import plain
+from smrti_quant_alerts.gateway.http_client import redact
+from smrti_quant_alerts.gateway.binance_client import plain
 
 
 class SpotWebsocketStreamClient:

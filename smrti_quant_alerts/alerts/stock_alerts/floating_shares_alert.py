@@ -7,8 +7,8 @@ from collections import defaultdict
 
 import pandas as pd
 
-from smrti_quant_alerts.email_api import EmailApi
-from smrti_quant_alerts.stock_crypto_api import StockApi
+from smrti_quant_alerts.gateway.email_api import EmailApi
+from smrti_quant_alerts.gateway.stock_api import StockApi
 from smrti_quant_alerts.alerts.base_alert import BaseAlert
 from smrti_quant_alerts.data_type import StockSymbol, FinancialMetricsData
 

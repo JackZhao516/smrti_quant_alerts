@@ -5,7 +5,7 @@ from time import time, sleep
 from datetime import datetime
 from urllib.parse import urlsplit
 
-from smrti_quant_alerts.http_client import redact
+from smrti_quant_alerts.gateway.http_client import redact
 
 from openai import OpenAI
 

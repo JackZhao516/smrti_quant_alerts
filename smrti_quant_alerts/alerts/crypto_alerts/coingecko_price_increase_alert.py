@@ -2,7 +2,7 @@ import time
 from collections.abc import Sequence, Iterable
 
 from smrti_quant_alerts.alerts.base_alert import BaseAlert
-from smrti_quant_alerts.stock_crypto_api import CoingeckoApi
+from smrti_quant_alerts.gateway.crypto_coingecko_api import CoingeckoApi
 from smrti_quant_alerts.data_type import CoingeckoCoin
 from smrti_quant_alerts.alerts.crypto_alerts.utility import send_coins_info_to_telegram
 
