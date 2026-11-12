@@ -80,6 +80,24 @@ def test_invalid_save_preserves_file_and_permissions(tmp_path, settings):
     assert not list(tmp_path.glob(".configs-*"))
 
 
+def test_worker_routes_validate_before_start(gui):
+    from unittest.mock import Mock
+
+    gui.workers = Mock()
+    gui.workers.status.return_value = {}
+    headers = {"Origin": f"http://127.0.0.1:{gui.server_port}", "X-CSRF-Token": gui.csrf}
+    assert call(gui, "POST", "/api/start", {"name": "unknown"}, **headers)[0] == 400
+    gui.workers.start.assert_not_called()
+    name = next(iter(gui.store.read()))
+    assert call(gui, "POST", "/api/start", {"name": name}, **headers)[0] == 200
+    gui.workers.start.assert_called_once_with(name)
+    assert call(gui, "POST", "/api/stop", {"name": name}, **headers)[0] == 200
+    gui.workers.stop.assert_called_once_with(name)
+    gui.workers.logs.return_value = "sanitized tail"
+    assert "sanitized tail" in call(gui, "POST", "/api/logs", {"name": name}, **headers)[1]
+    assert call(gui, "GET", "/api/status")[0] == 200
+
+
 @pytest.mark.parametrize("settings", [{}, [], {"": {}}, {"name": []}])
 def test_rejects_invalid_settings_shapes(settings):
     from smrti_quant_alerts.gui.server import validate
