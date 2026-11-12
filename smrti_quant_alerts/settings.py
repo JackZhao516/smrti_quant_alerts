@@ -51,7 +51,9 @@ class Config:
 
         :param verbose: print warning or not
         """
-        necessary_keys = ["TELEGRAMBOT", "COINGECKO_API_KEY"]
+        necessary_keys = ["TELEGRAMBOT"]
+        if self.TOKENS.get("COINGECKO_API_TIER", "pro") != "public":
+            necessary_keys.append("COINGECKO_API_KEY")
         for key in necessary_keys:
             if key not in self.TOKENS:
                 logging.error(f'token.json does not contain "{key}"')

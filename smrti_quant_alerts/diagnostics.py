@@ -31,7 +31,12 @@ def diagnose(tokens, live=False, providers=None):
         if provider == "gmail":
             results.append({"provider": provider, "status": "not_probed", "detail": "SMTP not contacted"})
             continue
-        if provider != "binance" and not configured(key):
+        tier = tokens.get("COINGECKO_API_TIER", "pro")
+        public = provider == "coingecko" and tier == "public"
+        if provider == "coingecko" and tier not in {"pro", "demo", "public"}:
+            results.append({"provider": provider, "status": "invalid_configuration"})
+            continue
+        if provider != "binance" and not public and not configured(key):
             results.append({"provider": provider, "status": "missing_credentials"})
             continue
         if not live:
@@ -39,13 +44,27 @@ def diagnose(tokens, live=False, providers=None):
             continue
         probes = {
             "binance": ("https://api.binance.com/api/v3/ping", {}, {}),
-            "coingecko": ("https://pro-api.coingecko.com/api/v3/ping", {}, {"x-cg-pro-api-key": key}),
+            "coingecko": (
+                (
+                    "https://pro-api.coingecko.com/api/v3/ping"
+                    if tokens.get("COINGECKO_API_TIER", "pro") == "pro"
+                    else "https://api.coingecko.com/api/v3/ping"
+                ),
+                {},
+                {
+                    (
+                        "x-cg-pro-api-key" if tokens.get("COINGECKO_API_TIER", "pro") == "pro" else "x-cg-demo-api-key"
+                    ): key
+                },
+            ),
             "fmp": ("https://financialmodelingprep.com/stable/profile", {"symbol": "AAPL", "apikey": key}, {}),
             "eodhd": ("https://eodhd.com/api/real-time/AAPL.US", {"api_token": key, "fmt": "json"}, {}),
             "openai": ("https://api.openai.com/v1/models", {}, {"Authorization": f"Bearer {key}"}),
             "telegram": (f"https://api.telegram.org/bot{key}/getMe", {}, {}),
         }
         url, params, headers = probes[provider]
+        if public:
+            headers = {}
         try:
             data = get_json(url, params=params, headers=headers, attempts=1, timeout=10)
             status = "reachable" if data is not None else "empty_response"
