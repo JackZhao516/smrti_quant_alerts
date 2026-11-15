@@ -3,7 +3,7 @@ from decimal import Decimal
 from multiprocessing.pool import ThreadPool
 
 from smrti_quant_alerts.alerts.base_alert import BaseAlert
-from smrti_quant_alerts.stock_crypto_api import BinanceApi
+from smrti_quant_alerts.gateway.crypto_binance_api import BinanceApi
 from smrti_quant_alerts.data_type import BinanceExchange
 
 

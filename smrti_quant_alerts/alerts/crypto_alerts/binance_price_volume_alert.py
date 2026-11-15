@@ -8,10 +8,10 @@ from collections.abc import Sequence, Iterable
 from collections import defaultdict
 from abc import ABC, abstractmethod
 
-from smrti_quant_alerts.stock_crypto_api.binance_stream import SpotWebsocketStreamClient
+from smrti_quant_alerts.gateway.binance_stream import SpotWebsocketStreamClient
 
 from smrti_quant_alerts.alerts.base_alert import BaseAlert
-from smrti_quant_alerts.stock_crypto_api import BinanceApi
+from smrti_quant_alerts.gateway.crypto_binance_api import BinanceApi
 from smrti_quant_alerts.data_type import BinanceExchange, ExchangeTick
 from smrti_quant_alerts.db import PriceVolumeDBUtils
 from smrti_quant_alerts.utility import run_task_at_daily_time

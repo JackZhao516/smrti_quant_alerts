@@ -1,97 +1,12 @@
-import os
-import json
-import datetime
-import pytz
-import numpy as np
+"""Compatibility imports for market helpers."""
 
-from talib import MACD
-
-from smrti_quant_alerts.settings import Config
-
-
-def write_exclude_coins_to_file(input_exclude_coins: str) -> None:
-    """
-    write exclude coins to json file
-
-    :param input_exclude_coins: str "xxx, xxx, xxx"
-    """
-    with open(os.path.join(Config.PROJECT_DIR, "exclude_coins.json")) as f:
-        exclude_coins = json.load(f)
-        exclude_coins_set = set(exclude_coins)
-        for coin in input_exclude_coins.split(","):
-            if coin.strip().upper() not in exclude_coins_set:
-                exclude_coins.append(coin.strip().upper())
-    with open(os.path.join(Config.PROJECT_DIR, "exclude_coins.json"), "w") as f:
-        json.dump(exclude_coins, f)
-
-
-def read_exclude_coins_from_file() -> set[str]:
-    """
-    read exclude coins from json file
-
-    :return: set of exclude coins
-    """
-    exclude_coins = set()
-    if os.path.exists(os.path.join(Config.PROJECT_DIR, "stable_coins.json")):
-        with open(os.path.join(Config.PROJECT_DIR, "stable_coins.json")) as f:
-            exclude_coins.update(json.load(f))
-
-    if os.path.exists(os.path.join(Config.PROJECT_DIR, "exclude_coins.json")):
-        with open(os.path.join(Config.PROJECT_DIR, "exclude_coins.json")) as f:
-            exclude_coins.update(json.load(f))
-    return exclude_coins
-
-
-def get_datetime_now(timezone: str = "US/Eastern") -> datetime.datetime:
-    """
-    get datetime now with timezone
-
-    :param timezone: str
-    :return: datetime.datetime
-    """
-    return datetime.datetime.now(pytz.timezone(timezone))
-
-
-def get_stock_market_close_timestamp_from_date(date: str) -> int:
-    """
-    get stock market close time stamp from date at 4pm EST
-
-    :param date: str
-    :return: timestamp in ms
-    """
-    timezone_utc = pytz.timezone("UTC")
-    return (
-        int(
-            timezone_utc.localize(datetime.datetime.strptime(date, "%Y-%m-%d"))
-            .replace(hour=23, minute=59, second=59)
-            .timestamp()
-        )
-        * 1000
-    )
-
-
-def get_date_from_timestamp(timestamp: int) -> str:
-    """
-    get date from timestamp
-
-    :param timestamp: int
-    :return: str
-    """
-    timezone = pytz.timezone("US/Eastern")
-    return datetime.datetime.fromtimestamp(timestamp / 1000, timezone).strftime("%Y-%m-%d")
-
-
-def calculate_macd(
-    close: list[float], fastperiod: int = 12, slowperiod: int = 26, signalperiod: int = 9
-) -> list[float]:
-    """
-    calculate MACD histogram
-
-    :param close: list of close prices
-    :param fastperiod: int
-    :param slowperiod: int
-    :param signalperiod: int
-    :return: MACD histogram, from newest to oldest
-    """
-    close = np.array(close, dtype=np.float64)
-    return (MACD(close, fastperiod=fastperiod, slowperiod=slowperiod, signalperiod=signalperiod)[2])[::-1]
+from smrti_quant_alerts.coin_exclusions import (
+    read_exclude_coins_from_file as read_exclude_coins_from_file,
+    write_exclude_coins_to_file as write_exclude_coins_to_file,
+)
+from smrti_quant_alerts.indicators import calculate_macd as calculate_macd
+from smrti_quant_alerts.market_time import (
+    get_date_from_timestamp as get_date_from_timestamp,
+    get_datetime_now as get_datetime_now,
+    get_stock_market_close_timestamp_from_date as get_stock_market_close_timestamp_from_date,
+)

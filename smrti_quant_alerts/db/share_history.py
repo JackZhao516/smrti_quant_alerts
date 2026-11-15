@@ -2,12 +2,12 @@
 
 import datetime
 import sqlite3
-from pathlib import Path
+from smrti_quant_alerts.db.database import runtime_database_path
 
 
 class ShareHistory:
     def __init__(self, project_dir):
-        self.path = Path(project_dir) / "runtime_database" / "shares_history.sqlite3"
+        self.path = runtime_database_path("shares_history.sqlite3", project_dir)
 
     def update(self, symbol, rows):
         valid = []

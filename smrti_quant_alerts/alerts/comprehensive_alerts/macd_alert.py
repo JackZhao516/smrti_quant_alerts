@@ -9,12 +9,14 @@ import pandas as pd
 import numpy as np
 from collections import defaultdict
 
-from smrti_quant_alerts.email_api import EmailApi
+from smrti_quant_alerts.gateway.email_api import EmailApi
 from smrti_quant_alerts.data_type import StockSymbol, BinanceExchange, TradingSymbol, get_class
-from smrti_quant_alerts.stock_crypto_api import StockApi, BinanceApi, get_stock_market_close_timestamp_from_date
-from smrti_quant_alerts.stock_crypto_api.utility import calculate_macd
+from smrti_quant_alerts.gateway.stock_api import StockApi
+from smrti_quant_alerts.gateway.crypto_binance_api import BinanceApi
+from smrti_quant_alerts.market_time import get_stock_market_close_timestamp_from_date
+from smrti_quant_alerts.indicators import calculate_macd
 from smrti_quant_alerts.alerts.base_alert import BaseAlert
-from smrti_quant_alerts.db import close_database, StockAlertDBUtils, init_database_runtime
+from smrti_quant_alerts.db import StockAlertDBUtils
 
 logging.basicConfig(level=logging.INFO)
 
@@ -98,12 +100,7 @@ class MACDAlert(BaseAlert):
         if not stock_screener_alert_db_name:
             return []
         try:
-            close_database()
-            init_database_runtime(stock_screener_alert_db_name)
-            stocks = list(StockAlertDBUtils.get_all_stocks())
-            close_database()
-            database_name = f"{self.CONFIG.SETTINGS[self._alert_name].get('database_name', self._alert_name)}.db"
-            init_database_runtime(database_name)
+            stocks = list(StockAlertDBUtils.get_all_stocks(stock_screener_alert_db_name))
             stocks = self._stock_api.get_stock_info(stocks)
             symbols = []
             for stock in stocks:

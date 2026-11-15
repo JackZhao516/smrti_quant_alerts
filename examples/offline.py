@@ -10,7 +10,8 @@ from unittest.mock import patch
 from smrti_quant_alerts.data_type import CoingeckoCoin, StockSymbol
 from smrti_quant_alerts.db import close_database, init_database_runtime
 from smrti_quant_alerts.settings import Config
-from smrti_quant_alerts.stock_crypto_api import CryptoComprehensiveApi, StockApi
+from smrti_quant_alerts.gateway.crypto_comprehensive_api import CryptoComprehensiveApi
+from smrti_quant_alerts.gateway.stock_api import StockApi
 from smrti_quant_alerts.alerts.crypto_alerts.coingecko_binance_spot_over_ma_alert import CoingeckoSpotOverMA
 
 

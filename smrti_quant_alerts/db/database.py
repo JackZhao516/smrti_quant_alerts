@@ -1,4 +1,4 @@
-import os
+from pathlib import Path
 import playhouse.pool
 from peewee import DatabaseProxy, SqliteDatabase
 
@@ -7,14 +7,17 @@ from smrti_quant_alerts.settings import Config
 database_runtime = DatabaseProxy()
 
 
+def runtime_database_path(db_name: str, project_dir: str | Path | None = None) -> Path:
+    root = Path(Config.PROJECT_DIR if project_dir is None else project_dir)
+    return root / "runtime_database" / db_name
+
+
 def init_database(db_name: str) -> SqliteDatabase:
-    database_dir = os.path.join(Config.PROJECT_DIR, "runtime_database")
-    if not os.path.exists(database_dir):
-        os.mkdir(database_dir)
-    db_name = os.path.join(database_dir, db_name)
+    path = runtime_database_path(db_name)
+    path.parent.mkdir(exist_ok=True)
     # in support of multi threading
     return playhouse.pool.PooledSqliteDatabase(
-        db_name,
+        str(path),
         stale_timeout=500,
         max_connections=20,
         pragmas={

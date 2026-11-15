@@ -12,7 +12,7 @@ from requests.exceptions import RequestException
 from requests.models import Response
 
 from .error_type import ClientError, ServerError
-from smrti_quant_alerts.http_client import PermanentAPIError, redact
+from smrti_quant_alerts.gateway.http_client import PermanentAPIError, redact
 
 
 def error_handling(api: str = "binance", retry: int = 5, default_val: Any | None = None) -> Callable:

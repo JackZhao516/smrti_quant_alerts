@@ -6,8 +6,8 @@ import numpy as np
 
 from smrti_quant_alerts.exception import error_handling
 from smrti_quant_alerts.data_type import BinanceExchange, CoingeckoCoin, TradingSymbol
-from smrti_quant_alerts.stock_crypto_api.crypto_binance_api import BinanceApi
-from smrti_quant_alerts.stock_crypto_api.crypto_coingecko_api import CoingeckoApi
+from smrti_quant_alerts.gateway.crypto_binance_api import BinanceApi
+from smrti_quant_alerts.gateway.crypto_coingecko_api import CoingeckoApi
 
 
 class CryptoComprehensiveApi(BinanceApi, CoingeckoApi):

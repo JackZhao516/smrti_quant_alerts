@@ -8,7 +8,7 @@ from pycoingecko import CoinGeckoAPI
 from smrti_quant_alerts.exception import error_handling
 from smrti_quant_alerts.settings import Config
 from smrti_quant_alerts.data_type import CoingeckoCoin, TradingSymbol, BinanceExchange
-from smrti_quant_alerts.stock_crypto_api.utility import read_exclude_coins_from_file
+from smrti_quant_alerts.coin_exclusions import read_exclude_coins_from_file
 
 
 class CoingeckoApi:

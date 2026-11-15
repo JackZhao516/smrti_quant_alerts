@@ -32,3 +32,41 @@ def test_close_database_resets_proxy(runtime_database) -> None:
     close_database()
 
     assert not is_database_runtime_initialized()
+
+
+def test_screener_read_uses_separate_connection_and_existing_data(runtime_database):
+    from peewee import SqliteDatabase
+
+    from smrti_quant_alerts.data_type import StockSymbol
+    from smrti_quant_alerts.db import StockAlertDBUtils
+    from smrti_quant_alerts.db.database import database_runtime, runtime_database_path
+    from smrti_quant_alerts.db.models import StockAlertCount
+
+    active = database_runtime.obj
+    StockAlertDBUtils.add_stocks([StockSymbol("AAPL")])
+    name = "screener #1.db"
+    screener = SqliteDatabase(str(runtime_database_path(name)))
+    with screener.bind_ctx([StockAlertCount]), screener.connection_context():
+        screener.create_tables([StockAlertCount])
+        StockAlertCount.insert(stock_symbol="MSFT", alert_type="screen").execute(screener)
+
+    assert StockAlertDBUtils.get_all_stocks(name) == {StockSymbol("MSFT")}
+    assert database_runtime.obj is active
+    assert StockAlertDBUtils.get_all_stocks() == {StockSymbol("AAPL")}
+
+
+def test_screener_read_does_not_create_missing_files_or_tables(runtime_database):
+    from peewee import SqliteDatabase
+
+    from smrti_quant_alerts.db import StockAlertDBUtils
+    from smrti_quant_alerts.db.database import runtime_database_path
+
+    name = "missing.db"
+    path = runtime_database_path(name)
+    assert StockAlertDBUtils.get_all_stocks(name) == set()
+    assert not path.exists()
+
+    database = SqliteDatabase(str(path))
+    with database.connection_context():
+        assert StockAlertDBUtils.get_all_stocks(name) == set()
+        assert not database.get_tables()

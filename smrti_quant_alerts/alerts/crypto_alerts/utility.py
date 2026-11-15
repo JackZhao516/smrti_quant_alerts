@@ -1,8 +1,8 @@
 import uuid
 
 from smrti_quant_alerts.data_type import TradingSymbol, BinanceExchange, CoingeckoCoin
-from smrti_quant_alerts.telegram_api import TelegramBot
-from smrti_quant_alerts.stock_crypto_api import CoingeckoApi
+from smrti_quant_alerts.gateway.telegram_api import TelegramBot
+from smrti_quant_alerts.gateway.crypto_coingecko_api import CoingeckoApi
 
 
 def send_coins_info_to_telegram(

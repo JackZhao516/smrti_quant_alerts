@@ -10,12 +10,12 @@ import requests
 import numpy as np
 
 from smrti_quant_alerts.exception import error_handling
-from smrti_quant_alerts.http_client import get_json, PermanentAPIError
-from smrti_quant_alerts.stock_crypto_api.fmp_client import FMPClient
-from smrti_quant_alerts.stock_crypto_api.share_history import ShareHistory
+from smrti_quant_alerts.gateway.http_client import get_json, PermanentAPIError
+from smrti_quant_alerts.gateway.fmp_client import FMPClient
+from smrti_quant_alerts.db.share_history import ShareHistory
 from smrti_quant_alerts.settings import Config
 from smrti_quant_alerts.data_type import StockSymbol, FinancialMetricsData, FinancialDataType, FinancialMetricType
-from smrti_quant_alerts.stock_crypto_api.utility import get_datetime_now, get_date_from_timestamp
+from smrti_quant_alerts.market_time import get_datetime_now, get_date_from_timestamp
 from smrti_quant_alerts.db import StockAlertDBUtils, init_database_runtime, is_database_runtime_initialized
 
 

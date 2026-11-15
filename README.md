@@ -71,19 +71,13 @@ Install the git hooks with `pre-commit install` to run Ruff before each commit.
 > ``floating_shares``, ``stock_screener``
 
 ## Structure
-> 1. python scripts to run those alerts are in ``main.py``
 
-> 2. alerts are defined in ``alerts/``, and will be sent to telegram groups/channels defined in ``token.json``
-
-> 3. ``stock_crypto_api/`` defines interactions with stock/crypto apis
-
-> 4. ``exception/`` defines error handling functions and ``telegram_api/`` 
-     implements a simplified message queue for telegram bot to accommodate the rate limit of telegram bot api
-
-> 5. coin: ``CoingeckoCoin``. exchange: ``BinanceExchange``. stock: ``StockSymbol``. All are defined in ``data_type/``
-
-> 6. alerts are set to run daily/bi-hourly/hourly/quarter-hourly, 
-     frequencies and timezones are defined in the ``configs.json``
+- `main.py` and `gui/` are the command line and local GUI entry points.
+- `alerts/` coordinates schedules, alert rules, and reports.
+- `gateway/` contains external provider adapters for market data, HTTP, Telegram, email, and OpenAI.
+- `db/` owns SQLite connections, models, alert state, and share history.
+- `data_type/` defines market symbols and financial metrics. `market_time.py` and `indicators.py` provide market time conversions and calculations.
+- `configs.json` defines alert inputs, schedules, and time zones. `token.json` supplies provider credentials and Telegram destinations.
 
 ## Alert Type Description
 * ``market_cap``: ``alerts/crypto_alerts/coingecko_market_cap_alert.py``: a daily report of newly deleted and newly added

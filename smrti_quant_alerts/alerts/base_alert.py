@@ -1,7 +1,7 @@
 from collections.abc import Callable
 
 from smrti_quant_alerts.settings import Config
-from smrti_quant_alerts.telegram_api import TelegramBot
+from smrti_quant_alerts.gateway.telegram_api import TelegramBot
 from smrti_quant_alerts.db import init_database_runtime
 
 
